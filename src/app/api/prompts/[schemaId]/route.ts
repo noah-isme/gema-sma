@@ -156,10 +156,17 @@ async function writePromptSchema(schemaId: keyof typeof SCHEMA_FILE_MAP, data: P
   await fs.writeFile(filePath, json, "utf-8");
 }
 
+type RouteContext = {
+  params: Promise<{
+    schemaId: string
+  }>
+}
+
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { schemaId: string } }
+  context: RouteContext
 ) {
+  const params = await context.params;
   const resolvedSchemaId = resolveSchemaId(params.schemaId);
   if (!resolvedSchemaId) {
     return NextResponse.json({ error: "Schema prompt tidak ditemukan" }, { status: 404 });
@@ -175,8 +182,9 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { schemaId: string } }
+  context: RouteContext
 ) {
+  const params = await context.params;
   const resolvedSchemaId = resolveSchemaId(params.schemaId);
   if (!resolvedSchemaId) {
     return NextResponse.json({ error: "Schema prompt tidak ditemukan" }, { status: 404 });

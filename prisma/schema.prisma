@@ -1,35 +1,36 @@
 model DiscussionThread {
-  id          String   @id @default(cuid())
-  title       String
-  authorId    String // Admin or Student ID
-  authorName  String
-  content     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  title      String
+  authorId   String // Admin or Student ID
+  authorName String
+  content    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
-  replies     DiscussionReply[]
+  replies DiscussionReply[]
 
   @@index([authorId])
   @@map("discussion_threads")
 }
 
 model DiscussionReply {
-  id          String   @id @default(cuid())
-  threadId    String
-  authorId    String // Admin or Student ID
-  authorName  String
-  content     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  threadId   String
+  authorId   String // Admin or Student ID
+  authorName String
+  content    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
-  thread      DiscussionThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  thread DiscussionThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
 
   @@index([threadId])
   @@index([authorId])
   @@map("discussion_replies")
 }
+
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
@@ -52,9 +53,13 @@ model Admin {
   updatedAt DateTime @updatedAt
 
   // Relations
-  webLabAssignments WebLabAssignment[]
-  webLabEvaluations WebLabEvaluation[]
-  codingEvaluations CodingEvaluation[]
+  webLabAssignments   WebLabAssignment[]
+  webLabEvaluations   WebLabEvaluation[]
+  codingEvaluations   CodingEvaluation[]
+  quizzes             Quiz[]
+  hostedQuizSessions  QuizSession[]
+  quizResponsesGraded QuizResponse[]     @relation("QuizResponseGrader")
+  quizSessionEvents   QuizSessionEvent[]
 
   @@map("admins")
 }
@@ -79,7 +84,7 @@ model Registration {
   id        String   @id @default(cuid())
   fullName  String
   email     String
-  phone      String
+  phone     String
   school    String?
   address   String?
   program   String   @default("GEMA")
@@ -92,15 +97,15 @@ model Registration {
 }
 
 model Announcement {
-  id          String   @id @default(cuid())
-  title       String
-  content     String
-  type        String   @default("info") // info, warning, success, error
-  isActive    Boolean  @default(true)
-  showOnHomepage Boolean @default(false)
-  publishDate DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  title          String
+  content        String
+  type           String   @default("info") // info, warning, success, error
+  isActive       Boolean  @default(true)
+  showOnHomepage Boolean  @default(false)
+  publishDate    DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@map("announcements")
 }
@@ -114,31 +119,31 @@ model Settings {
 }
 
 model Activity {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  date        DateTime
-  location    String?
-  capacity    Int?
-  registered  Int      @default(0)
-  isActive    Boolean  @default(true)
-  showOnHomepage Boolean @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  title          String
+  description    String?
+  date           DateTime
+  location       String?
+  capacity       Int?
+  registered     Int      @default(0)
+  isActive       Boolean  @default(true)
+  showOnHomepage Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@map("activities")
 }
 
 model Gallery {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  imageUrl    String
-  category    String   @default("general")
-  isActive    Boolean  @default(true)
-  showOnHomepage Boolean @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  title          String
+  description    String?
+  imageUrl       String
+  category       String   @default("general")
+  isActive       Boolean  @default(true)
+  showOnHomepage Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@map("galleries")
 }
@@ -260,9 +265,9 @@ model CodingLabTask {
   classLevel   String
   tags         String?
   instructions String?
-  project      Json?    // { title, description, rubric }
-  files        Json?    // { path, language, content }[]
-  previewMode  String?  // e.g., "iframe", "image"
+  project      Json? // { title, description, rubric }
+  files        Json? // { path, language, content }[]
+  previewMode  String? // e.g., "iframe", "image"
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -274,29 +279,29 @@ model CodingLabTask {
 }
 
 model CodingLabSubmission {
-  id            String                    @id @default(cuid())
-  taskId        String
-  studentId     String
-  title         String
-  summary       String?
-  classLevel    String
-  tags          String?
-  status        CodingLabSubmissionStatus @default(DRAFT)
-  lastVersionId String?                   @unique
-  grade         Int?
-  reviewerId    String?
-  reviewerNote  String?
-  submittedAt   DateTime?
-  returnedAt    DateTime?
-  draftHtml     String?
-  draftCss      String?
-  draftJs       String?
-  draftArtifact CodingLabArtifactType @default(EDITOR)
+  id               String                    @id @default(cuid())
+  taskId           String
+  studentId        String
+  title            String
+  summary          String?
+  classLevel       String
+  tags             String?
+  status           CodingLabSubmissionStatus @default(DRAFT)
+  lastVersionId    String?                   @unique
+  grade            Int?
+  reviewerId       String?
+  reviewerNote     String?
+  submittedAt      DateTime?
+  returnedAt       DateTime?
+  draftHtml        String?
+  draftCss         String?
+  draftJs          String?
+  draftArtifact    CodingLabArtifactType     @default(EDITOR)
   draftArchivePath String?
   draftArchiveSize Int?
-  draftMetadata String?
-  createdAt     DateTime                  @default(now())
-  updatedAt     DateTime                  @updatedAt
+  draftMetadata    String?
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
 
   task        CodingLabTask         @relation(fields: [taskId], references: [id], onDelete: Cascade)
   student     Student               @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -388,13 +393,13 @@ model ClassroomProjectChecklist {
 }
 
 model Classroom {
-  id          String        @id @default(cuid())
+  id          String   @id @default(cuid())
   title       String
-  slug        String?       @unique
+  slug        String?  @unique
   description String?
   teacherId   String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([teacherId])
   @@map("classrooms")
@@ -425,12 +430,211 @@ model Student {
   ArticleFeedback     ArticleFeedback[]
   webLabSubmissions   WebLabSubmission[]
   codingSubmissions   CodingSubmission[]
-  pythonSubmissions   PythonSubmission[]  @relation("PythonSubmissions")
+  pythonSubmissions   PythonSubmission[]    @relation("PythonSubmissions")
+  quizParticipations  QuizParticipant[]
 
   @@index([studentId])
   @@index([status])
   @@index([class])
   @@map("students")
+}
+
+// ===== QUIZ MODELS =====
+
+enum QuizQuestionType {
+  MULTIPLE_CHOICE
+  MULTI_SELECT
+  TRUE_FALSE
+  SHORT_ANSWER
+  NUMERIC
+  SCALE
+}
+
+enum QuizSessionMode {
+  LIVE
+  HOMEWORK
+}
+
+enum QuizSessionStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum QuizSessionEventType {
+  CREATED
+  HOST_JOINED
+  STARTED
+  QUESTION_ADVANCED
+  QUESTION_REWOUND
+  PAUSED
+  RESUMED
+  FINISHED
+  SCORE_ADJUSTED
+  MANUAL_GRADE
+}
+
+model Quiz {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  slug            String?   @unique
+  tags            Json?
+  isPublic        Boolean   @default(false)
+  timePerQuestion Int?
+  defaultPoints   Int       @default(1)
+  createdBy       String
+  publishedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  createdByAdmin Admin          @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  questions      QuizQuestion[]
+  sessions       QuizSession[]
+
+  @@index([createdBy])
+  @@index([isPublic])
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id               String           @id @default(cuid())
+  quizId           String
+  order            Int
+  type             QuizQuestionType
+  prompt           String
+  richContent      Json?
+  mediaUrl         String?
+  options          Json?
+  correctAnswers   Json?
+  competencyTag    String?
+  explanation      String?
+  difficulty       String?
+  points           Int              @default(1)
+  timeLimitSeconds Int?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  quiz      Quiz           @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  responses QuizResponse[]
+  currentIn QuizSession[]  @relation("SessionCurrentQuestion")
+
+  @@unique([quizId, order])
+  @@index([quizId])
+  @@map("quiz_questions")
+}
+
+model QuizSession {
+  id                       String            @id @default(cuid())
+  quizId                   String
+  hostId                   String
+  code                     String            @unique
+  title                    String?
+  description              String?
+  mode                     QuizSessionMode
+  status                   QuizSessionStatus @default(DRAFT)
+  scheduledStart           DateTime?
+  scheduledEnd             DateTime?
+  startedAt                DateTime?
+  finishedAt               DateTime?
+  currentQuestionId        String?
+  currentQuestionStartedAt DateTime?
+  homeworkWindowStart      DateTime?
+  homeworkWindowEnd        DateTime?
+  maxAttemptsPerQuestion   Int?
+  metadata                 Json?
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+
+  quiz            Quiz               @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  host            Admin              @relation(fields: [hostId], references: [id])
+  currentQuestion QuizQuestion?      @relation("SessionCurrentQuestion", fields: [currentQuestionId], references: [id])
+  participants    QuizParticipant[]
+  responses       QuizResponse[]
+  events          QuizSessionEvent[]
+
+  @@index([quizId])
+  @@index([hostId])
+  @@index([status])
+  @@index([mode])
+  @@index([scheduledStart])
+  @@index([scheduledEnd])
+  @@map("quiz_sessions")
+}
+
+model QuizParticipant {
+  id            String    @id @default(cuid())
+  sessionId     String
+  studentId     String?
+  displayName   String
+  avatarColor   String?
+  joinedAt      DateTime  @default(now())
+  lastSeenAt    DateTime?
+  score         Float     @default(0)
+  accuracy      Float?
+  responseCount Int       @default(0)
+  isKicked      Boolean   @default(false)
+  metadata      Json?
+
+  session   QuizSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student   Student?       @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  responses QuizResponse[]
+
+  @@unique([sessionId, displayName])
+  @@index([sessionId])
+  @@index([studentId])
+  @@index([score])
+  @@map("quiz_participants")
+}
+
+model QuizResponse {
+  id            String    @id @default(cuid())
+  sessionId     String
+  participantId String
+  questionId    String
+  answer        Json?
+  score         Float     @default(0)
+  maxScore      Float     @default(0)
+  isCorrect     Boolean?
+  attempt       Int       @default(1)
+  submittedAt   DateTime  @default(now())
+  gradedAt      DateTime?
+  gradedBy      String?
+  latencyMs     Int?
+  feedback      String?
+  metadata      Json?
+
+  session     QuizSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  participant QuizParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  question    QuizQuestion    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  grader      Admin?          @relation("QuizResponseGrader", fields: [gradedBy], references: [id], onDelete: SetNull)
+
+  @@unique([participantId, questionId, sessionId])
+  @@index([sessionId])
+  @@index([questionId])
+  @@index([participantId])
+  @@map("quiz_responses")
+}
+
+model QuizSessionEvent {
+  id        String               @id @default(cuid())
+  sessionId String
+  type      QuizSessionEventType
+  actorId   String?
+  actorName String?
+  payload   Json?
+  createdAt DateTime             @default(now())
+
+  session QuizSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  actor   Admin?      @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("quiz_session_events")
 }
 
 model Article {
@@ -478,7 +682,7 @@ model ArticleFeedback {
   createdAt DateTime @default(now())
 
   // Relations
-  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  article Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
   student Student? @relation(fields: [studentId], references: [id], onDelete: SetNull)
 
   @@index([articleId])
@@ -516,31 +720,31 @@ enum WebLabEvaluationStatus {
 }
 
 model WebLabAssignment {
-  id          String   @id @default(cuid())
-  title       String
-  description String
-  difficulty  WebLabDifficulty @default(BEGINNER)
-  classLevel  String? // Target class level (XI-A, XI-B, etc.)
+  id           String           @id @default(cuid())
+  title        String
+  description  String
+  difficulty   WebLabDifficulty @default(BEGINNER)
+  classLevel   String? // Target class level (XI-A, XI-B, etc.)
   instructions String // Detailed instructions for the assignment
-  starterHtml String? // Starter HTML code
-  starterCss  String? // Starter CSS code
-  starterJs   String? // Starter JavaScript code
-  template    String? // e.g., "html-dasar", "landing-sederhana", "todo-js"
+  starterHtml  String? // Starter HTML code
+  starterCss   String? // Starter CSS code
+  starterJs    String? // Starter JavaScript code
+  template     String? // e.g., "html-dasar", "landing-sederhana", "todo-js"
   requirements Json? // JSON array of requirements/checklist
-  hints       Json? // JSON array of hints
+  hints        Json? // JSON array of hints
   solutionHtml String? // Solution HTML (for admin reference)
   solutionCss  String? // Solution CSS (for admin reference)
   solutionJs   String? // Solution JavaScript (for admin reference)
-  points      Int     @default(100)
-  timeLimit   Int? // Time limit in minutes
-  status      WebLabStatus @default(DRAFT)
-  createdBy   String // Admin ID
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  points       Int              @default(100)
+  timeLimit    Int? // Time limit in minutes
+  status       WebLabStatus     @default(DRAFT)
+  createdBy    String // Admin ID
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
   // Relations
   submissions WebLabSubmission[]
-  admin       Admin @relation(fields: [createdBy], references: [id])
+  admin       Admin              @relation(fields: [createdBy], references: [id])
 
   @@index([status])
   @@index([difficulty])
@@ -549,30 +753,30 @@ model WebLabAssignment {
 }
 
 model WebLabSubmission {
-  id         String   @id @default(cuid())
+  id           String                 @id @default(cuid())
   assignmentId String
-  studentId  String
-  html       String?
-  css        String?
-  js         String?
-  status     WebLabSubmissionStatus @default(DRAFT)
-  submittedAt DateTime?
-  gradedAt   DateTime?
-  score      Int?
-  feedback   String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  studentId    String
+  html         String?
+  css          String?
+  js           String?
+  status       WebLabSubmissionStatus @default(DRAFT)
+  submittedAt  DateTime?
+  gradedAt     DateTime?
+  score        Int?
+  feedback     String?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
 
   // Relations
-  assignment WebLabAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  student    Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assignment WebLabAssignment          @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    Student                   @relation(fields: [studentId], references: [id], onDelete: Cascade)
   evaluation WebLabEvaluation?
   versions   WebLabSubmissionVersion[]
 
+  @@unique([assignmentId, studentId])
   @@index([assignmentId])
   @@index([studentId])
   @@index([status])
-  @@unique([assignmentId, studentId])
   @@map("web_lab_submissions")
 }
 
@@ -601,7 +805,7 @@ model WebLabEvaluation {
 
   // Relations
   submission WebLabSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  admin      Admin @relation(fields: [evaluatedBy], references: [id])
+  admin      Admin            @relation(fields: [evaluatedBy], references: [id])
 
   @@index([evaluatedBy])
   @@map("web_lab_evaluations")
@@ -624,16 +828,16 @@ enum CodingSubmissionStatus {
 }
 
 model CodingLab {
-  id          String   @id @default(cuid())
+  id          String           @id @default(cuid())
   title       String
   description String?
   difficulty  CodingDifficulty @default(BEGINNER)
-  language    String   // Programming language (JavaScript, Python, Java, etc.)
-  points      Int      @default(100)
-  duration    Int      // Duration in minutes
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  language    String // Programming language (JavaScript, Python, Java, etc.)
+  points      Int              @default(100)
+  duration    Int // Duration in minutes
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   // Relations
   exercises CodingExercise[]
@@ -645,26 +849,26 @@ model CodingLab {
 }
 
 model CodingExercise {
-  id           String   @id @default(cuid())
+  id           String           @id @default(cuid())
   labId        String
   title        String
   description  String
   difficulty   CodingDifficulty @default(BEGINNER)
-  points       Int      @default(10)
-  timeLimit    Int      // Time limit in seconds
-  memoryLimit  Int      // Memory limit in MB
+  points       Int              @default(10)
+  timeLimit    Int // Time limit in seconds
+  memoryLimit  Int // Memory limit in MB
   instructions String
   starterCode  String
   solutionCode String?
-  hints        String?  // JSON array of hints
-  tags         String?  // JSON array of tags
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  hints        String? // JSON array of hints
+  tags         String? // JSON array of tags
+  isActive     Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
   // Relations
-  lab        CodingLab         @relation(fields: [labId], references: [id], onDelete: Cascade)
-  testCases  CodingTestCase[]
+  lab         CodingLab          @relation(fields: [labId], references: [id], onDelete: Cascade)
+  testCases   CodingTestCase[]
   submissions CodingSubmission[]
 
   @@index([labId])
@@ -674,13 +878,13 @@ model CodingExercise {
 }
 
 model CodingTestCase {
-  id            String   @id @default(cuid())
-  exerciseId    String
-  input         String
+  id             String   @id @default(cuid())
+  exerciseId     String
+  input          String
   expectedOutput String
-  isHidden      Boolean  @default(false)
-  explanation   String?
-  createdAt     DateTime @default(now())
+  isHidden       Boolean  @default(false)
+  explanation    String?
+  createdAt      DateTime @default(now())
 
   // Relations
   exercise CodingExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
@@ -690,43 +894,43 @@ model CodingTestCase {
 }
 
 model CodingSubmission {
-  id            String                  @id @default(cuid())
+  id            String                 @id @default(cuid())
   exerciseId    String
   studentId     String
   code          String
-  status        CodingSubmissionStatus  @default(DRAFT)
+  status        CodingSubmissionStatus @default(DRAFT)
   score         Int?
-  executionTime Int?    // Execution time in milliseconds
-  memoryUsed    Int?    // Memory used in KB
-  testResults   Json?   // JSON array of test results
+  executionTime Int? // Execution time in milliseconds
+  memoryUsed    Int? // Memory used in KB
+  testResults   Json? // JSON array of test results
   submittedAt   DateTime?
-  attempts      Int     @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  attempts      Int                    @default(0)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
 
   // Relations
-  exercise CodingExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-  student  Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  exercise   CodingExercise    @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  student    Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
   evaluation CodingEvaluation?
 
+  @@unique([exerciseId, studentId]) // One submission per student per exercise
   @@index([exerciseId])
   @@index([studentId])
   @@index([status])
-  @@unique([exerciseId, studentId]) // One submission per student per exercise
   @@map("coding_submissions")
 }
 
 model CodingEvaluation {
   id           String   @id @default(cuid())
   submissionId String   @unique
-  evaluatedBy  String   // Admin ID
+  evaluatedBy  String // Admin ID
   overallScore Int
   feedback     String?
   evaluatedAt  DateTime @default(now())
 
   // Relations
   submission CodingSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  admin      Admin           @relation(fields: [evaluatedBy], references: [id])
+  admin      Admin            @relation(fields: [evaluatedBy], references: [id])
 
   @@index([evaluatedBy])
   @@map("coding_evaluations")
@@ -751,23 +955,23 @@ enum PythonSubmissionStatus {
 }
 
 model PythonCodingTask {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  description String
-  difficulty  PythonTaskDifficulty @default(EASY)
-  category    String   @default("general") // general, algorithm, data-structure, etc.
-  tags        String?  // JSON array of tags
-  starterCode String   @default("# Write your Python code here\n\ndef solution():\n    pass\n\n# Test your solution\nif __name__ == \"__main__\":\n    print(solution())")
+  id           String               @id @default(cuid())
+  title        String
+  slug         String               @unique
+  description  String
+  difficulty   PythonTaskDifficulty @default(EASY)
+  category     String               @default("general") // general, algorithm, data-structure, etc.
+  tags         String? // JSON array of tags
+  starterCode  String               @default("# Write your Python code here\n\ndef solution():\n    pass\n\n# Test your solution\nif __name__ == \"__main__\":\n    print(solution())")
   solutionCode String? // Solution code for reference
-  hints       Json?    // Array of hints
-  timeLimit   Int      @default(5)    // seconds
-  memoryLimit Int      @default(128)  // MB
-  points      Int      @default(100)
-  order       Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  hints        Json? // Array of hints
+  timeLimit    Int                  @default(5) // seconds
+  memoryLimit  Int                  @default(128) // MB
+  points       Int                  @default(100)
+  order        Int                  @default(0)
+  isActive     Boolean              @default(true)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
 
   // Relations
   testCases   PythonTestCase[]
@@ -781,15 +985,15 @@ model PythonCodingTask {
 }
 
 model PythonTestCase {
-  id            String   @id @default(cuid())
-  taskId        String
-  name          String   // Test case name/description
-  input         String   // Input for the test
-  expectedOutput String  // Expected output
-  isHidden      Boolean  @default(false) // Hidden test cases for validation
-  points        Int      @default(10)
-  order         Int      @default(0)
-  createdAt     DateTime @default(now())
+  id             String   @id @default(cuid())
+  taskId         String
+  name           String // Test case name/description
+  input          String // Input for the test
+  expectedOutput String // Expected output
+  isHidden       Boolean  @default(false) // Hidden test cases for validation
+  points         Int      @default(10)
+  order          Int      @default(0)
+  createdAt      DateTime @default(now())
 
   // Relations
   task PythonCodingTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
@@ -800,28 +1004,28 @@ model PythonTestCase {
 }
 
 model PythonSubmission {
-  id              String   @id @default(cuid())
-  taskId          String
-  studentId       String
-  code            String
-  language        String   @default("python") // python, python3
-  status          PythonSubmissionStatus @default(PENDING)
-  judge0Token     String?  // Judge0 submission token
-  stdout          String?  // Program output
-  stderr          String?  // Error output
-  compileOutput   String?  // Compilation output
-  message         String?  // Judge0 status message
-  time            Float?   // Execution time in seconds
-  memory          Int?     // Memory used in KB
-  score           Int      @default(0) // Score based on passed test cases
-  totalTests      Int      @default(0)
-  passedTests     Int      @default(0)
-  testResults     Json?    // Detailed test results
-  submittedAt     DateTime @default(now())
-  completedAt     DateTime?
-  attempts        Int      @default(1)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String                 @id @default(cuid())
+  taskId        String
+  studentId     String
+  code          String
+  language      String                 @default("python") // python, python3
+  status        PythonSubmissionStatus @default(PENDING)
+  judge0Token   String? // Judge0 submission token
+  stdout        String? // Program output
+  stderr        String? // Error output
+  compileOutput String? // Compilation output
+  message       String? // Judge0 status message
+  time          Float? // Execution time in seconds
+  memory        Int? // Memory used in KB
+  score         Int                    @default(0) // Score based on passed test cases
+  totalTests    Int                    @default(0)
+  passedTests   Int                    @default(0)
+  testResults   Json? // Detailed test results
+  submittedAt   DateTime               @default(now())
+  completedAt   DateTime?
+  attempts      Int                    @default(1)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
 
   // Relations
   task    PythonCodingTask @relation(fields: [taskId], references: [id], onDelete: Cascade)

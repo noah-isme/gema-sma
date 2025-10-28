@@ -22,7 +22,7 @@ import fallbackPromptData from "@/data/prompts/webPortfolioSma.json";
 import type { PromptSchema, PromptSection } from "@/types/prompt";
 
 const SCHEMA_ID = "webPortfolioSma";
-const FALLBACK_SCHEMA = fallbackPromptData as PromptSchema;
+const FALLBACK_SCHEMA = fallbackPromptData as unknown as PromptSchema;
 type TabMode = "ringkas" | "lengkap" | "guru";
 
 interface ChecklistState {

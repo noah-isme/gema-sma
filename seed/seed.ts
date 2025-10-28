@@ -1,10 +1,15 @@
 import { PrismaClient } from '@prisma/client'
+import type { Prisma, QuizQuestionType, QuizSessionMode, QuizSessionStatus } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
 async function main() {
   console.log('🌱 Starting database seed...')
+
+  let quizzesSeeded = 0
+  let quizQuestionsSeeded = 0
+  let quizSessionsSeeded = 0
 
   // Create admin users (2 admins)
   console.log('👨‍💼 Creating admin accounts...')
@@ -165,6 +170,260 @@ async function main() {
   })
 
   console.log('✅ Created 4 gallery items')
+
+  // Create sample quizzes with question banks
+  console.log('🧠 Creating quiz library and demo sessions...')
+  const quizHost = await prisma.admin.findUnique({
+    where: { email: 'admin.gema@smawahidiyah.edu' }
+  })
+
+  if (!quizHost) {
+    throw new Error('Admin host (admin.gema@smawahidiyah.edu) not found for quiz seeding')
+  }
+
+  type QuizSessionSeed = {
+    code: string
+    title: string
+    description?: string | null
+    mode: QuizSessionMode
+    status: QuizSessionStatus
+    startedAt?: Date
+    finishedAt?: Date
+    scheduledStart?: Date
+    scheduledEnd?: Date
+    homeworkWindowStart?: Date
+    homeworkWindowEnd?: Date
+  }
+
+  type QuizQuestionSeed = {
+    type: QuizQuestionType
+    prompt: string
+    options?: unknown[]
+    correctAnswers?: unknown
+    shortAnswers?: string[]
+    points: number
+    timeLimitSeconds?: number
+    competencyTag?: string
+    explanation?: string
+    difficulty?: string
+  }
+
+  type QuizDefinition = {
+    slug: string
+    title: string
+    description: string
+    isPublic: boolean
+    defaultPoints: number
+    timePerQuestion: number
+    questions: QuizQuestionSeed[]
+    session?: QuizSessionSeed
+  }
+
+  const quizDefinitions: QuizDefinition[] = [
+    {
+      slug: 'quiz-fundamental-web',
+      title: 'Kuis Fundamental Web Dasar',
+      description: 'Mengukur pemahaman HTML, CSS, dan dasar aksesibilitas.',
+      isPublic: true,
+      defaultPoints: 10,
+      timePerQuestion: 45,
+      questions: [
+        {
+          type: 'MULTIPLE_CHOICE',
+          prompt: 'Elemen HTML manakah yang semantik untuk menyatakan navigasi utama pada halaman?',
+          options: ['<div>', '<section>', '<nav>', '<main>'],
+          correctAnswers: ['<nav>'],
+          points: 10,
+          timeLimitSeconds: 45,
+          competencyTag: 'HTML Semantik',
+          explanation: 'Elemen <nav> digunakan untuk membungkus tautan navigasi utama.'
+        },
+        {
+          type: 'MULTI_SELECT',
+          prompt: 'Manakah praktik berikut yang meningkatkan aksesibilitas situs?',
+          options: [
+            'Memberi teks alternatif pada gambar',
+            'Menggunakan warna teks dan latar dengan kontras tinggi',
+            'Menempatkan seluruh konten dalam satu <div>',
+            'Menonaktifkan fokus keyboard'
+          ],
+          correctAnswers: [
+            'Memberi teks alternatif pada gambar',
+            'Menggunakan warna teks dan latar dengan kontras tinggi'
+          ],
+          points: 12,
+          timeLimitSeconds: 60,
+          competencyTag: 'Aksesibilitas'
+        },
+        {
+          type: 'TRUE_FALSE',
+          prompt: 'Property CSS flexbox dapat digunakan untuk membuat layout responsif tanpa media query.',
+          correctAnswers: [true],
+          points: 8,
+          timeLimitSeconds: 30,
+          competencyTag: 'CSS Flexbox'
+        },
+        {
+          type: 'SHORT_ANSWER',
+          prompt: 'Sebutkan minimal satu alat untuk menganalisis performa website di peramban.',
+          shortAnswers: ['lighthouse', 'google lighthouse', 'chrome devtools'],
+          points: 10,
+          timeLimitSeconds: 45,
+          competencyTag: 'Performance',
+          explanation: 'Lighthouse di Chrome DevTools dapat mengaudit performa, aksesibilitas, dan SEO.'
+        }
+      ],
+      session: {
+        code: 'GEMA01',
+        title: 'Demo Live Web Fundamentals',
+        description: 'Sesi contoh untuk memperkenalkan fitur live quiz di kelas GEMA.',
+        mode: 'LIVE',
+        status: 'COMPLETED',
+        startedAt: new Date(Date.now() - 1000 * 60 * 50),
+        finishedAt: new Date(Date.now() - 1000 * 60 * 20)
+      }
+    },
+    {
+      slug: 'quiz-logika-pemrograman',
+      title: 'Kuis Logika Pemrograman',
+      description: 'Pertanyaan campuran seputar algoritma dasar, pseudocode, dan struktur data sederhana.',
+      isPublic: false,
+      defaultPoints: 15,
+      timePerQuestion: 60,
+      questions: [
+        {
+          type: 'MULTIPLE_CHOICE',
+          prompt: 'Struktur data apa yang paling tepat untuk menerapkan algoritma BFS (Breadth First Search)?',
+          options: ['Stack', 'Queue', 'Linked List', 'Tree'],
+          correctAnswers: ['Queue'],
+          points: 15,
+          timeLimitSeconds: 60,
+          competencyTag: 'Struktur Data'
+        },
+        {
+          type: 'NUMERIC',
+          prompt: 'Berapa jumlah maksimum iterasi dalam algoritma binary search untuk daftar 1024 elemen?',
+          correctAnswers: [{ value: 10, tolerance: 0 }],
+          points: 15,
+          timeLimitSeconds: 45,
+          competencyTag: 'Kompleksitas',
+          explanation: 'Binary search membutuhkan log₂(n) langkah. log₂(1024) = 10.'
+        },
+        {
+          type: 'SHORT_ANSWER',
+          prompt: 'Apa nama teknik desain algoritma yang memecah masalah menjadi sub masalah lebih kecil dan solusi digabung?',
+          shortAnswers: ['divide and conquer', 'divide-and-conquer'],
+          points: 15,
+          timeLimitSeconds: 45,
+          competencyTag: 'Algoritma'
+        },
+        {
+          type: 'TRUE_FALSE',
+          prompt: 'Bubble sort memiliki kompleksitas waktu rata-rata O(n log n).',
+          correctAnswers: [false],
+          points: 8,
+          competencyTag: 'Kompleksitas',
+          explanation: 'Bubble sort memiliki kompleksitas O(n²) pada rata-rata dan kasus terburuk.'
+        }
+      ],
+      session: {
+        code: 'GEMA-HOME',
+        title: 'Homework Logika Pemrograman',
+        description: 'Latihan mandiri yang bisa diakses siswa selama akhir pekan.',
+        mode: 'HOMEWORK',
+        status: 'ACTIVE',
+        startedAt: new Date(Date.now() - 1000 * 60 * 60 * 6),
+        homeworkWindowStart: new Date(Date.now() - 1000 * 60 * 60 * 6),
+        homeworkWindowEnd: new Date(Date.now() + 1000 * 60 * 60 * 18)
+      }
+    }
+  ]
+
+  for (const definition of quizDefinitions) {
+    let quizRecord = await prisma.quiz.findUnique({
+      where: { slug: definition.slug },
+      include: { questions: true }
+    })
+
+    if (!quizRecord) {
+      quizRecord = await prisma.quiz.create({
+        data: {
+          title: definition.title,
+          slug: definition.slug,
+          description: definition.description,
+          isPublic: definition.isPublic,
+          defaultPoints: definition.defaultPoints,
+          timePerQuestion: definition.timePerQuestion,
+          createdBy: quizHost.id,
+          questions: {
+            create: definition.questions.map((question, index) => {
+              const optionsValue =
+                question.options !== undefined
+                  ? (question.options as Prisma.InputJsonValue)
+                  : undefined
+              const correctAnswersSource =
+                question.correctAnswers !== undefined
+                  ? question.correctAnswers
+                  : question.shortAnswers !== undefined
+                    ? question.shortAnswers
+                    : undefined
+
+              return {
+                order: index,
+                type: question.type,
+                prompt: question.prompt,
+                options: optionsValue,
+                correctAnswers: correctAnswersSource as Prisma.InputJsonValue | undefined,
+                points: question.points,
+                timeLimitSeconds: question.timeLimitSeconds ?? null,
+                competencyTag: question.competencyTag ?? null,
+                explanation: question.explanation ?? null,
+                difficulty: question.difficulty ?? null
+              }
+            })
+          }
+        },
+        include: { questions: true }
+      })
+
+      quizzesSeeded += 1
+      quizQuestionsSeeded += quizRecord.questions.length
+    }
+
+    if (!quizRecord) {
+      continue
+    }
+
+    if (definition.session) {
+      const existingSession = await prisma.quizSession.findUnique({
+        where: { code: definition.session.code }
+      })
+
+      if (!existingSession) {
+        await prisma.quizSession.create({
+          data: {
+            quizId: quizRecord.id,
+            hostId: quizHost.id,
+            code: definition.session.code,
+            title: definition.session.title,
+            description: definition.session.description ?? null,
+            mode: definition.session.mode,
+            status: definition.session.status,
+            startedAt: definition.session.startedAt ?? null,
+            finishedAt: definition.session.finishedAt ?? null,
+            scheduledStart: definition.session.scheduledStart ?? null,
+            scheduledEnd: definition.session.scheduledEnd ?? null,
+            homeworkWindowStart: definition.session.homeworkWindowStart ?? null,
+            homeworkWindowEnd: definition.session.homeworkWindowEnd ?? null,
+            metadata: {}
+          }
+        })
+        quizSessionsSeeded += 1
+      }
+    }
+  }
+
+  console.log(`✅ Quiz library ready (${quizzesSeeded} new quiz(es), ${quizQuestionsSeeded} soal, ${quizSessionsSeeded} sesi demo)`)
 
   // Create sample settings
   console.log('⚙️ Creating system settings...')
@@ -410,6 +669,7 @@ if __name__ == "__main__":
   console.log('- 3 Announcements created')
   console.log('- 4 Activities created')
   console.log('- 4 Gallery items created')
+  console.log(`- ${quizzesSeeded} quizzes created (${quizQuestionsSeeded} questions, ${quizSessionsSeeded} demo sessions)`)
   console.log('- 3 Python Coding Lab tasks created')
   console.log('- System settings configured')
   console.log('')
