@@ -14,7 +14,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { motion } from "framer-motion";
 import {
   ArrowRight,
   BarChart3,
@@ -29,10 +28,15 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
-// gsap exports a default object; avoid importing non-existent 'GSAP' type
-import innovationAnimationData from "@/../public/animations/innovation.json";
-import VideoLogo from "@/components/branding/VideoLogo";
-import AnimatedLogoDemo from "@/components/branding/AnimatedLogoDemo";
+
+const VideoLogo = dynamic(() => import("@/components/branding/VideoLogo"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[300px] w-full items-center justify-center rounded-2xl bg-gradient-to-br from-[#6C63FF]/10 to-[#5EEAD4]/10">
+      <div className="h-12 w-12 animate-pulse rounded-full bg-[#6C63FF]/20" />
+    </div>
+  ),
+});
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { SkipLink } from "@/components/ui/SkipLink";
@@ -40,6 +44,7 @@ import { SkeletonGrid } from "@/components/ui/Skeleton";
 import { OptimizedImage } from "@/components/ui/OptimizedImage";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 const VantaBackground = dynamic(() => import("@/components/landing/VantaBackground"), {
   ssr: false,
@@ -79,10 +84,6 @@ interface GalleryItem {
   description: string;
 }
 
-type GsapModule = typeof import("gsap");
-type GsapCore = GsapModule["gsap"];
-type GsapContext = ReturnType<GsapCore["context"]>;
-type GsapTween = ReturnType<GsapCore["to"]>;
 
 interface Stats {
   totalMembers: number;
@@ -320,9 +321,6 @@ const galleryAccents: AccentPalette[] = [
   },
 ];
 
-// Use a permissive type for ScrollReveal to match the runtime library shape
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ScrollRevealController = any;
 
 class InteractiveBackgroundBoundary
   extends Component<{ children: ReactNode }, { hasError: boolean }>
@@ -463,6 +461,13 @@ export default function HomePage() {
     fetchPublicData().catch(() => null);
   }, [fetchPublicData]);
 
+  // Activate scroll reveal for all [data-scroll-reveal] elements
+  useScrollReveal({
+    threshold: 0.1,
+    rootMargin: "0px 0px -50px 0px",
+    once: true,
+  });
+
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
@@ -487,81 +492,29 @@ export default function HomePage() {
     };
   }, [prefersReducedMotion]);
 
+  // Simple JS typewriter effect (native, no library)
   useEffect(() => {
-    if (!typedRef.current) {
+    if (!typedRef.current || prefersReducedMotion) {
+      if (typedRef.current) {
+        typedRef.current.textContent = typedPhrases[0];
+      }
       return;
     }
+
+    let currentPhraseIndex = 0;
+    const interval = setInterval(() => {
+      currentPhraseIndex = (currentPhraseIndex + 1) % typedPhrases.length;
+      if (typedRef.current) {
+        typedRef.current.textContent = typedPhrases[currentPhraseIndex];
+      }
+    }, 3000);
 
     typedRef.current.textContent = typedPhrases[0];
 
-    if (prefersReducedMotion) {
-      return;
-    }
-
-    let typedInstance: { destroy: () => void } | null = null;
-    let isActive = true;
-
-    import("typed.js")
-      .then((module) => {
-        if (!isActive || !typedRef.current) {
-          return;
-        }
-        const Typed = module.default;
-        typedInstance = new Typed(typedRef.current, {
-          strings: typedPhrases,
-          typeSpeed: 64,
-          backSpeed: 36,
-          backDelay: 1600,
-          loop: true,
-          smartBackspace: true,
-        });
-      })
-      .catch(() => null);
-
-    return () => {
-      isActive = false;
-      typedInstance?.destroy();
-    };
+    return () => clearInterval(interval);
   }, [prefersReducedMotion]);
 
-  useEffect(() => {
-    if (prefersReducedMotion) {
-      return;
-    }
-
-    let ctx: GsapContext | undefined;
-
-    (async () => {
-      const { default: gsap } = await import("gsap");
-
-      ctx = gsap.context(() => {
-        const titleEl = heroTitleRef.current;
-        const subtitleEl = heroSubtitleRef.current;
-        const buttonEls = heroButtonsRef.current
-          ? Array.from(heroButtonsRef.current.querySelectorAll("a"))
-          : [];
-
-        if (!titleEl || !subtitleEl) {
-          return;
-        }
-
-        gsap.set([titleEl, subtitleEl, ...buttonEls], {
-          opacity: 0,
-          y: 24,
-        });
-
-        gsap
-          .timeline({ defaults: { ease: "cubic-bezier(0.16, 1, 0.3, 1)" } })
-          .to(titleEl, { opacity: 1, y: 0, duration: 0.8 })
-          .to(subtitleEl, { opacity: 1, y: 0, duration: 0.7 }, "-=0.4")
-          .to(buttonEls, { opacity: 1, y: 0, duration: 0.6, stagger: 0.12 }, "-=0.4");
-      }, heroRef);
-    })();
-
-    return () => {
-      ctx?.revert();
-    };
-  }, [prefersReducedMotion]);
+  // Hero animations now use native CSS (hero-title, hero-subtitle, hero-cta classes)
 
   useEffect(() => {
     const updateProgress = () => {
@@ -605,45 +558,7 @@ export default function HomePage() {
     [],
   );
 
-  useEffect(() => {
-    if (prefersReducedMotion) {
-      return;
-    }
-
-  let context: GsapContext | undefined;
-
-    (async () => {
-      const { default: gsap } = await import("gsap");
-      const { ScrollTrigger } = await import("gsap/ScrollTrigger");
-      gsap.registerPlugin(ScrollTrigger);
-
-      context = gsap.context(() => {
-        const parallaxElements = document.querySelectorAll<HTMLElement>("[data-parallax]");
-        parallaxElements.forEach((element) => {
-          const speed = Number(element.dataset.parallax ?? "0.2");
-          const trigger = element.closest<HTMLElement>("[data-parallax-root]") ?? element;
-          gsap.fromTo(
-            element,
-            { yPercent: -20 * speed },
-            {
-              yPercent: 20 * speed,
-              ease: "sine.inOut",
-              scrollTrigger: {
-                trigger,
-                start: "top bottom",
-                end: "bottom top",
-                scrub: true,
-              },
-            },
-          );
-        });
-      }, document.body);
-    })();
-
-    return () => {
-      context?.revert();
-    };
-  }, [prefersReducedMotion]);
+  // Parallax removed - simplified for performance (can use CSS transform if needed)
 
   useEffect(() => {
     if (!featuresRef.current) {
@@ -778,52 +693,55 @@ export default function HomePage() {
       return;
     }
 
+    // Stats counter animation using native JS (no GSAP)
     let observer: IntersectionObserver | null = null;
-  const animations: GsapTween[] = [];
     let hasTriggered = false;
 
-    const initAnimation = async () => {
-      const { default: gsap } = await import("gsap");
-
-      observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting && !hasTriggered) {
-              hasTriggered = true;
-              statsItems.forEach((stat, index) => {
-                const counterElement = countersRef.current[index];
-                if (!counterElement) {
-                  return;
+    observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !hasTriggered) {
+            hasTriggered = true;
+            statsItems.forEach((stat, index) => {
+              const counterElement = countersRef.current[index];
+              if (!counterElement) {
+                return;
+              }
+              
+              // Native JS counter animation
+              const duration = 2000; // 2 seconds
+              const steps = 60;
+              const increment = stat.value / steps;
+              let currentValue = 0;
+              let step = 0;
+              
+              const timer = setInterval(() => {
+                step++;
+                currentValue = Math.min(currentValue + increment, stat.value);
+                counterElement.textContent = formatStatValue(
+                  Math.round(currentValue),
+                  stat.suffix,
+                );
+                
+                if (step >= steps) {
+                  clearInterval(timer);
+                  counterElement.textContent = formatStatValue(stat.value, stat.suffix);
                 }
-                const state = { value: 0 };
-                const tween = gsap.to(state, {
-                  value: stat.value,
-                  duration: 2,
-                  ease: "cubic-bezier(0.16, 1, 0.3, 1)",
-                  onUpdate: () => {
-                    counterElement.textContent = formatStatValue(
-                      Math.round(state.value),
-                      stat.suffix,
-                    );
-                  },
-                });
-                animations.push(tween);
-              });
-              observer?.disconnect();
-            }
-          });
-        },
-        { threshold: 0.4 },
-      );
+              }, duration / steps);
+            });
+            observer?.disconnect();
+          }
+        });
+      },
+      { threshold: 0.4 },
+    );
 
+    if (statsRef.current) {
       observer.observe(statsRef.current as Element);
-    };
-
-    initAnimation().catch(() => null);
+    }
 
     return () => {
       observer?.disconnect();
-      animations.forEach((animation) => animation.kill());
     };
   }, [prefersReducedMotion, statsItems]);
 
@@ -838,104 +756,20 @@ export default function HomePage() {
       return;
     }
 
-  let animation: GsapTween | null = null;
-    let isMounted = true;
-
-    import("gsap")
-      .then(({ default: gsap }) => {
-        if (!isMounted || !button) {
-          return;
-        }
-
-        animation = gsap.to(button, {
-          boxShadow: "0 0 28px rgba(127, 127, 255, 0.45)",
-          duration: 1.6,
-          repeat: -1,
-          yoyo: true,
-          ease: "sine.inOut",
-        });
-      })
-      .catch(() => null);
-
-    return () => {
-      isMounted = false;
-      animation?.kill();
-      button.style.boxShadow = "";
-    };
+  // CTA glow animation removed for performance - can use CSS animation if needed
   }, [prefersReducedMotion]);
 
+  // Lottie animation removed - using static illustration instead
   useEffect(() => {
-    if (!lottieContainerRef.current) {
-      return;
-    }
+    setIsLottieLoaded(true); // Mark as loaded immediately for static content
+  }, []);
 
-    let animationInstance: import("lottie-web").AnimationItem | null = null;
-    let isCancelled = false;
-    const markLoaded = () => setIsLottieLoaded(true);
-
-    setIsLottieLoaded(false);
-
-    import("lottie-web")
-      .then(({ default: lottie }) => {
-        if (!lottieContainerRef.current || isCancelled) {
-          return;
-        }
-        animationInstance = lottie.loadAnimation({
-          container: lottieContainerRef.current,
-          renderer: "svg",
-          loop: true,
-          autoplay: !prefersReducedMotion,
-          animationData: innovationAnimationData,
-        });
-
-        animationInstance.addEventListener("DOMLoaded", markLoaded);
-        animationInstance.addEventListener("loopComplete", markLoaded);
-
-        if (prefersReducedMotion) {
-          animationInstance.goToAndStop(0, true);
-          markLoaded();
-        }
-      })
-      .catch(() => {
-        setIsLottieLoaded(false);
-      });
-
-    return () => {
-      isCancelled = true;
-      if (animationInstance) {
-        animationInstance.removeEventListener("DOMLoaded", markLoaded);
-        animationInstance.removeEventListener("loopComplete", markLoaded);
-        animationInstance.destroy();
-      }
-    };
-  }, [prefersReducedMotion]);
-
+  // ScrollReveal replaced with native Intersection Observer
+  // Using useScrollReveal hook for scroll-triggered animations
   useEffect(() => {
-    if (prefersReducedMotion) {
-      return;
-    }
-
-    let scrollRevealInstance: ScrollRevealController | null = null;
-
-    import("scrollreveal")
-      .then(({ default: ScrollReveal }) => {
-        scrollRevealInstance = ScrollReveal();
-        scrollRevealInstance.reveal("[data-reveal]", {
-          delay: 200,
-          distance: "40px",
-          origin: "bottom",
-          duration: 800,
-          easing: "cubic-bezier(0.16, 1, 0.3, 1)",
-          interval: 120,
-          cleanup: true,
-        });
-      })
-      .catch(() => null);
-
-    return () => {
-      scrollRevealInstance?.clean?.("[data-reveal]");
-    };
-  }, [prefersReducedMotion, activities.length, announcements.length, gallery.length]);
+    // Scroll animations now handled by CSS + Intersection Observer
+    // See: useScrollReveal hook and .scroll-reveal CSS classes in globals.css
+  }, []);
 
   const heroGradientOverlay = useMemo(
     () =>
@@ -1022,20 +856,18 @@ export default function HomePage() {
 
           <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-12 px-6 pb-20 pt-24 sm:px-10 md:flex-row md:items-center md:pb-28 md:pt-32">
             <div className="flex-1">
-              <motion.div
-                initial={prefersReducedMotion ? false : { scale: 0.7, opacity: 0 }}
-                animate={prefersReducedMotion ? undefined : { scale: 1, opacity: 1 }}
-                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
-                className="mb-8 inline-flex h-20 w-20 items-center justify-center rounded-3xl border border-white/10 bg-white/5 backdrop-blur"
+              <div
+                className="mb-8 inline-flex h-20 w-20 items-center justify-center rounded-3xl border border-white/10 bg-white/5 backdrop-blur animate-scale-in"
+                style={{ animationDelay: "0.1s" }}
               >
                 <Image
                   src="/gema.svg"
-                  alt="Logo GEMA SMA Wahidiyah"
+                  alt="Logo GEMA - Learning Management System"
                   width={48}
                   height={48}
                   priority
                 />
-              </motion.div>
+              </div>
               <p className="inline-flex items-center gap-3 text-sm font-medium uppercase tracking-[0.3em] text-[#5EEAD4]/80">
                 Playful Tech Movement
                 <span className="h-px w-10 bg-[#5EEAD4]/40" aria-hidden="true" />
@@ -1043,16 +875,17 @@ export default function HomePage() {
               <h1
                 id="hero-heading"
                 ref={heroTitleRef}
-                className="mt-5 text-4xl font-semibold leading-tight text-slate-900 transition-colors duration-500 dark:text-white sm:text-5xl md:text-6xl"
+                className="hero-title mt-5 text-4xl font-semibold leading-tight text-slate-900 transition-colors duration-500 dark:text-white sm:text-5xl md:text-6xl"
               >
-                Belajar Informatika jadi petualangan seru bareng GEMA SMA Wahidiyah
+                Platform LMS Informatika yang Bikin Belajar Coding Jadi Seru dan Interaktif
               </h1>
               <p
                 ref={heroSubtitleRef}
-                className="mt-6 max-w-xl text-base leading-relaxed text-slate-600 transition-colors duration-500 dark:text-slate-200/85 sm:text-lg"
+                className="hero-subtitle mt-6 max-w-xl text-base leading-relaxed text-slate-600 transition-colors duration-500 dark:text-slate-200/85 sm:text-lg"
               >
-                Gabung komunitas digital yang bikin ngoding terasa seperti main game: penuh tantangan
-                seru, mentor suportif, dan ruang untuk eksplorasi ide liar jadi karya berdampak.
+                GEMA adalah Learning Management System modern untuk mata pelajaran Informatika SMA. 
+                Dengan fitur coding lab interaktif, tutorial terstruktur, dan sistem penilaian otomatis 
+                yang membantu siswa belajar pemrograman dengan cara yang menyenangkan.
               </p>
 
               <ul className="mt-6 flex items-center gap-3 text-xl sm:gap-4" aria-hidden="true">
@@ -1065,7 +898,7 @@ export default function HomePage() {
 
               <div
                 ref={heroButtonsRef}
-                className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6"
+                className="hero-cta mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6"
               >
                 <Link
                   href="/contact"
@@ -1109,30 +942,18 @@ export default function HomePage() {
 
               <div className="mt-8 grid gap-3 sm:grid-cols-3">
                 {heroSpotlightCards.map((card, index) => (
-                  <motion.div
+                  <div
                     key={card.title}
-                    initial={
-                      prefersReducedMotion
-                        ? false
-                        : { opacity: 0, y: 18, rotate: -2 }
-                    }
-                    animate={
-                      prefersReducedMotion ? undefined : { opacity: 1, y: 0, rotate: 0 }
-                    }
-                    transition={{
-                      delay: prefersReducedMotion ? 0 : 0.2 + index * 0.12,
-                      duration: 0.6,
-                      ease: [0.16, 1, 0.3, 1],
-                    }}
-                    className="rounded-2xl border border-white/10 bg-white/90 p-4 text-left shadow-lg shadow-[#03030f]/20 backdrop-blur transition-colors duration-500 dark:bg-white/5 dark:shadow-[#03030f]/40"
+                    className="rounded-2xl border border-white/10 bg-white/90 p-4 text-left shadow-lg shadow-[#03030f]/20 backdrop-blur transition-colors duration-500 dark:bg-white/5 dark:shadow-[#03030f]/40 animate-slide-up"
                     style={{
                       borderColor: `${card.accent}33`,
                       boxShadow: `0 12px 28px ${card.accent}26`,
+                      animationDelay: prefersReducedMotion ? "0s" : `${0.2 + index * 0.12}s`,
                     }}
                   >
                     <p className="text-sm font-semibold text-slate-900 dark:text-white">{card.title}</p>
                     <p className="mt-2 text-xs text-slate-600 dark:text-slate-200/75">{card.caption}</p>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -1192,7 +1013,15 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="rounded-2xl border border-white/20 bg-white/90 p-4 backdrop-blur transition-colors duration-500 dark:border-white/10 dark:bg-white/5">
-                  <AnimatedLogoDemo />
+                  <div className="flex items-center justify-center p-8 animate-scale-in" style={{ animationDelay: "0.6s" }}>
+                    <Image
+                      src="/gema.svg"
+                      alt="GEMA Logo Animation"
+                      width={200}
+                      height={200}
+                      className="animate-pulse"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1210,7 +1039,7 @@ export default function HomePage() {
             aria-hidden="true"
           />
           <div className="relative mx-auto max-w-6xl px-6 sm:px-10">
-            <div className="max-w-2xl" data-reveal>
+            <div className="max-w-2xl" data-scroll-reveal>
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[#5EEAD4]/80">
                 Program Unggulan
               </span>
@@ -1250,7 +1079,7 @@ export default function HomePage() {
                   <article
                     key={feature.title}
                     data-feature-card
-                    data-reveal
+                    data-scroll-reveal
                     className="group feature-card relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/20 bg-white/90 p-8 shadow-xl shadow-[#050513]/10 backdrop-blur-xl transition-colors duration-500 will-change-transform dark:border-white/10 dark:bg-white/5 dark:shadow-[#050513]/40 sm:p-9"
                     style={cardStyle}
                     onPointerMove={handleFeaturePointerMove}
@@ -1326,7 +1155,7 @@ export default function HomePage() {
             />
           </div>
           <div className="stats-grid relative mx-auto max-w-6xl px-6 sm:px-10">
-            <div className="text-center" data-reveal>
+            <div className="text-center" data-scroll-reveal>
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[#5EEAD4]/80">
                 Dampak Komunitas
               </span>
@@ -1351,7 +1180,7 @@ export default function HomePage() {
                 return (
                   <article
                     key={stat.label}
-                    data-reveal
+                    data-scroll-reveal
                     className="stat-card relative flex flex-col gap-4 overflow-hidden rounded-3xl border border-white/20 bg-white/90 p-8 shadow-xl shadow-[#040410]/10 backdrop-blur-xl transition-colors duration-500 dark:border-white/10 dark:bg-white/5 dark:shadow-[#040410]/60"
                     style={statCardStyle}
                   >
@@ -1414,7 +1243,7 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(108,99,255,0.08),transparent_65%)] dark:bg-[radial-gradient(circle_at_top,_rgba(108,99,255,0.08),transparent_65%)]" />
           <div className="relative mx-auto max-w-6xl px-6 sm:px-10">
             <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
-              <div className="max-w-2xl" data-reveal>
+              <div className="max-w-2xl" data-scroll-reveal>
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[#5EEAD4]/80">
                   Kegiatan Komunitas
                 </span>
@@ -1440,7 +1269,7 @@ export default function HomePage() {
 
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               {featuredActivities.length === 0 ? (
-                <p className="text-sm text-slate-600 dark:text-slate-200/70" data-reveal>
+                <p className="text-sm text-slate-600 dark:text-slate-200/70" data-scroll-reveal>
                   Belum ada kegiatan terbaru. Tim kami sedang menyiapkan agenda berikutnya.
                 </p>
               ) : (
@@ -1455,7 +1284,7 @@ export default function HomePage() {
                   return (
                     <article
                       key={activity.id}
-                      data-reveal
+                      data-scroll-reveal
                       className="activities-card relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/20 bg-white/90 p-6 shadow-xl shadow-[#040410]/10 backdrop-blur-xl transition-transform duration-300 dark:border-white/10 dark:bg-white/5 dark:shadow-[#040410]/40"
                       style={activityStyle}
                       onPointerMove={prefersReducedMotion ? undefined : handleFeaturePointerMove}
@@ -1514,7 +1343,7 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(94,234,212,0.12),transparent_60%)] dark:bg-[radial-gradient(circle_at_bottom,_rgba(94,234,212,0.1),transparent_60%)]" />
           <div className="relative mx-auto max-w-6xl px-6 sm:px-10">
             <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
-              <div className="max-w-2xl" data-reveal>
+              <div className="max-w-2xl" data-scroll-reveal>
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[#5EEAD4]/80">
                   Pengumuman
                 </span>
@@ -1522,7 +1351,7 @@ export default function HomePage() {
                   id="announcements-heading"
                   className="mt-5 text-3xl font-semibold text-slate-900 dark:text-white sm:text-4xl"
                 >
-                  Update terbaru dari tim GEMA SMA Wahidiyah
+                  Update terbaru dari tim GEMA
                 </h2>
                 <p className="mt-4 text-base leading-relaxed text-slate-600 dark:text-slate-200/80">
                   Informasi kegiatan, prestasi siswa, dan highlight program dirangkum agar kamu tetap
@@ -1540,7 +1369,7 @@ export default function HomePage() {
 
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               {latestAnnouncements.length === 0 ? (
-                <p className="text-sm text-slate-600 dark:text-slate-200/70" data-reveal>
+                <p className="text-sm text-slate-600 dark:text-slate-200/70" data-scroll-reveal>
                   Belum ada pengumuman baru. Pantau terus laman ini untuk informasi selanjutnya.
                 </p>
               ) : (
@@ -1564,7 +1393,7 @@ export default function HomePage() {
                   return (
                     <article
                       key={announcement.id}
-                      data-reveal
+                      data-scroll-reveal
                       className="announcement-card relative flex h-full flex-col gap-4 overflow-hidden rounded-3xl border border-white/20 bg-white/90 p-6 shadow-xl shadow-[#040410]/10 backdrop-blur-xl transition-colors duration-500 dark:border-white/10 dark:bg-white/5 dark:shadow-[#040410]/40"
                       style={announcementStyle}
                     >
@@ -1602,7 +1431,7 @@ export default function HomePage() {
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(108,99,255,0.12),transparent_60%)] dark:bg-[radial-gradient(circle_at_top,_rgba(108,99,255,0.1),transparent_60%)]" />
           <div className="relative mx-auto max-w-6xl px-6 sm:px-10">
-            <div className="max-w-2xl" data-reveal>
+            <div className="max-w-2xl" data-scroll-reveal>
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[#5EEAD4]/80">
                 Galeri Kegiatan
               </span>
@@ -1620,7 +1449,7 @@ export default function HomePage() {
 
             <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {highlightedGallery.length === 0 ? (
-                <p className="text-sm text-slate-600 dark:text-slate-200/70" data-reveal>
+                <p className="text-sm text-slate-600 dark:text-slate-200/70" data-scroll-reveal>
                   Dokumentasi akan segera hadir setelah kegiatan terbaru berlangsung.
                 </p>
               ) : (
@@ -1637,7 +1466,7 @@ export default function HomePage() {
                   return (
                     <article
                       key={item.id}
-                      data-reveal
+                      data-scroll-reveal
                       className="gallery-card group relative overflow-hidden rounded-3xl border border-white/20 bg-white/95 shadow-xl shadow-[#040410]/10 backdrop-blur-xl transition-transform duration-300 dark:border-white/10 dark:bg-white/5 dark:shadow-[#040410]/40"
                       style={galleryStyle}
                     >
@@ -1681,7 +1510,7 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(108,99,255,0.18),transparent_65%)] dark:bg-[radial-gradient(circle_at_bottom,_rgba(108,99,255,0.2),transparent_65%)]" />
           <div className="relative mx-auto max-w-5xl px-6 sm:px-10">
             <div
-              data-reveal
+              data-scroll-reveal
               className="relative overflow-hidden rounded-4xl border border-white/30 bg-white/95 p-10 shadow-2xl shadow-[#040410]/15 backdrop-blur-xl transition-colors duration-500 dark:border-white/10 dark:bg-gradient-to-br dark:from-[#6C63FF]/25 dark:via-[#06081C]/85 dark:to-[#5EEAD4]/25 dark:shadow-[#040410]/70 sm:p-12"
             >
               <div
@@ -1711,7 +1540,7 @@ export default function HomePage() {
                     <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
                   </Link>
                   <p className="text-xs text-slate-500 dark:text-slate-100/70">
-                    Terbuka untuk siswa SMA Wahidiyah dan kolaborator eksternal.
+                    Terbuka untuk semua SMA yang ingin mengadopsi platform LMS modern.
                   </p>
                 </div>
               </div>

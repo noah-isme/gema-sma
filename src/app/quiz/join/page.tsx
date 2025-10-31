@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Landmark, Trophy, Users, Loader2, ScanSearch } from "lucide-react";
@@ -31,7 +31,7 @@ function normaliseCode(code: string): string {
     .slice(0, 8);
 }
 
-export default function QuizJoinPage() {
+function QuizJoinContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const codeFromQuery = searchParams?.get("code") ?? "";
@@ -200,5 +200,17 @@ export default function QuizJoinPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function QuizJoinPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-900">
+        <Loader2 className="h-8 w-8 animate-spin text-white" />
+      </div>
+    }>
+      <QuizJoinContent />
+    </Suspense>
   );
 }

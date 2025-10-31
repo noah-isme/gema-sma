@@ -1,6 +1,6 @@
-# GEMA - Generasi Muda Informatika
+# GEMA - Learning Management System
 
-GEMA (Generasi Muda Informatika) adalah platform pembelajaran terpadu yang dikembangkan untuk SMA Wahidiyah Kediri. Proyek ini menggabungkan landing page publik, panel admin, dan dashboard siswa ke dalam satu aplikasi Next.js sehingga seluruh aktivitas pembelajaran dapat dikelola secara terpusat.
+GEMA (Generasi Muda Informatika) adalah **Learning Management System (LMS)** modern yang dirancang khusus untuk mata pelajaran **Informatika SMA**. Platform ini menyediakan coding lab interaktif, tutorial terstruktur, sistem quiz otomatis, dan dashboard komprehensif untuk pembelajaran pemrograman yang efektif dan menyenangkan.
 
 ## 🔧 Tech Stack
 - **Framework**: Next.js 15 (App Router) & React 19
