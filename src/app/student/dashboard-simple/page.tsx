@@ -467,7 +467,7 @@ export default function StudentDashboardPage() {
                 Kelas {student?.class} • NIS {student?.studentId}
               </p>
               <p className="text-blue-100">
-                Platform pembelajaran digital untuk mengembangkan kemampuan teknologi dengan nilai-nilai pesantren.
+                Platform pembelajaran digital untuk mengembangkan kemampuan teknologi informatika Anda.
               </p>
             </div>
             <div className="hidden lg:block">
@@ -729,6 +729,60 @@ export default function StudentDashboardPage() {
                       i < Math.floor(dashboardStats.engagementScore / 20) ? 'text-yellow-300' : 'text-white/30'
                     }`} />
                   ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Komunitas GEMA Stats */}
+        {!statsLoading && dashboardStats && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.55 }}
+            className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-8"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <Award className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Komunitas GEMA</h3>
+                <p className="text-sm text-gray-600">Bergabunglah dengan komunitas pembelajar teknologi</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                <div className="text-3xl font-bold text-blue-600 mb-2">{dashboardStats.totalStudents}</div>
+                <div className="text-sm font-medium text-gray-700">Siswa Terdaftar</div>
+                <div className="text-xs text-gray-500 mt-1">👥 Active learners</div>
+              </div>
+              
+              <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border border-purple-100">
+                <div className="text-3xl font-bold text-purple-600 mb-2">{dashboardStats.totalTutorialArticles}</div>
+                <div className="text-sm font-medium text-gray-700">Tutorial & Materi</div>
+                <div className="text-xs text-gray-500 mt-1">📚 Learning resources</div>
+              </div>
+              
+              <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                <div className="text-3xl font-bold text-green-600 mb-2">{dashboardStats.codingLabTasks}</div>
+                <div className="text-sm font-medium text-gray-700">Coding Lab Tasks</div>
+                <div className="text-xs text-gray-500 mt-1">💻 Practice challenges</div>
+              </div>
+            </div>
+
+            <div className="mt-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200">
+              <div className="flex items-center gap-3">
+                <Rocket className="w-8 h-8 text-amber-600" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">
+                    Kamu adalah bagian dari {dashboardStats.totalStudents} siswa yang belajar bersama! 🎉
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Akses {dashboardStats.totalTutorialArticles} tutorial dan {dashboardStats.codingLabTasks} coding challenges untuk mengasah skill.
+                  </p>
                 </div>
               </div>
             </div>

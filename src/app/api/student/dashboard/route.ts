@@ -18,6 +18,28 @@ export async function GET(request: NextRequest) {
 
     console.log('Fetching data for student:', studentId)
 
+    // First, get student internal ID
+    const studentInfo = await prisma.student.findUnique({
+      where: { studentId: studentId },
+      select: {
+        id: true,
+        studentId: true,
+        fullName: true,
+        class: true,
+        email: true,
+        createdAt: true
+      }
+    })
+
+    if (!studentInfo) {
+      return NextResponse.json(
+        { success: false, error: 'Student not found' },
+        { status: 404 }
+      )
+    }
+
+    const internalStudentId = studentInfo.id
+
     // Calculate date ranges for time-based analysis
     const now = new Date()
     const oneWeekAgo = new Date()
@@ -28,11 +50,10 @@ export async function GET(request: NextRequest) {
 
     // Execute all queries in parallel for optimal performance
     const [
-      // Student specific data
-      studentInfo,
-      studentSubmissions,
-      studentFeedbacks,
-      studentActivities,
+      // Student specific data (using internal ID)
+      studentSubmissionsCount,
+      studentFeedbacksCount,
+      studentActivitiesCount,
       
       // Assignment and learning progress
       totalAssignments,
@@ -56,27 +77,14 @@ export async function GET(request: NextRequest) {
       // Roadmap progress (from localStorage will be handled client-side)
       roadmapStages
     ] = await Promise.all([
-      // Student info
-      prisma.student.findUnique({
-        where: { studentId: studentId },
-        select: {
-          id: true,
-          studentId: true,
-          fullName: true,
-          class: true,
-          email: true,
-          createdAt: true
-        }
-      }),
-
-      // Student submissions
+      // Student submissions (using internal ID)
       prisma.submission.count({
-        where: { studentId: studentId }
+        where: { studentId: internalStudentId }
       }),
 
-      // Student feedbacks given
+      // Student feedbacks given (using internal ID)
       prisma.articleFeedback.count({
-        where: { studentId: studentId }
+        where: { studentId: internalStudentId }
       }),
 
       // Student activity count (generic activity tracking)
@@ -95,7 +103,7 @@ export async function GET(request: NextRequest) {
       prisma.assignment.count({
         where: {
           submissions: {
-            some: { studentId: studentId }
+            some: { studentId: internalStudentId }
           }
         }
       }),
@@ -107,7 +115,7 @@ export async function GET(request: NextRequest) {
             {
               NOT: {
                 submissions: {
-                  some: { studentId: studentId }
+                  some: { studentId: internalStudentId }
                 }
               }
             }
@@ -122,7 +130,7 @@ export async function GET(request: NextRequest) {
             {
               NOT: {
                 submissions: {
-                  some: { studentId: studentId }
+                  some: { studentId: internalStudentId }
                 }
               }
             }
@@ -130,18 +138,18 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Coding Lab data
+      // Coding Lab data (using internal ID)
       prisma.codingLabSubmission.count({
-        where: { studentId: studentId }
+        where: { studentId: internalStudentId }
       }),
 
       prisma.codingLabTask.count(),
 
-      // Recent activities
+      // Recent activities (using internal ID)
       prisma.submission.count({
         where: {
           AND: [
-            { studentId: studentId },
+            { studentId: internalStudentId },
             { submittedAt: { gte: oneWeekAgo } }
           ]
         }
@@ -150,17 +158,17 @@ export async function GET(request: NextRequest) {
       prisma.articleFeedback.count({
         where: {
           AND: [
-            { studentId: studentId },
+            { studentId: internalStudentId },
             { createdAt: { gte: oneWeekAgo } }
           ]
         }
       }),
 
-      // Weekly progress comparison
+      // Weekly progress comparison (using internal ID)
       prisma.submission.count({
         where: {
           AND: [
-            { studentId: studentId },
+            { studentId: internalStudentId },
             { submittedAt: { gte: oneWeekAgo } }
           ]
         }
@@ -184,13 +192,13 @@ export async function GET(request: NextRequest) {
 
     // Calculate learning streak (days with activity)
     const learningStreak = Math.min(
-      Math.floor((studentSubmissions + studentFeedbacks) / 2), 
+      Math.floor((studentSubmissionsCount + studentFeedbacksCount) / 2), 
       30
     ) // Max 30 days
 
     // Calculate engagement score
     const engagementScore = Math.min(
-      Math.round(((studentSubmissions * 2) + (studentFeedbacks * 1.5) + (studentActivities * 1)) / 3),
+      Math.round(((studentSubmissionsCount * 2) + (studentFeedbacksCount * 1.5) + (studentActivitiesCount * 1)) / 3),
       100
     )
 
@@ -207,8 +215,8 @@ export async function GET(request: NextRequest) {
       completionPercentage,
       
       // Engagement metrics
-      totalSubmissions: studentSubmissions,
-      totalFeedbacks: studentFeedbacks,
+      totalSubmissions: studentSubmissionsCount,
+      totalFeedbacks: studentFeedbacksCount,
       codingLabSubmissions,
       codingLabTasks,
       

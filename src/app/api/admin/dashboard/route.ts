@@ -63,7 +63,7 @@ export async function GET() {
       }),
       // Additional stats
       prisma.student.count({
-        where: { status: 'active' }
+        where: { status: 'ACTIVE' }
       }),
       prisma.activity.count({
         where: { 
