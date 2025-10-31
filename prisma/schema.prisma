@@ -193,7 +193,7 @@ model Assignment {
   maxSubmissions   Int      @default(30)
   status           String   @default("active") // active, closed, upcoming
   instructions     String? // JSON array of instructions
-  allowedFileTypes String   @default("pdf,doc,docx") // Document types only
+  allowedFileTypes String   @default("pdf,doc,docx,ppt,pptx") // Document and presentation types
   maxFileSize      Int      @default(10485760) // 10MB in bytes
   createdBy        String // Admin ID
   createdAt        DateTime @default(now())

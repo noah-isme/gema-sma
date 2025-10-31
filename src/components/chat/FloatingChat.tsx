@@ -382,8 +382,8 @@ export default function FloatingChat() {
       {/* Chat Window */}
       {isOpen && (
         <div
-          className={`fixed bottom-24 right-6 w-[22rem] max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-2xl border border-gray-200 z-50 transition-all duration-300 ${
-            isMinimized ? 'h-16' : 'h-[28rem]'
+          className={`fixed bottom-24 right-6 w-full max-w-md md:max-w-lg lg:max-w-xl bg-white rounded-xl shadow-2xl border border-gray-200 z-50 transition-all duration-300 ${
+            isMinimized ? 'h-16' : 'h-[32rem] md:h-[36rem] lg:h-[40rem]'
           } flex flex-col overflow-hidden`}
         >
           {/* Chat Header */}

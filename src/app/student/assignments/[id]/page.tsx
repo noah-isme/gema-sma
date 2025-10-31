@@ -327,7 +327,7 @@ export default function StudentAssignmentDetail() {
                   type="file"
                   className="hidden"
                   onChange={handleFileSelect}
-                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
                 />
               </label>
               <p className="text-gray-500 text-sm mt-1">
@@ -335,7 +335,7 @@ export default function StudentAssignmentDetail() {
               </p>
             </div>
             <p className="text-xs text-gray-400">
-              Maksimal 10MB. Format dokumen: PDF, DOC, DOCX
+              Maksimal 10MB. Format: PDF, DOC, DOCX, PPT, PPTX
             </p>
             <p className="text-xs text-blue-600 mt-2">
               ✓ Dokumen dapat langsung ditinjau oleh admin tanpa perlu download

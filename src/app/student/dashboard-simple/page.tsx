@@ -1267,5 +1267,8 @@ export default function StudentDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Floating Chat with Admin */}
+      <FloatingChat />
     </StudentLayout>
   )}
