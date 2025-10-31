@@ -19,10 +19,11 @@ const firaCode = Fira_Code({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://gema-lms.vercel.app'),
-  title: "GEMA - Learning Management System untuk Informatika SMA",
-  description: "Platform LMS modern untuk mata pelajaran Informatika SMA. Dilengkapi coding lab interaktif, tutorial terstruktur, quiz otomatis, dan sistem penilaian komprehensif untuk pembelajaran pemrograman yang efektif.",
+  title: "GEMA (Generasi Muda Informatika) - LMS untuk Informatika SMA",
+  description: "GEMA (Generasi Muda Informatika) adalah platform LMS modern untuk mata pelajaran Informatika SMA. Dilengkapi coding lab interaktif, tutorial terstruktur, quiz otomatis, dan sistem penilaian komprehensif untuk pembelajaran pemrograman yang efektif.",
   keywords: [
     "GEMA",
+    "Generasi Muda Informatika",
     "LMS Informatika",
     "Learning Management System",
     "platform belajar coding",

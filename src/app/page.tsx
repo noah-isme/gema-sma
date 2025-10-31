@@ -86,19 +86,23 @@ interface GalleryItem {
 
 
 interface Stats {
-  totalMembers: number;
-  activeProjects: number;
-  completedWorkshops: number;
-  achievements: number;
+  totalStudents: number;
+  totalTutorials: number;
+  totalCodingLabs: number;
+  totalActivities: number;
+  totalAnnouncements: number;
+  totalGalleryItems: number;
+  totalAssignments: number;
+  totalAchievements: number;
   upcomingEventsToday: number;
   upcomingEventsThisWeek: number;
 }
 
 const typedPhrases = [
-  "Belajar Informatika itu fun bareng squad!",
-  "Ubah ide liar jadi produk digital nyata.",
-  "Kolaborasi, kompetisi, dan kreasi tanpa batas!",
-  "Coding sambil seru-seruan? Bisa banget!",
+  "Platform LMS terlengkap untuk Informatika SMA",
+  "Coding Lab, Tutorial, Quiz - semua dalam satu tempat",
+  "Belajar pemrograman jadi lebih mudah dan terstruktur",
+  "Sistem penilaian otomatis dan tracking progress real-time",
 ];
 
 const heroEmojis = [
@@ -127,10 +131,10 @@ interface FeatureCardConfig {
 
 const featuresData: FeatureCardConfig[] = [
   {
-    title: "Mission Control Dashboard",
+    title: "Dashboard & Progress Tracking",
     description:
-      "Pantau progres kelas, kompetisi, dan pencapaian harian lewat panel yang terasa seperti pusat komando game.",
-    highlights: ["Leaderboard dinamis", "Insight personal", "Reminder cerdas"],
+      "Monitor progress belajar siswa secara real-time dengan visualisasi yang jelas. Lihat statistik, achievement, dan area yang perlu improvement.",
+    highlights: ["Progress real-time", "Analitik mendalam", "Export laporan"],
     icon: BarChart3,
     accent: {
       primary: "#6C63FF",
@@ -143,10 +147,10 @@ const featuresData: FeatureCardConfig[] = [
     },
   },
   {
-    title: "Code Playground",
+    title: "Interactive Coding Lab",
     description:
-      "Eksperimen langsung dengan mini game coding, project kolaboratif, dan integrasi Git tanpa perlu setup ribet.",
-    highlights: ["Sandbox aman", "Template stack populer", "Review mentor instan"],
+      "Platform coding lab dengan code editor powerful, test case otomatis, dan feedback instant. Mendukung Python, JavaScript, dan HTML/CSS.",
+    highlights: ["Auto-grading", "Multiple languages", "Instant feedback"],
     icon: Code2,
     accent: {
       primary: "#5EEAD4",
@@ -155,14 +159,14 @@ const featuresData: FeatureCardConfig[] = [
       shadow: "0 18px 45px rgba(80, 176, 255, 0.18)",
       hoverShadow: "0 24px 55px rgba(80, 176, 255, 0.26)",
       emoji: "💻",
-      label: "Playground",
+      label: "Coding Lab",
     },
   },
   {
-    title: "Collab Studio Live",
+    title: "Tutorial & Learning Path",
     description:
-      "Ikuti kelas interaktif, whiteboard seru, dan playback otomatis yang sinkron di semua perangkat squad-mu.",
-    highlights: ["Streaming ultra-low latency", "Catatan otomatis", "Integrasi tugas realtime"],
+      "Materi pembelajaran terstruktur dengan video, artikel, dan latihan interaktif. Siswa belajar sesuai pace mereka sendiri.",
+    highlights: ["Kurikulum lengkap", "Video tutorial", "Interactive quiz"],
     icon: MonitorPlay,
     accent: {
       primary: "#FF99CC",
@@ -170,26 +174,26 @@ const featuresData: FeatureCardConfig[] = [
       spotlight: "rgba(255, 153, 204, 0.3)",
       shadow: "0 18px 45px rgba(255, 153, 204, 0.22)",
       hoverShadow: "0 24px 55px rgba(255, 153, 204, 0.3)",
-      emoji: "🎙️",
-      label: "Live Class",
+      emoji: "📚",
+      label: "Tutorial",
     },
   },
 ];
 
 const heroSpotlightCards = [
   {
-    title: "Weekly Code Jam",
-    caption: "Mini challenge dengan leaderboard real-time dan hadiah spesial.",
+    title: "Auto-Grading System",
+    caption: "Sistem penilaian otomatis untuk coding assignments dan quiz.",
     accent: "#5EEAD4",
   },
   {
-    title: "Creative Sprint",
-    caption: "Kolaborasi lintas jurusan bikin prototype aplikasi dalam 48 jam.",
+    title: "Multi-Language Support",
+    caption: "Mendukung Python, JavaScript, HTML/CSS untuk pembelajaran lengkap.",
     accent: "#F4B5FF",
   },
   {
-    title: "Mentor Hangout",
-    caption: "Curhat karier teknologi bareng alumni & mentor industri.",
+    title: "Real-Time Analytics",
+    caption: "Dashboard komprehensif untuk tracking progress dan performa siswa.",
     accent: "#FFDB7D",
   },
 ];
@@ -374,10 +378,14 @@ export default function HomePage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [stats, setStats] = useState<Stats>({
-    totalMembers: 0,
-    activeProjects: 0,
-    completedWorkshops: 0,
-    achievements: 0,
+    totalStudents: 0,
+    totalTutorials: 0,
+    totalCodingLabs: 0,
+    totalActivities: 0,
+    totalAnnouncements: 0,
+    totalGalleryItems: 0,
+    totalAssignments: 0,
+    totalAchievements: 0,
     upcomingEventsToday: 0,
     upcomingEventsThisWeek: 0,
   });
@@ -411,43 +419,29 @@ export default function HomePage() {
   const fetchPublicData = useCallback(async () => {
     setLoading(true);
     try {
-      const timestamp = new Date().getTime();
-      const response = await fetch(`/api/public?_t=${timestamp}`, {
-        cache: "no-store",
-        headers: {
-          "Cache-Control": "no-cache",
-        },
-      });
+      // Fetch both public data and stats in parallel
+      const [publicResponse, statsResponse] = await Promise.all([
+        fetch(`/api/public`, {
+          next: { revalidate: 3600 }, // ISR: revalidate every 1 hour
+        }),
+        fetch(`/api/public-stats`, {
+          next: { revalidate: 3600 }, // ISR: revalidate every 1 hour
+        }),
+      ]);
 
-      if (response.ok) {
-        const data = await response.json();
+      if (publicResponse.ok) {
+        const data = await publicResponse.json();
         if (data.success) {
-          const activitiesData: Activity[] = data.data.activities ?? [];
-          const now = new Date();
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-          const upcomingEventsTodayCount = activitiesData.filter((activity) => {
-            const activityDate = new Date(activity.date);
-            return (
-              activityDate >= today &&
-              activityDate < new Date(today.getTime() + 24 * 60 * 60 * 1000)
-            );
-          }).length;
-
-          const upcomingEventsThisWeekCount = activitiesData.filter((activity) => {
-            const activityDate = new Date(activity.date);
-            return activityDate >= today && activityDate < weekFromNow;
-          }).length;
-
-          setActivities(activitiesData);
+          setActivities(data.data.activities ?? []);
           setAnnouncements(data.data.announcements ?? []);
           setGallery(data.data.gallery ?? []);
-          setStats({
-            ...(data.data.stats as Omit<Stats, "upcomingEventsToday" | "upcomingEventsThisWeek">),
-            upcomingEventsToday: upcomingEventsTodayCount,
-            upcomingEventsThisWeek: upcomingEventsThisWeekCount,
-          });
+        }
+      }
+
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        if (statsData.success) {
+          setStats(statsData.data);
         }
       }
     } catch (error) {
@@ -560,118 +554,37 @@ export default function HomePage() {
 
   // Parallax removed - simplified for performance (can use CSS transform if needed)
 
-  useEffect(() => {
-    if (!featuresRef.current) {
-      return;
-    }
-
-    if (prefersReducedMotion) {
-      featuresRef.current
-        .querySelectorAll("[data-feature-card]")
-        .forEach((card) => {
-          card.classList.remove("opacity-0");
-          (card as HTMLElement).style.opacity = "1";
-          (card as HTMLElement).style.transform = "none";
-        });
-      return;
-    }
-
-    let observer: IntersectionObserver | null = null;
-    let hasAnimated = false;
-
-    const runAnimation = async () => {
-      if (hasAnimated || !featuresRef.current) {
-        return;
-      }
-      const cards = Array.from(
-        featuresRef.current.querySelectorAll<HTMLElement>("[data-feature-card]"),
-      );
-      if (cards.length === 0) {
-        return;
-      }
-
-      cards.forEach((card) => {
-        card.style.opacity = "0";
-        card.style.transform = "translateY(24px) scale(0.95)";
-      });
-
-      try {
-        const anime = (await import("animejs")).default;
-        hasAnimated = true;
-        anime({
-          targets: cards,
-          opacity: [0, 1],
-          scale: [0.95, 1],
-          translateY: [24, 0],
-          delay: anime.stagger(200),
-          easing: "easeOutElastic(1, .8)",
-          duration: 1400,
-          complete: () => {
-            cards.forEach((card) => {
-              card.style.opacity = "1";
-              card.style.transform = "none";
-              card.classList.remove("opacity-0");
-              card.classList.remove("md:scale-95");
-            });
-          },
-        });
-      } catch (error) {
-        hasAnimated = true;
-        cards.forEach((card) => {
-          card.style.opacity = "1";
-          card.style.transform = "none";
-          card.classList.remove("opacity-0");
-          card.classList.remove("md:scale-95");
-        });
-        console.warn("Failed to start feature animation", error);
-      }
-    };
-
-    observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            runAnimation().catch(() => null);
-            observer?.disconnect();
-          }
-        });
-      },
-      { threshold: 0.3 },
-    );
-
-    observer.observe(featuresRef.current);
-
-    return () => observer?.disconnect();
-  }, [prefersReducedMotion]);
+  // Feature cards animation now handled by useScrollReveal hook + CSS
+  // Native Intersection Observer triggers .scroll-reveal animations with stagger delays
 
   const statsItems = useMemo(
     () => [
       {
-        label: "Siswa Aktif",
-        value: stats.totalMembers,
+        label: "Siswa Terdaftar",
+        value: stats.totalStudents,
         suffix: "+",
-        description: "bergabung dan konsisten mengasah skill teknologi setiap semester.",
+        description: "siswa yang aktif menggunakan platform GEMA untuk belajar.",
         icon: Users,
       },
       {
-        label: "Proyek Aktif",
-        value: stats.activeProjects,
+        label: "Tutorial & Materi",
+        value: stats.totalTutorials,
         suffix: "+",
-        description: "kolaborasi lintas angkatan yang sedang dikerjakan bersama mentor.",
-        icon: Sparkles,
-      },
-      {
-        label: "Workshop Tuntas",
-        value: stats.completedWorkshops,
-        suffix: "+",
-        description: "pelatihan modul praktis yang telah diselesaikan komunitas.",
+        description: "artikel tutorial dan materi pembelajaran terstruktur.",
         icon: BookOpenCheck,
       },
       {
-        label: "Prestasi",
-        value: stats.achievements,
+        label: "Coding Lab",
+        value: stats.totalCodingLabs,
         suffix: "+",
-        description: "penghargaan dan kompetisi IT tingkat regional hingga nasional.",
+        description: "latihan coding interaktif dengan auto-grading system.",
+        icon: Code2,
+      },
+      {
+        label: "Assignment Selesai",
+        value: stats.totalAchievements,
+        suffix: "+",
+        description: "tugas yang telah diselesaikan siswa dengan sukses.",
         icon: GraduationCap,
       },
     ],
@@ -869,7 +782,7 @@ export default function HomePage() {
                 />
               </div>
               <p className="inline-flex items-center gap-3 text-sm font-medium uppercase tracking-[0.3em] text-[#5EEAD4]/80">
-                Playful Tech Movement
+                Learning Management System
                 <span className="h-px w-10 bg-[#5EEAD4]/40" aria-hidden="true" />
               </p>
               <h1
@@ -883,7 +796,8 @@ export default function HomePage() {
                 ref={heroSubtitleRef}
                 className="hero-subtitle mt-6 max-w-xl text-base leading-relaxed text-slate-600 transition-colors duration-500 dark:text-slate-200/85 sm:text-lg"
               >
-                GEMA adalah Learning Management System modern untuk mata pelajaran Informatika SMA. 
+                <strong className="text-slate-900 dark:text-white">GEMA (Generasi Muda Informatika)</strong> adalah 
+                Learning Management System modern untuk mata pelajaran Informatika SMA. 
                 Dengan fitur coding lab interaktif, tutorial terstruktur, dan sistem penilaian otomatis 
                 yang membantu siswa belajar pemrograman dengan cara yang menyenangkan.
               </p>
@@ -901,10 +815,10 @@ export default function HomePage() {
                 className="hero-cta mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6"
               >
                 <Link
-                  href="/contact"
+                  href="/student/register"
                   ref={ctaButtonRef}
                   className="cta-button inline-flex items-center justify-center rounded-full bg-gradient-to-br from-[#6C63FF] to-[#5EEAD4] px-8 py-4 text-base font-semibold text-[#0b0b1c] shadow-lg transition-transform duration-300 hover:-translate-y-0.5 hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5EEAD4]"
-                  aria-label="Hubungi tim GEMA untuk bergabung"
+                  aria-label="Daftar sebagai siswa baru"
                 >
                   Gabung Sekarang
                   <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
@@ -920,22 +834,22 @@ export default function HomePage() {
 
               <div className="mt-10 flex flex-wrap items-center gap-4 text-base">
                 <span className="rounded-full bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[#5EEAD4]">
-                  Tagline
+                  Platform LMS Informatika
                 </span>
                 <span ref={typedRef} className="text-xl font-semibold text-[#5EEAD4]" aria-live="polite" />
               </div>
 
               <div className="mt-8 grid gap-4 text-sm text-slate-600 transition-colors duration-500 dark:text-slate-200/70 sm:grid-cols-2">
                 <div className="rounded-2xl border border-white/10 bg-white/80 p-4 backdrop-blur-sm dark:bg-white/5">
-                  <p className="font-semibold text-slate-900 dark:text-white">Quest Harian &amp; Badge</p>
+                  <p className="font-semibold text-slate-900 dark:text-white">Comprehensive Features</p>
                   <p className="mt-1">
-                    Sistem XP yang bikin tiap tugas kerasa seperti naik level di game favoritmu.
+                    Coding lab, tutorial articles, quiz system, dan assignment management dalam satu platform.
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/80 p-4 backdrop-blur-sm dark:bg-white/5">
-                  <p className="font-semibold text-slate-900 dark:text-white">Squad Support System</p>
+                  <p className="font-semibold text-slate-900 dark:text-white">Teacher & Student Portal</p>
                   <p className="mt-1">
-                    Mentor, guru, dan alumni siap bantu brainstorming dan review karya secara realtime.
+                    Dashboard terpisah untuk guru dan siswa dengan role management yang fleksibel.
                   </p>
                 </div>
               </div>
@@ -1012,15 +926,47 @@ export default function HomePage() {
                     <span>Visual animatif akan tampil di sini</span>
                   </div>
                 </div>
-                <div className="rounded-2xl border border-white/20 bg-white/90 p-4 backdrop-blur transition-colors duration-500 dark:border-white/10 dark:bg-white/5">
-                  <div className="flex items-center justify-center p-8 animate-scale-in" style={{ animationDelay: "0.6s" }}>
-                    <Image
-                      src="/gema.svg"
-                      alt="GEMA Logo Animation"
-                      width={200}
-                      height={200}
-                      className="animate-pulse"
-                    />
+                <div className="rounded-2xl border border-white/20 bg-white/90 p-6 backdrop-blur transition-colors duration-500 dark:border-white/10 dark:bg-white/5">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    Tentang GEMA
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-200/80">
+                    GEMA (Generasi Muda Informatika) adalah platform Learning Management System yang dirancang khusus untuk pembelajaran Informatika tingkat SMA.
+                  </p>
+                  <div className="mt-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#6C63FF]/10 text-[#6C63FF]">
+                        <Code2 className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">Interactive Coding Lab</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-200/70">
+                          Editor code dengan auto-grading dan instant feedback
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#5EEAD4]/10 text-[#5EEAD4]">
+                        <BookOpenCheck className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">Structured Learning Path</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-200/70">
+                          Tutorial, artikel, dan quiz terstruktur sesuai kurikulum
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#FF99CC]/10 text-[#FF99CC]">
+                        <BarChart3 className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">Real-Time Analytics</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-200/70">
+                          Dashboard komprehensif untuk tracking progress siswa
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1532,15 +1478,15 @@ export default function HomePage() {
                 </div>
                 <div className="flex w-full flex-col gap-4 md:w-auto md:items-end">
                   <Link
-                    href="/contact"
+                    href="/student/register"
                     className="inline-flex items-center justify-center rounded-full border border-white/30 bg-white px-6 py-3 text-base font-semibold text-[#050513] transition-transform duration-300 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                    aria-label="Mulai proses pendaftaran GEMA"
+                    aria-label="Daftar sebagai siswa baru"
                   >
-                    Hubungi Kami
+                    Daftar Sekarang
                     <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
                   </Link>
                   <p className="text-xs text-slate-500 dark:text-slate-100/70">
-                    Terbuka untuk semua SMA yang ingin mengadopsi platform LMS modern.
+                    Mulai belajar dengan platform LMS modern untuk Informatika SMA.
                   </p>
                 </div>
               </div>
