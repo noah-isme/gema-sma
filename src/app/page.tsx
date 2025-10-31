@@ -1160,11 +1160,6 @@ export default function HomePage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.45em] text-slate-500 dark:text-slate-300/80">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-white/40 px-3 py-1 text-[0.6rem] dark:bg-white/10">
-                        {accent.emoji ?? "✨"} {accent.label}
-                      </span>
-                    </div>
                     <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-200/70">{stat.description}</p>
                     {index === 0 && (
                       <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white/80 px-4 py-3 text-xs text-slate-600 transition-colors duration-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-200/70">
