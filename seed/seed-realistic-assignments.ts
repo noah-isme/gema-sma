@@ -32,7 +32,7 @@ async function main() {
       data: {
         title: 'Makalah: Dampak Kecerdasan Buatan dalam Pendidikan',
         description: 'Buatlah makalah ilmiah tentang dampak positif dan negatif penggunaan AI dalam dunia pendidikan. Makalah harus memuat pendahuluan, tinjauan pustaka, pembahasan, kesimpulan, dan daftar pustaka.',
-        subject: 'Informatika',
+        subject: 'Informatika - Kecerdasan Buatan',
         dueDate: new Date('2025-11-15T23:59:00'),
         status: 'active',
         createdBy: admin.id,
@@ -53,7 +53,7 @@ async function main() {
       data: {
         title: 'Esai: Etika Penggunaan Data Pribadi di Era Digital',
         description: 'Tulislah esai argumentatif tentang pentingnya etika dalam penggunaan data pribadi pengguna internet. Sampaikan argumen yang kuat disertai contoh kasus nyata.',
-        subject: 'Informatika',
+        subject: 'Informatika - Etika Digital',
         dueDate: new Date('2025-11-20T23:59:00'),
         status: 'active',
         createdBy: admin.id,
@@ -74,7 +74,7 @@ async function main() {
       data: {
         title: 'Presentasi: Inovasi Teknologi untuk Solusi Lingkungan',
         description: 'Buatlah presentasi tentang salah satu inovasi teknologi (IoT, AI, Blockchain, dll) yang dapat digunakan untuk mengatasi masalah lingkungan. Presentasi harus informatif dan menarik.',
-        subject: 'Informatika',
+        subject: 'Informatika - Teknologi Hijau',
         dueDate: new Date('2025-11-25T23:59:00'),
         status: 'active',
         createdBy: admin.id,
@@ -95,7 +95,7 @@ async function main() {
       data: {
         title: 'Makalah Kelompok: Analisis Sistem Informasi Sekolah',
         description: 'Dalam kelompok (3-4 orang), buatlah makalah analisis sistem informasi yang ada di sekolah. Identifikasi kelebihan, kekurangan, dan usulan perbaikan sistem.',
-        subject: 'Informatika',
+        subject: 'Basis Data - Sistem Informasi',
         dueDate: new Date('2025-12-01T23:59:00'),
         status: 'active',
         createdBy: admin.id,
@@ -117,7 +117,7 @@ async function main() {
       data: {
         title: 'Esai Reflektif: Pengalaman Belajar Informatika Semester Ini',
         description: 'Tulislah esai reflektif tentang pengalaman dan pembelajaran kalian di mata pelajaran Informatika semester ini. Apa yang paling berkesan? Apa tantangan yang dihadapi?',
-        subject: 'Informatika',
+        subject: 'Informatika - Refleksi',
         dueDate: new Date('2025-12-10T23:59:00'),
         status: 'active',
         createdBy: admin.id,
@@ -138,7 +138,7 @@ async function main() {
       data: {
         title: 'Presentasi Mini: Review Aplikasi Mobile Pilihan',
         description: 'Pilih satu aplikasi mobile yang menurut kalian inovatif, lalu buatlah presentasi singkat yang mereview aplikasi tersebut dari sisi UI/UX, fitur, dan teknologi yang digunakan.',
-        subject: 'Informatika',
+        subject: 'UI/UX Design - Review',
         dueDate: new Date('2025-12-05T23:59:00'),
         status: 'active',
         createdBy: admin.id,

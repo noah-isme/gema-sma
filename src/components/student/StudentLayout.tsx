@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation'
 import {
   Home,
   BookOpen,
-  Upload,
   User,
   LogOut,
   Menu,
@@ -62,8 +61,7 @@ export default function StudentLayout({ children, loading = false }: StudentLayo
     { name: 'Dashboard', href: '/student/dashboard-simple', icon: Home, active: false },
     { name: 'Assignments', href: '/student/assignments', icon: BookOpen, active: false },
     { name: 'Web Lab', href: '/student/web-lab', icon: Code, active: false },
-    { name: 'Project Upload', href: '/student/coding-lab', icon: Upload, active: false },
-    { name: 'Python Coding', href: '/student/python-coding-lab', icon: Code2, active: false },
+    { name: 'Coding Lab', href: '/student/coding-lab', icon: Code2, active: false },
     { name: 'Learning Path', href: '/student/learning-path', icon: Target, active: false },
   ]
 

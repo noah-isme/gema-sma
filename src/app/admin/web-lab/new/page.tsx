@@ -5,6 +5,13 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { WebLabDifficulty, WebLabStatus } from '@prisma/client'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
+
+// Class options: X-1 to X-4, XI-1 to XI-4, XII-1 to XII-4
+const CLASS_OPTIONS = [
+  'X-1', 'X-2', 'X-3', 'X-4',
+  'XI-1', 'XI-2', 'XI-3', 'XI-4',
+  'XII-1', 'XII-2', 'XII-3', 'XII-4',
+]
 import AdminLayout from '@/components/admin/AdminLayout'
 import { WEB_LAB_TEMPLATES } from '@/data/webLabTemplates'
 
@@ -186,13 +193,18 @@ export default function NewWebLabPage() {
                   <label htmlFor="classLevel" className="block text-sm font-medium text-gray-700 mb-2">
                     Class Level
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="classLevel"
                     name="classLevel"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="e.g., XI-A"
-                  />
+                  >
+                    <option value="">All Classes</option>
+                    {CLASS_OPTIONS.map(classLevel => (
+                      <option key={classLevel} value={classLevel}>
+                        {classLevel}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

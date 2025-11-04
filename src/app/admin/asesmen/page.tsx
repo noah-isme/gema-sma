@@ -306,9 +306,12 @@ export default function AdminAssessmentPage() {
                         required
                       >
                         <option value="">Pilih subject</option>
+                        <option value="Informatika">Informatika</option>
                         <option value="Web Development">Web Development</option>
-                        <option value="UI/UX">UI/UX</option>
-                        <option value="Programming">Programming</option>
+                        <option value="Pemrograman">Pemrograman</option>
+                        <option value="Basis Data">Basis Data</option>
+                        <option value="Jaringan Komputer">Jaringan Komputer</option>
+                        <option value="UI/UX Design">UI/UX Design</option>
                       </select>
                     </div>
                   </div>

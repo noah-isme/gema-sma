@@ -6,6 +6,13 @@ import { useRouter, useParams } from 'next/navigation'
 import { WebLabAssignment, WebLabDifficulty, WebLabStatus } from '@prisma/client'
 import { ArrowLeftIcon, CheckIcon } from '@heroicons/react/24/outline'
 
+// Class options: X-1 to X-4, XI-1 to XI-4, XII-1 to XII-4
+const CLASS_OPTIONS = [
+  'X-1', 'X-2', 'X-3', 'X-4',
+  'XI-1', 'XI-2', 'XI-3', 'XI-4',
+  'XII-1', 'XII-2', 'XII-3', 'XII-4',
+]
+
 interface WebLabAssignmentData extends WebLabAssignment {
   admin: {
     name: string
@@ -322,15 +329,20 @@ export default function EditWebLabPage() {
                   <label htmlFor="classLevel" className="block text-sm font-medium text-gray-700 mb-2">
                     Class Level
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="classLevel"
                     name="classLevel"
                     defaultValue={assignment.classLevel || ''}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="e.g., X-A, XI-B, XII-C"
-                  />
+                  >
+                    <option value="">All Classes</option>
+                    {CLASS_OPTIONS.map(classLevel => (
+                      <option key={classLevel} value={classLevel}>
+                        {classLevel}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

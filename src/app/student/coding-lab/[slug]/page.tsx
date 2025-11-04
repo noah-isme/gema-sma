@@ -66,6 +66,19 @@ interface SubmissionResult {
   };
 }
 
+interface PreviousSubmission {
+  id: string;
+  code: string;
+  score: number;
+  passedTests: number;
+  totalTests: number;
+  status: string;
+  submittedAt: string;
+  task: {
+    points: number;
+  };
+}
+
 const difficultyColors = {
   EASY: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
   MEDIUM: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
@@ -84,10 +97,18 @@ export default function PythonCodingTaskPage() {
   const [result, setResult] = useState<SubmissionResult | null>(null);
   const [showHints, setShowHints] = useState(false);
   const [activeTab, setActiveTab] = useState<'problem' | 'submissions'>('problem');
+  const [submissions, setSubmissions] = useState<PreviousSubmission[]>([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
   useEffect(() => {
     fetchTask();
   }, [slug]);
+
+  useEffect(() => {
+    if (activeTab === 'submissions' && task) {
+      fetchSubmissions();
+    }
+  }, [activeTab, task]);
 
   const fetchTask = async () => {
     try {
@@ -100,7 +121,7 @@ export default function PythonCodingTaskPage() {
         return;
       }
 
-      const response = await fetch(`/api/python-coding-lab/tasks/${slug}?studentId=${session.id}`);
+      const response = await fetch(`/api/coding-lab-python/tasks/${slug}?studentId=${session.id}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -113,6 +134,33 @@ export default function PythonCodingTaskPage() {
       console.error('Error fetching task:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSubmissions = async () => {
+    if (!task) return;
+
+    try {
+      setLoadingSubmissions(true);
+      
+      const session = studentAuth.getSession();
+      if (!session) {
+        router.push('/student/login');
+        return;
+      }
+
+      const response = await fetch(`/api/coding-lab-python/submissions?taskId=${task.id}&studentId=${String(session.id)}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubmissions(data.submissions || []);
+      } else {
+        console.error('Failed to fetch submissions:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching submissions:', error);
+    } finally {
+      setLoadingSubmissions(false);
     }
   };
 
@@ -130,7 +178,7 @@ export default function PythonCodingTaskPage() {
         return;
       }
 
-      const response = await fetch('/api/python-coding-lab/submit', {
+      const response = await fetch('/api/coding-lab-python/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -144,6 +192,8 @@ export default function PythonCodingTaskPage() {
 
       if (response.ok) {
         setResult(data);
+        // Refresh submissions after successful submit
+        fetchSubmissions();
       } else {
         alert(`Error: ${data.message || data.error}`);
       }
@@ -164,8 +214,8 @@ export default function PythonCodingTaskPage() {
 
   const breadcrumbItems = [
     { label: 'Dashboard', href: '/student/dashboard' },
-    { label: 'Python Coding Lab', href: '/student/python-coding-lab' },
-    { label: task?.title || 'Loading...', href: `/student/python-coding-lab/${slug}` },
+    { label: 'Coding Lab', href: '/student/coding-lab' },
+    { label: task?.title || 'Loading...', href: `/student/coding-lab/${slug}` },
   ];
 
   if (!task) {
@@ -174,7 +224,7 @@ export default function PythonCodingTaskPage() {
         <div className="text-center py-20">
           <p className="text-gray-600 dark:text-gray-400">Task tidak ditemukan</p>
           <button
-            onClick={() => router.push('/student/python-coding-lab')}
+            onClick={() => router.push('/student/coding-lab')}
             className="mt-4 text-blue-600 hover:text-blue-700"
           >
             Kembali ke daftar
@@ -193,7 +243,7 @@ export default function PythonCodingTaskPage() {
         {/* Header */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <button
-            onClick={() => router.push('/student/python-coding-lab')}
+            onClick={() => router.push('/student/coding-lab')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -315,6 +365,105 @@ export default function PythonCodingTaskPage() {
                           ))}
                         </div>
                       )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'submissions' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Riwayat Submission
+                    </h3>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Total: {submissions.length} submission
+                    </span>
+                  </div>
+
+                  {loadingSubmissions ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="text-gray-600 dark:text-gray-400 mt-2">Loading submissions...</p>
+                    </div>
+                  ) : submissions.length === 0 ? (
+                    <div className="text-center py-8">
+                      <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-600 dark:text-gray-400">Belum ada submission</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+                        Submit kode Anda untuk melihat riwayat
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {submissions.map((submission, idx) => (
+                        <div
+                          key={submission.id}
+                          className={`p-4 rounded-lg border ${
+                            submission.status === 'COMPLETED'
+                              ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800'
+                              : submission.status === 'RUNTIME_ERROR'
+                              ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800'
+                              : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              {submission.status === 'COMPLETED' && submission.passedTests === submission.totalTests ? (
+                                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                              ) : submission.status === 'COMPLETED' ? (
+                                <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                              ) : (
+                                <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                              )}
+                              <span className="font-medium text-gray-900 dark:text-white">
+                                Submission #{submissions.length - idx}
+                              </span>
+                            </div>
+                            <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                              {submission.score}/{submission.task.points}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                            <div>
+                              <span className="text-gray-600 dark:text-gray-400">Status:</span>
+                              <span className={`ml-2 font-medium ${
+                                submission.status === 'COMPLETED' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                              }`}>
+                                {submission.status === 'COMPLETED' ? '✓ Completed' : '✗ Error'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 dark:text-gray-400">Test Cases:</span>
+                              <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                                {submission.passedTests}/{submission.totalTests} passed
+                              </span>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="text-gray-600 dark:text-gray-400">Waktu:</span>
+                              <span className="ml-2 text-gray-900 dark:text-white">
+                                {new Date(submission.submittedAt).toLocaleString('id-ID', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                            </div>
+                          </div>
+
+                          <details className="cursor-pointer">
+                            <summary className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                              Lihat Kode
+                            </summary>
+                            <pre className="mt-2 p-3 bg-gray-900 text-gray-100 rounded text-xs overflow-x-auto">
+                              {submission.code}
+                            </pre>
+                          </details>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

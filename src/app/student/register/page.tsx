@@ -7,6 +7,13 @@ import { motion } from 'framer-motion'
 import { Eye, EyeOff, User, Mail, Phone, MapPin, Users, GraduationCap, BookOpen } from 'lucide-react'
 import { Toast } from '@/components/feedback/toast'
 
+// Class options: X-1 to X-4, XI-1 to XI-4, XII-1 to XII-4
+const CLASS_OPTIONS = [
+  'X-1', 'X-2', 'X-3', 'X-4',
+  'XI-1', 'XI-2', 'XI-3', 'XI-4',
+  'XII-1', 'XII-2', 'XII-3', 'XII-4',
+]
+
 export default function StudentRegisterPage() {
   const [formData, setFormData] = useState({
     studentId: '',
@@ -217,15 +224,11 @@ export default function StudentRegisterPage() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
                   <option value="">Pilih Kelas</option>
-                  <option value="X-A">X-A</option>
-                  <option value="X-B">X-B</option>
-                  <option value="X-C">X-C</option>
-                  <option value="XI-A">XI-A</option>
-                  <option value="XI-B">XI-B</option>
-                  <option value="XI-C">XI-C</option>
-                  <option value="XII-A">XII-A</option>
-                  <option value="XII-B">XII-B</option>
-                  <option value="XII-C">XII-C</option>
+                  {CLASS_OPTIONS.map(classOption => (
+                    <option key={classOption} value={classOption}>
+                      {classOption}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
