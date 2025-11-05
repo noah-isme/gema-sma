@@ -217,7 +217,7 @@ const statsAccents: AccentPalette[] = [
     secondary: "#9C8BFF",
     tertiary: "rgba(108, 99, 255, 0.18)",
     glow: "0 22px 55px rgba(108, 99, 255, 0.22)",
-    surface: "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(239,238,255,0.92) 100%)",
+    surface: "",
     label: "Aktif",
     emoji: "🚀",
   },
@@ -226,7 +226,7 @@ const statsAccents: AccentPalette[] = [
     secondary: "#53C8FF",
     tertiary: "rgba(94, 234, 212, 0.2)",
     glow: "0 22px 55px rgba(83, 200, 255, 0.2)",
-    surface: "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(228,250,249,0.9) 100%)",
+    surface: "",
     label: "Kolaborasi",
     emoji: "🤝",
   },
@@ -235,7 +235,7 @@ const statsAccents: AccentPalette[] = [
     secondary: "#FFCF86",
     tertiary: "rgba(255, 179, 71, 0.24)",
     glow: "0 22px 55px rgba(255, 179, 71, 0.22)",
-    surface: "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,247,232,0.92) 100%)",
+    surface: "",
     label: "Pembelajaran",
     emoji: "📘",
   },
@@ -244,7 +244,7 @@ const statsAccents: AccentPalette[] = [
     secondary: "#FFB4E3",
     tertiary: "rgba(255, 153, 204, 0.24)",
     glow: "0 22px 55px rgba(255, 153, 204, 0.2)",
-    surface: "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,241,248,0.92) 100%)",
+    surface: "",
     label: "Prestasi",
     emoji: "🏆",
   },
@@ -255,21 +255,21 @@ const activityAccents: AccentPalette[] = [
     primary: "#6C63FF",
     secondary: "#8B7CFF",
     glow: "0 24px 60px rgba(108, 99, 255, 0.22)",
-    surface: "linear-gradient(165deg, rgba(255,255,255,0.95) 0%, rgba(240,242,ff,0.9) 100%)",
+    surface: "",
     label: "Bootcamp",
   },
   {
     primary: "#5EEAD4",
     secondary: "#58D3FF",
     glow: "0 24px 60px rgba(94, 234, 212, 0.22)",
-    surface: "linear-gradient(165deg, rgba(255,255,255,0.95) 0%, rgba(229,250,249,0.92) 100%)",
+    surface: "",
     label: "Workshop",
   },
   {
     primary: "#FF99CC",
     secondary: "#FFB3E2",
     glow: "0 24px 60px rgba(255, 153, 204, 0.22)",
-    surface: "linear-gradient(165deg, rgba(255,255,255,0.95) 0%, rgba(255,240,248,0.92) 100%)",
+    surface: "",
     label: "Community",
   },
 ];
@@ -279,7 +279,7 @@ const announcementAccentMap: Record<string, AccentPalette> = {
     primary: "#6C63FF",
     secondary: "#8F83FF",
     glow: "0 20px 45px rgba(108, 99, 255, 0.2)",
-    surface: "linear-gradient(165deg, rgba(255,255,255,0.94) 0%, rgba(239,241,ff,0.92) 100%)",
+    surface: "",
     label: "Event",
     emoji: "📅",
   },
@@ -287,7 +287,7 @@ const announcementAccentMap: Record<string, AccentPalette> = {
     primary: "#FFB347",
     secondary: "#FFCF86",
     glow: "0 20px 45px rgba(255, 179, 71, 0.22)",
-    surface: "linear-gradient(165deg, rgba(255,255,255,0.94) 0%, rgba(255,246,230,0.92) 100%)",
+    surface: "",
     label: "Prestasi",
     emoji: "🌟",
   },
@@ -295,7 +295,7 @@ const announcementAccentMap: Record<string, AccentPalette> = {
     primary: "#5EEAD4",
     secondary: "#63B8FF",
     glow: "0 20px 45px rgba(94, 234, 212, 0.2)",
-    surface: "linear-gradient(165deg, rgba(255,255,255,0.94) 0%, rgba(232,250,245,0.92) 100%)",
+    surface: "",
     label: "Info",
     emoji: "ℹ️",
   },
@@ -306,21 +306,21 @@ const galleryAccents: AccentPalette[] = [
     primary: "#6C63FF",
     secondary: "#5EEAD4",
     glow: "0 20px 45px rgba(108, 99, 255, 0.18)",
-    surface: "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(237,240,255,0.92) 100%)",
+    surface: "",
     label: "Labs",
   },
   {
     primary: "#FF99CC",
     secondary: "#FFD1DC",
     glow: "0 20px 45px rgba(255, 153, 204, 0.2)",
-    surface: "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,240,248,0.92) 100%)",
+    surface: "",
     label: "Kolaborasi",
   },
   {
     primary: "#5EEAD4",
     secondary: "#6DB2FF",
     glow: "0 20px 45px rgba(94, 234, 212, 0.2)",
-    surface: "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(233,248,255,0.92) 100%)",
+    surface: "",
     label: "Eksplorasi",
   },
 ];
@@ -840,14 +840,14 @@ export default function HomePage() {
               </div>
 
               <div className="mt-8 grid gap-4 text-sm text-slate-600 transition-colors duration-500 dark:text-slate-200/70 sm:grid-cols-2">
-                <div className="rounded-2xl border border-white/10 bg-white/80 p-4 backdrop-blur-sm dark:bg-white/5">
-                  <p className="font-semibold text-slate-900 dark:text-white">Comprehensive Features</p>
+                      <div className="rounded-2xl border border-white/10 bg-white/80 p-4 backdrop-blur-sm transition-colors duration-500 dark:bg-white/5">
+                  <p className="font-semibold text-slate-900 transition-colors duration-500 dark:text-white">Comprehensive Features</p>
                   <p className="mt-1">
                     Coding lab, tutorial articles, quiz system, dan assignment management dalam satu platform.
                   </p>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-white/80 p-4 backdrop-blur-sm dark:bg-white/5">
-                  <p className="font-semibold text-slate-900 dark:text-white">Teacher & Student Portal</p>
+                <div className="rounded-2xl border border-white/10 bg-white/80 p-4 backdrop-blur-sm transition-colors duration-500 dark:bg-white/5">
+                  <p className="font-semibold text-slate-900 transition-colors duration-500 dark:text-white">Teacher & Student Portal</p>
                   <p className="mt-1">
                     Dashboard terpisah untuk guru dan siswa dengan role management yang fleksibel.
                   </p>
@@ -865,8 +865,8 @@ export default function HomePage() {
                       animationDelay: prefersReducedMotion ? "0s" : `${0.2 + index * 0.12}s`,
                     }}
                   >
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{card.title}</p>
-                    <p className="mt-2 text-xs text-slate-600 dark:text-slate-200/75">{card.caption}</p>
+                    <p className="text-sm font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{card.title}</p>
+                    <p className="mt-2 text-xs text-slate-600 transition-colors duration-500 dark:text-slate-200/75">{card.caption}</p>
                   </div>
                 ))}
               </div>
@@ -1012,7 +1012,6 @@ export default function HomePage() {
                 const cardStyle = {
                   boxShadow: feature.accent.shadow,
                   borderColor: `${feature.accent.primary}26`,
-                  background: "linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(247,249,255,0.95) 100%)",
                   "--card-accent-primary": feature.accent.primary,
                   "--card-accent-secondary": feature.accent.secondary,
                   "--card-accent-tertiary": feature.accent.spotlight,
@@ -1040,7 +1039,7 @@ export default function HomePage() {
                       className="absolute inset-0 bg-gradient-to-br from-white/[0.05] via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                     />
                     <div className="flex items-center justify-between text-xs uppercase tracking-[0.35em] text-slate-500 dark:text-slate-200/70">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/40 px-3 py-1 text-[0.65rem] font-semibold dark:bg-white/10">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/40 px-3 py-1 text-[0.65rem] font-semibold transition-colors duration-500 dark:bg-white/10">
                         {feature.accent.emoji} {feature.accent.label}
                       </span>
                       <span className="hidden text-[0.65rem] font-semibold text-[#5EEAD4]/80 sm:inline">
@@ -1056,7 +1055,7 @@ export default function HomePage() {
                       >
                         <Icon className="h-6 w-6" aria-hidden="true" />
                       </div>
-                      <h3 className="text-xl font-semibold text-slate-900 dark:text-white">{feature.title}</h3>
+                      <h3 className="text-xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{feature.title}</h3>
                     </div>
                     <p className="relative mt-4 text-sm leading-relaxed text-slate-600 dark:text-slate-200/80">
                       {feature.description}
@@ -1105,7 +1104,7 @@ export default function HomePage() {
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[#5EEAD4]/80">
                 Dampak Komunitas
               </span>
-              <h2 id="stats-heading" className="mt-5 text-3xl font-semibold text-slate-900 dark:text-white sm:text-4xl">
+              <h2 id="stats-heading" className="mt-5 text-3xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white sm:text-4xl">
                 Pertumbuhan ekosistem belajar yang terukur dan kolaboratif
               </h2>
               <p className="mx-auto mt-4 max-w-3xl text-base leading-relaxed text-slate-600 dark:text-slate-200/75">
@@ -1119,7 +1118,6 @@ export default function HomePage() {
                 const Icon = stat.icon;
                 const accent = statsAccents[index % statsAccents.length];
                 const statCardStyle = {
-                  background: accent.surface,
                   borderColor: `${accent.primary}26`,
                   boxShadow: accent.glow,
                 } as CSSProperties;
@@ -1146,7 +1144,7 @@ export default function HomePage() {
                         <p className="text-sm font-medium uppercase tracking-wide text-slate-600 dark:text-slate-200/70">
                           {stat.label}
                         </p>
-                        <p className="mt-1 flex items-baseline gap-2 text-3xl font-semibold text-slate-900 dark:text-white">
+                        <p className="mt-1 flex items-baseline gap-2 text-3xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">
                           <span
                             ref={(element) => {
                               countersRef.current[index] = element;
@@ -1217,7 +1215,6 @@ export default function HomePage() {
                 featuredActivities.map((activity, index) => {
                   const accent = activityAccents[index % activityAccents.length];
                   const activityStyle = {
-                    background: accent.surface,
                     borderColor: `${accent.primary}26`,
                     boxShadow: accent.glow,
                   } as CSSProperties;
@@ -1243,7 +1240,7 @@ export default function HomePage() {
                           {formatDate(activity.date)}
                         </span>
                       </div>
-                      <h3 className="mt-4 text-xl font-semibold text-slate-900 dark:text-white">{activity.title}</h3>
+                      <h3 className="mt-4 text-xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{activity.title}</h3>
                       <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-200/75">
                         {activity.description}
                       </p>
@@ -1290,7 +1287,7 @@ export default function HomePage() {
                 </span>
                 <h2
                   id="announcements-heading"
-                  className="mt-5 text-3xl font-semibold text-slate-900 dark:text-white sm:text-4xl"
+                  className="mt-5 text-3xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white sm:text-4xl"
                 >
                   Update terbaru dari tim GEMA
                 </h2>
@@ -1319,13 +1316,12 @@ export default function HomePage() {
                     primary: "#6C63FF",
                     secondary: "#5EEAD4",
                     glow: "0 20px 45px rgba(108, 99, 255, 0.2)",
-                    surface: "linear-gradient(165deg, rgba(255,255,255,0.94) 0%, rgba(241,244,ff,0.92) 100%)",
+                    surface: "",
                     label: "Update",
                     emoji: "✨",
                   };
 
                   const announcementStyle = {
-                    background: accent.surface,
                     borderColor: `${accent.primary}26`,
                     boxShadow: accent.glow,
                     "--announcement-glow": accent.glow,
@@ -1352,7 +1348,7 @@ export default function HomePage() {
                       <span data-label className="text-[#5EEAD4]/80">
                         {accent.label}
                       </span>
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{announcement.title}</h3>
+                      <h3 className="text-lg font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{announcement.title}</h3>
                       <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-200/75">
                         {announcement.content}
                       </p>
@@ -1378,7 +1374,7 @@ export default function HomePage() {
               </span>
               <h2
                 id="gallery-heading"
-                className="mt-5 text-3xl font-semibold text-slate-900 dark:text-white sm:text-4xl"
+                className="mt-5 text-3xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white sm:text-4xl"
               >
                 Sekilas dokumentasi karya dan eksplorasi komunitas
               </h2>
@@ -1399,7 +1395,6 @@ export default function HomePage() {
                   const galleryStyle = {
                     boxShadow: accent.glow,
                     borderColor: `${accent.primary}26`,
-                    background: accent.surface,
                     "--gallery-primary": accent.primary,
                     "--gallery-secondary": accent.secondary,
                   } as CSSProperties;
@@ -1425,7 +1420,7 @@ export default function HomePage() {
                             <p className="text-xs uppercase tracking-[0.3em] text-slate-200">
                               {item.category}
                             </p>
-                            <h3 className="mt-2 text-lg font-semibold text-white dark:text-white">
+                            <h3 className="mt-2 text-lg font-semibold text-white transition-colors duration-500 dark:text-white">
                               {item.title}
                             </h3>
                           </div>
@@ -1463,7 +1458,7 @@ export default function HomePage() {
                   <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#5EEAD4]">
                     Ajukan Kolaborasi
                   </span>
-                  <h2 id="cta-heading" className="mt-4 text-3xl font-semibold sm:text-4xl">
+                  <h2 id="cta-heading" className="mt-4 text-3xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white sm:text-4xl">
                     Siap membawa energi baru ke laboratorium inovasi GEMA?
                   </h2>
                   <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-100/80 sm:text-base">

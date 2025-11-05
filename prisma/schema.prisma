@@ -31,6 +31,176 @@ model DiscussionReply {
   @@map("discussion_replies")
 }
 
+// ===== CURRICULUM MODELS =====
+
+enum ActivityType {
+  READING
+  QUIZ
+  CODING_LAB
+  DISCUSSION
+  NETWORK_LAB
+  PROJECT
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  level       String   @default("XI") // XI, XII, etc.
+  subject     String   @default("Informatika")
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  modules Module[]
+
+  @@index([level])
+  @@index([subject])
+  @@index([isActive])
+  @@map("courses")
+}
+
+model Module {
+  id          String   @id @default(cuid())
+  courseId    String
+  title       String
+  slug        String   @unique
+  description String?
+  chapter     String   // Bab 1, Bab 2, etc.
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+
+  @@index([courseId])
+  @@index([chapter])
+  @@index([isActive])
+  @@map("modules")
+}
+
+model Lesson {
+  id          String   @id @default(cuid())
+  moduleId    String
+  title       String
+  slug        String   @unique
+  description String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  module   Module    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  activities Activity[]
+
+  @@index([moduleId])
+  @@index([isActive])
+  @@map("lessons")
+}
+
+model Activity {
+  id          String      @id @default(cuid())
+  lessonId    String
+  title       String
+  type        ActivityType
+  content     String?     // For reading content
+  quizId      String?     // Link to Quiz if type is QUIZ
+  codingTaskId String?    // Link to CodingLabTask if type is CODING_LAB
+  assignmentId String?    // Link to Assignment if type is PROJECT
+  order       Int         @default(0)
+  isActive    Boolean     @default(true)
+  timeLimit   Int?        // In minutes
+  points      Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  quiz   Quiz?  @relation(fields: [quizId], references: [id])
+
+  @@index([lessonId])
+  @@index([type])
+  @@index([isActive])
+  @@map("activities")
+}
+
+model Competency {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  description String
+  level       String   @default("XI")
+  subject     String   @default("Informatika")
+  category    String   // KD, Capaian, etc.
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  mappings CompetencyMap[]
+
+  @@index([level])
+  @@index([subject])
+  @@index([category])
+  @@map("competencies")
+}
+
+model CompetencyMap {
+  id           String   @id @default(cuid())
+  competencyId String
+  activityId   String?
+  quizId       String?
+  moduleId     String?
+  weight       Float    @default(1.0)
+  createdAt    DateTime @default(now())
+
+  // Relations
+  competency Competency @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+  activity    Activity? @relation(fields: [activityId], references: [id])
+  quiz        Quiz?     @relation(fields: [quizId], references: [id])
+  module      Module?   @relation(fields: [moduleId], references: [id])
+
+  @@index([competencyId])
+  @@index([activityId])
+  @@index([quizId])
+  @@index([moduleId])
+  @@map("competency_maps")
+}
+
+model Grade {
+  id            String   @id @default(cuid())
+  studentId     String
+  activityId    String?
+  submissionId  String?
+  quizResponseId String?
+  score         Float
+  maxScore      Float    @default(100)
+  feedback      String?
+  gradedBy      String   // Admin ID
+  gradedAt      DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  student      Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  activity     Activity?     @relation(fields: [activityId], references: [id])
+  submission   Submission?   @relation(fields: [submissionId], references: [id])
+  quizResponse QuizResponse? @relation(fields: [quizResponseId], references: [id])
+  grader       Admin         @relation(fields: [gradedBy], references: [id])
+
+  @@index([studentId])
+  @@index([activityId])
+  @@index([submissionId])
+  @@index([quizResponseId])
+  @@map("grades")
+}
+
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
@@ -231,6 +401,7 @@ model Submission {
   // Relations
   assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  grades     Grade[]
 
   @@index([assignmentId])
   @@index([studentId])
@@ -432,6 +603,7 @@ model Student {
   codingSubmissions   CodingSubmission[]
   pythonSubmissions   PythonSubmission[]    @relation("PythonSubmissions")
   quizParticipations  QuizParticipant[]
+  grades              Grade[]
 
   @@index([studentId])
   @@index([status])
@@ -611,6 +783,7 @@ model QuizResponse {
   participant QuizParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
   question    QuizQuestion    @relation(fields: [questionId], references: [id], onDelete: Cascade)
   grader      Admin?          @relation("QuizResponseGrader", fields: [gradedBy], references: [id], onDelete: SetNull)
+  grades      Grade[]
 
   @@unique([participantId, questionId, sessionId])
   @@index([sessionId])
