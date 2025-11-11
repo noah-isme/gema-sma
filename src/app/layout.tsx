@@ -1,15 +1,25 @@
 import type { Metadata } from "next";
-import { Poppins, Fira_Code } from "next/font/google";
+import { Outfit, Inter, Fira_Code } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const poppins = Poppins({
+// Display Font - Bold & Playful untuk Headlines
+const outfit = Outfit({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-poppins",
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-outfit",
   display: "swap",
 });
 
+// Body Font - Clean & Readable untuk Content
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+// Code Font - Monospace untuk Code Snippets
 const firaCode = Fira_Code({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -95,6 +105,9 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
         <link rel="dns-prefetch" href="https://picsum.photos" />
         
+        {/* Lottie Web Component */}
+        <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.8.5/dist/dotlottie-wc.js" type="module" async></script>
+        
         {/* Preload critical assets */}
         <link rel="preload" href="/gema.svg" as="image" type="image/svg+xml" />
         
@@ -104,7 +117,7 @@ export default function RootLayout({
         <link rel="prefetch" href="/contact" />
       </head>
       <body
-        className={`${poppins.variable} ${firaCode.variable} antialiased`}
+        className={`${outfit.variable} ${inter.variable} ${firaCode.variable} antialiased`}
       >
         <Providers>{children}</Providers>
       </body>

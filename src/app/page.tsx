@@ -28,6 +28,7 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
+import LogoAnimated from "@/components/LogoAnimated";
 
 const VideoLogo = dynamic(() => import("@/components/branding/VideoLogo"), {
   ssr: false,
@@ -552,7 +553,26 @@ export default function HomePage() {
     [],
   );
 
-  // Parallax removed - simplified for performance (can use CSS transform if needed)
+  // Parallax effect for hero elements
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      return;
+    }
+
+    const handleScroll = () => {
+      const scrolled = window.scrollY;
+      const parallaxElements = document.querySelectorAll('[data-parallax]');
+      
+      parallaxElements.forEach((element) => {
+        const speed = parseFloat(element.getAttribute('data-parallax') || '0');
+        const yPos = -(scrolled * speed);
+        (element as HTMLElement).style.transform = `translate3d(0, ${yPos}px, 0)`;
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [prefersReducedMotion]);
 
   // Feature cards animation now handled by useScrollReveal hook + CSS
   // Native Intersection Observer triggers .scroll-reveal animations with stagger delays
@@ -687,16 +707,16 @@ export default function HomePage() {
   const heroGradientOverlay = useMemo(
     () =>
       resolvedTheme === "dark"
-        ? "absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_18%_18%,_rgba(94,234,212,0.18),transparent_58%)]"
-        : "absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_18%_18%,_rgba(108,99,255,0.12),transparent_68%)]",
+        ? "absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_18%_18%,_rgba(34,211,238,0.18),transparent_58%)]"
+        : "absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_18%_18%,_rgba(99,102,241,0.12),transparent_68%)]",
     [resolvedTheme],
   );
 
   const heroBackdropOverlay = useMemo(
     () =>
       resolvedTheme === "dark"
-        ? "absolute inset-0 pointer-events-none bg-gradient-to-br from-[#070721]/85 via-[#050513]/65 to-[#021119]/90"
-        : "absolute inset-0 pointer-events-none bg-gradient-to-br from-[#ffffff]/92 via-[#eef3ff]/70 to-[#e6faff]/90",
+        ? "absolute inset-0 pointer-events-none bg-gradient-to-br from-[#0a0a1a]/85 via-[#080816]/65 to-[#0c0e20]/90"
+        : "absolute inset-0 pointer-events-none bg-gradient-to-br from-[#F9FAFB]/92 via-[#EEF2FF]/70 to-[#E0F2FE]/90",
     [resolvedTheme],
   );
 
@@ -752,126 +772,326 @@ export default function HomePage() {
             <div className={heroGradientOverlay} aria-hidden="true" />
             <div className={heroBackdropOverlay} aria-hidden="true" />
             <div className="absolute inset-0 pointer-events-none">
+              {/* Joyful Floating Blobs */}
               <div
                 data-parallax="0.25"
-                className="absolute -top-24 right-16 h-64 w-64 rounded-full bg-gradient-to-br from-[#6C63FF]/45 to-transparent blur-3xl"
+                className="absolute -top-24 right-16 h-64 w-64 bg-gradient-to-br from-[#6366F1]/40 to-transparent blur-3xl floating-blob blob-shape-1"
               />
               <div
                 data-parallax="0.2"
-                className="absolute bottom-0 left-16 h-72 w-72 rounded-full bg-gradient-to-br from-[#5EEAD4]/35 to-transparent blur-3xl"
+                className="absolute bottom-0 left-16 h-72 w-72 bg-gradient-to-br from-[#22D3EE]/35 to-transparent blur-3xl floating-blob blob-shape-2"
+                style={{ animationDelay: '2s' }}
               />
               <div
                 data-parallax="0.35"
-                className="absolute -bottom-20 right-24 h-44 w-44 rounded-full border border-[#5EEAD4]/40"
+                className="absolute -bottom-20 right-24 h-44 w-44 border-2 border-[#22D3EE]/40 blob-morph"
+              />
+              <div
+                data-parallax="0.3"
+                className="absolute top-32 left-32 h-56 w-56 bg-gradient-to-br from-[#FBBF24]/25 to-transparent blur-3xl floating-blob blob-shape-3"
+                style={{ animationDelay: '4s' }}
+              />
+              <div
+                data-parallax="0.28"
+                className="absolute top-1/2 right-1/4 h-40 w-40 bg-gradient-to-br from-[#10B981]/20 to-transparent blur-2xl floating-blob blob-shape-4"
+                style={{ animationDelay: '6s' }}
               />
             </div>
           </div>
 
-          <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-12 px-6 pb-20 pt-24 sm:px-10 md:flex-row md:items-center md:pb-28 md:pt-32">
-            <div className="flex-1">
+          <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-16 px-6 pb-32 pt-32 section-spacing-lg sm:px-10 md:flex-row md:items-center md:gap-20 md:pb-40 md:pt-40 lg:gap-24">
+            {/* Left Column - Content (Asymmetric 55%) */}
+            <div className="flex-1 md:w-[55%]" data-parallax="0.1">
+              {/* Animated Logo with fallbacks */}
               <div
-                className="mb-8 inline-flex h-20 w-20 items-center justify-center rounded-3xl border border-white/10 bg-white/5 backdrop-blur animate-scale-in"
+                className="mb-8 animate-scale-in"
                 style={{ animationDelay: "0.1s" }}
               >
-                <Image
-                  src="/gema.svg"
-                  alt="Logo GEMA - Learning Management System"
-                  width={48}
-                  height={48}
-                  priority
+                <LogoAnimated 
+                  size="md" 
+                  priority 
+                  className="hover-lift icon-wiggle cursor-pointer" 
                 />
               </div>
-              <p className="inline-flex items-center gap-3 text-sm font-medium uppercase tracking-[0.3em] text-[#5EEAD4]/80">
+              <p className="type-caption text-[#0891B2] dark:text-[#22D3EE] inline-flex items-center gap-3" data-parallax="0.15" role="doc-subtitle">
                 Learning Management System
-                <span className="h-px w-10 bg-[#5EEAD4]/40" aria-hidden="true" />
+                <span className="h-px w-10 bg-[#0891B2]/60 dark:bg-[#22D3EE]/40" aria-hidden="true" />
               </p>
               <h1
                 id="hero-heading"
                 ref={heroTitleRef}
-                className="hero-title mt-5 text-4xl font-semibold leading-tight text-slate-900 transition-colors duration-500 dark:text-white sm:text-5xl md:text-6xl"
+                className="type-h1 hero-title mt-6 text-slate-900 transition-colors duration-500 dark:text-white"
+                data-parallax="0.12"
+                role="heading"
+                aria-level={1}
               >
-                Platform LMS Informatika yang Bikin Belajar Coding Jadi Seru dan Interaktif
+                Platform LMS Informatika yang Bikin Belajar{" "}
+                <span className="text-highlight font-extrabold" role="emphasis">Coding</span> Jadi{" "}
+                <span className="text-gradient-primary font-extrabold" role="emphasis">
+                  Seru <span role="img" aria-label="roket">🚀</span>
+                </span>{" "}
+                dan{" "}
+                <span className="text-gradient-primary font-extrabold" role="emphasis">
+                  Interaktif!
+                </span>
               </h1>
               <p
                 ref={heroSubtitleRef}
-                className="hero-subtitle mt-6 max-w-xl text-base leading-relaxed text-slate-600 transition-colors duration-500 dark:text-slate-200/85 sm:text-lg"
+                className="type-body hero-subtitle mt-8 max-w-xl text-slate-700 transition-colors duration-500 dark:text-slate-200"
+                data-parallax="0.18"
+                role="doc-subtitle"
               >
-                <strong className="text-slate-900 dark:text-white">GEMA (Generasi Muda Informatika)</strong> adalah 
+                <strong className="font-semibold text-slate-900 dark:text-white">
+                  <abbr title="Generasi Muda Informatika" className="no-underline">GEMA</abbr>
+                </strong> adalah 
                 Learning Management System modern untuk mata pelajaran Informatika SMA. 
-                Dengan fitur coding lab interaktif, tutorial terstruktur, dan sistem penilaian otomatis 
-                yang membantu siswa belajar pemrograman dengan cara yang menyenangkan.
+                Dilengkapi <span className="font-medium text-slate-900 dark:text-slate-100">
+                  coding lab interaktif <span role="img" aria-label="kilat">⚡</span>
+                </span>, 
+                tutorial terstruktur, dan sistem penilaian otomatis.
               </p>
-
-              <ul className="mt-6 flex items-center gap-3 text-xl sm:gap-4" aria-hidden="true">
-                {heroEmojis.map((emoji) => (
-                  <li key={emoji.label} className="hero-emoji" title={emoji.label}>
-                    {emoji.symbol}
-                  </li>
-                ))}
-              </ul>
 
               <div
                 ref={heroButtonsRef}
-                className="hero-cta mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6"
+                className="hero-cta mt-10 flex flex-col gap-5 sm:flex-row sm:items-center"
+                data-parallax="0.2"
               >
+                {/* Primary CTA - Emotional & Clear Result */}
                 <Link
                   href="/student/register"
                   ref={ctaButtonRef}
-                  className="cta-button inline-flex items-center justify-center rounded-full bg-gradient-to-br from-[#6C63FF] to-[#5EEAD4] px-8 py-4 text-base font-semibold text-[#0b0b1c] shadow-lg transition-transform duration-300 hover:-translate-y-0.5 hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5EEAD4]"
-                  aria-label="Daftar sebagai siswa baru"
+                  className="group cta-button button-ripple inline-flex items-center justify-center rounded-full bg-gradient-to-br from-[#6366F1] via-[#4F46E5] to-[#22D3EE] px-10 py-5 font-outfit text-lg font-bold text-white shadow-brand-xl transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:shadow-brand-xl focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-[#22D3EE] glow-brand pulse-glow"
+                  aria-label="Mulai petualangan coding bersama GEMA - Daftar sebagai siswa baru"
+                  role="button"
+                  tabIndex={0}
                 >
-                  Gabung Sekarang
-                  <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
+                  <Sparkles className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:rotate-180" aria-hidden="true" />
+                  <span className="sr-only">Daftar sekarang: </span>
+                  Mulai Petualangan Codingmu!
+                  <ArrowRight className="ml-3 h-6 w-6 transition-transform duration-300 group-hover:translate-x-2 group-hover:scale-110" aria-hidden="true" />
                 </Link>
-                <Link
-                  href="/tutorial"
-                  className="inline-flex items-center gap-2 text-sm font-medium text-[#5EEAD4] transition-colors duration-300 hover:text-[#6ff0df] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5EEAD4]"
-                >
-                  Jelajahi Kurikulum
-                  <span aria-hidden="true" className="h-px w-8 bg-[#5EEAD4]/50" />
-                </Link>
-              </div>
-
-              <div className="mt-10 flex flex-wrap items-center gap-4 text-base">
-                <span className="rounded-full bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[#5EEAD4]">
-                  Platform LMS Informatika
-                </span>
-                <span ref={typedRef} className="text-xl font-semibold text-[#5EEAD4]" aria-live="polite" />
-              </div>
-
-              <div className="mt-8 grid gap-4 text-sm text-slate-600 transition-colors duration-500 dark:text-slate-200/70 sm:grid-cols-2">
-                      <div className="rounded-2xl border border-white/10 bg-white/80 p-4 backdrop-blur-sm transition-colors duration-500 dark:bg-white/5">
-                  <p className="font-semibold text-slate-900 transition-colors duration-500 dark:text-white">Comprehensive Features</p>
-                  <p className="mt-1">
-                    Coding lab, tutorial articles, quiz system, dan assignment management dalam satu platform.
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/80 p-4 backdrop-blur-sm transition-colors duration-500 dark:bg-white/5">
-                  <p className="font-semibold text-slate-900 transition-colors duration-500 dark:text-white">Teacher & Student Portal</p>
-                  <p className="mt-1">
-                    Dashboard terpisah untuk guru dan siswa dengan role management yang fleksibel.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                {heroSpotlightCards.map((card, index) => (
-                  <div
-                    key={card.title}
-                    className="rounded-2xl border border-white/10 bg-white/90 p-4 text-left shadow-lg shadow-[#03030f]/20 backdrop-blur transition-colors duration-500 dark:bg-white/5 dark:shadow-[#03030f]/40 animate-slide-up"
-                    style={{
-                      borderColor: `${card.accent}33`,
-                      boxShadow: `0 12px 28px ${card.accent}26`,
-                      animationDelay: prefersReducedMotion ? "0s" : `${0.2 + index * 0.12}s`,
-                    }}
+                
+                {/* Secondary CTA - Exploratory */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4" role="group" aria-label="Opsi eksplorasi">
+                  <Link
+                    href="/tutorial"
+                    className="group inline-flex items-center gap-3 rounded-full border-2 border-[#4338CA]/30 bg-white/90 px-6 py-3 font-inter text-base font-semibold text-[#4338CA] backdrop-blur-sm transition-all duration-300 hover:border-[#4F46E5] hover:bg-[#4F46E5]/10 hover:shadow-brand-md dark:border-[#0891B2]/30 dark:bg-slate-700/90 dark:text-[#0891B2] dark:hover:border-[#22D3EE] dark:hover:bg-[#22D3EE]/10 focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#4F46E5]"
+                    aria-label="Lihat kurikulum pembelajaran coding lengkap"
+                    role="button"
                   >
-                    <p className="text-sm font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{card.title}</p>
-                    <p className="mt-2 text-xs text-slate-600 transition-colors duration-500 dark:text-slate-200/75">{card.caption}</p>
+                    <BookOpenCheck className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" aria-hidden="true" />
+                    Lihat Kurikulum
+                  </Link>
+                  <Link
+                    href="/demo"
+                    className="group inline-flex items-center gap-2 font-inter text-sm font-medium text-slate-700 transition-all duration-300 hover:text-[#4F46E5] dark:text-slate-300 dark:hover:text-[#22D3EE] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#4F46E5]"
+                    aria-label="Coba demo gratis tanpa registrasi"
+                  >
+                    <MonitorPlay className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" aria-hidden="true" />
+                    Coba Demo Gratis
+                    <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
+                  </Link>
+                </div>
+              </div>
+              
+              {/* Value Proposition - Clear Benefits */}
+              <div 
+                className="mt-8 flex flex-wrap items-center gap-4 rounded-2xl border-2 border-[#6366F1]/20 bg-gradient-to-r from-[#6366F1]/8 to-[#22D3EE]/8 p-4 backdrop-blur-sm dark:border-[#22D3EE]/20 dark:from-[#6366F1]/10 dark:to-[#22D3EE]/10" 
+                data-parallax="0.22"
+                role="list"
+                aria-label="Benefit utama GEMA"
+              >
+                <div className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-100" role="listitem">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#10B981]/30 dark:bg-[#10B981]/40" aria-hidden="true">
+                    <span className="text-lg font-bold text-[#059669]" role="img" aria-label="centang">✓</span>
                   </div>
-                ))}
+                  <span>Gratis untuk siswa</span>
+                </div>
+                <span className="text-slate-500 dark:text-slate-400" aria-hidden="true">•</span>
+                <div className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-100" role="listitem">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FBBF24]/30 dark:bg-[#FBBF24]/40" aria-hidden="true">
+                    <span className="text-lg" role="img" aria-label="kilat">⚡</span>
+                  </div>
+                  <span>Hasil langsung terlihat</span>
+                </div>
+                <span className="text-slate-500 dark:text-slate-400" aria-hidden="true">•</span>
+                <div className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-100" role="listitem">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#6366F1]/30 dark:bg-[#6366F1]/40" aria-hidden="true">
+                    <span className="text-lg" role="img" aria-label="topi wisuda">🎓</span>
+                  </div>
+                  <span>Sertifikat resmi</span>
+                </div>
+              </div>
+
+              {/* Social Proof & Dynamic Text */}
+              <div className="mt-10 flex flex-wrap items-center gap-5" data-parallax="0.24">
+                <div className="flex items-center gap-3">
+                  <div className="flex -space-x-2">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div
+                        key={i}
+                        className="h-8 w-8 rounded-full border-2 border-white bg-gradient-to-br from-[#6366F1] to-[#22D3EE] dark:border-slate-900"
+                        style={{ zIndex: 10 - i }}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                    <span className="font-bold text-[#4F46E5] dark:text-[#22D3EE]">500+</span> siswa aktif
+                  </p>
+                </div>
+                <span className="text-slate-400">•</span>
+                <span ref={typedRef} className="font-outfit text-base font-bold text-[#4F46E5] dark:text-[#22D3EE]" aria-live="polite" />
+              </div>
+
+              {/* Feature Indicators with Progressive Disclosure */}
+              <div className="mt-8 flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-400" data-scroll-reveal data-parallax="0.26">
+                <span className="inline-flex items-center gap-2 font-inter font-medium transition-all duration-300 hover:text-[#4F46E5] hover:scale-110 cursor-pointer">
+                  <Code2 className="h-4 w-4 text-[#4F46E5] icon-bounce" /> Coding Lab
+                </span>
+                <span className="text-slate-400 animate-pulse">•</span>
+                <span className="inline-flex items-center gap-2 font-inter font-medium transition-all duration-300 hover:text-[#22D3EE] hover:scale-110 cursor-pointer">
+                  <BookOpenCheck className="h-4 w-4 text-[#22D3EE] icon-bounce" /> Tutorial
+                </span>
+                <span className="text-slate-400 animate-pulse">•</span>
+                <span className="inline-flex items-center gap-2 font-inter font-medium transition-all duration-300 hover:text-[#FBBF24] hover:scale-110 cursor-pointer">
+                  <BarChart3 className="h-4 w-4 text-[#FBBF24] icon-bounce" /> Auto Grading
+                </span>
               </div>
             </div>
 
+            {/* Right Column - Lottie Animation (Asymmetric 45%) */}
+            <div className="relative flex-1 md:w-[45%]" data-parallax="0.25">
+              <div 
+                ref={lottieContainerRef}
+                className="relative flex items-center justify-center"
+              >
+                {/* Decorative joyful blobs */}
+                <div className="absolute -left-16 top-20 h-64 w-64 bg-[#6366F1]/25 blur-3xl blob-shape-1 animate-breathe" data-parallax="0.3" />
+                <div className="absolute -right-12 bottom-16 h-52 w-52 bg-[#22D3EE]/25 blur-3xl blob-shape-2 animate-breathe" data-parallax="0.28" style={{ animationDelay: '1s' }} />
+                <div className="absolute top-40 right-20 h-40 w-40 bg-[#FBBF24]/20 blur-2xl blob-shape-3 animate-breathe" data-parallax="0.32" style={{ animationDelay: '2s' }} />
+                
+                {/* Lottie Animation Container with tilt effect */}
+                <div className="relative z-10 transform transition-transform duration-700 hover:scale-105 tilt-hover cursor-pointer">
+                  <dotlottie-wc 
+                    src="https://lottie.host/3d2f4808-10b3-440a-bed8-687a32569b66/kxkNTFuOxU.lottie"
+                    style={{ width: '100%', maxWidth: '500px', height: 'auto', minHeight: '400px' } as CSSProperties}
+                    autoplay 
+                    loop
+                  />
+                </div>
+
+                {/* Floating badges with micro-interactions */}
+                <div 
+                  className="floating-card absolute -left-8 top-24 animate-float p-4 shadow-brand-lg hover-lift cursor-pointer group" 
+                  style={{ animationDelay: '0s' }}
+                  title="Coding Lab Interactive"
+                >
+                  <Code2 className="h-8 w-8 text-[#4F46E5] transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12" />
+                </div>
+                <div 
+                  className="floating-card absolute -right-4 top-40 animate-float p-4 shadow-cyan-md hover-lift cursor-pointer group" 
+                  style={{ animationDelay: '1s' }}
+                  title="Sparkles & Magic"
+                >
+                  <Sparkles className="h-8 w-8 text-[#22D3EE] transition-transform duration-300 group-hover:scale-125 group-hover:rotate-180" />
+                </div>
+                <div 
+                  className="floating-card absolute bottom-32 left-12 animate-float p-4 shadow-warm-md hover-lift cursor-pointer group" 
+                  style={{ animationDelay: '2s' }}
+                  title="Achievement Unlocked"
+                >
+                  <GraduationCap className="h-8 w-8 text-[#FBBF24] transition-transform duration-300 group-hover:scale-125 group-hover:-rotate-12" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Feature Cards Below Hero - Progressive Disclosure */}
+          <div className="relative z-10 mx-auto max-w-7xl section-spacing px-6 sm:px-10">
+            <div className="mb-8 text-center" data-scroll-reveal>
+              <p className="type-caption text-[#22D3EE]">Kenapa Memilih GEMA?</p>
+              <h2 className="type-h2 mt-2 text-slate-900 dark:text-white">
+                Platform All-in-One untuk Pembelajaran Coding
+              </h2>
+            </div>
+            
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2">
+              <div 
+                className="floating-card group p-6 shadow-brand-md hover:shadow-brand-lg card-pop cursor-pointer" 
+                data-scroll-reveal
+                style={{ animationDelay: '0.1s' }}
+              >
+                <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6366F1]/20 to-[#22D3EE]/20 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+                  <BookOpenCheck className="h-6 w-6 text-[#4F46E5] transition-transform duration-300 group-hover:scale-125" />
+                </div>
+                <h3 className="font-outfit text-lg font-bold text-slate-900 transition-colors duration-500 dark:text-white">
+                  Fitur Lengkap & Terpadu
+                </h3>
+                <p className="type-body mt-2 text-slate-600 dark:text-slate-300">
+                  Coding lab, tutorial articles, quiz system, dan assignment management dalam satu platform.
+                </p>
+                <div className="mt-4 flex items-center gap-2 text-sm font-medium text-[#4F46E5] dark:text-[#22D3EE]">
+                  <span>Lihat Fitur</span>
+                  <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                </div>
+              </div>
+              <div 
+                className="floating-card group p-6 shadow-cyan-md hover:shadow-brand-lg card-pop cursor-pointer" 
+                data-scroll-reveal
+                style={{ animationDelay: '0.2s' }}
+              >
+                <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#22D3EE]/20 to-[#10B981]/20 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-3">
+                  <Users className="h-6 w-6 text-[#22D3EE] transition-transform duration-300 group-hover:scale-125" />
+                </div>
+                <h3 className="font-outfit text-lg font-bold text-slate-900 transition-colors duration-500 dark:text-white">
+                  Portal Guru & Siswa
+                </h3>
+                <p className="type-body mt-2 text-slate-600 dark:text-slate-300">
+                  Dashboard terpisah untuk guru dan siswa dengan role management yang fleksibel.
+                </p>
+                <div className="mt-4 flex items-center gap-2 text-sm font-medium text-[#22D3EE]">
+                  <span>Pelajari Lebih Lanjut</span>
+                  <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                </div>
+              </div>
+            </div>
+
+            {/* Trust Signals & Quick Stats - Progressive Disclosure */}
+            <div className="mt-8 grid gap-4 sm:grid-cols-3" data-scroll-reveal>
+                {heroSpotlightCards.map((card, index) => (
+                  <div
+                    key={card.title}
+                    className="group rounded-2xl border border-white/10 bg-white/90 p-4 text-left shadow-lg backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:bg-white/5 animate-slide-up cursor-pointer"
+                    style={{
+                      borderColor: `${card.accent}33`,
+                      boxShadow: `0 12px 28px ${card.accent}26`,
+                      animationDelay: prefersReducedMotion ? "0s" : `${0.3 + index * 0.1}s`,
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <p className="font-inter text-sm font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{card.title}</p>
+                      <Sparkles className="h-4 w-4 text-[#FBBF24] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                    </div>
+                    <p className="type-caption mt-2 !normal-case !tracking-normal opacity-80 text-slate-600 transition-colors duration-500 dark:text-slate-200/75">{card.caption}</p>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Urgency Indicator - Limited Time */}
+              <div 
+                className="mt-8 flex items-center justify-center gap-3 rounded-full border border-[#FBBF24]/30 bg-gradient-to-r from-[#FBBF24]/10 to-[#F43F5E]/10 px-6 py-3 backdrop-blur-sm animate-pulse" 
+                data-scroll-reveal
+              >
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F43F5E] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#F43F5E]"></span>
+                </span>
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  <span className="text-[#F43F5E]">🔥 Promo Akhir Tahun:</span> Daftar sekarang dapat akses penuh gratis!
+                </p>
+              </div>
+
+            {/* Additional Hero Content - Right Side */}
             <div className="relative flex-1 space-y-6">
               <div className="relative rounded-3xl border border-white/20 bg-white/95 p-6 backdrop-blur-lg transition-colors duration-500 dark:border-white/10 dark:bg-white/5">
                 <div className="absolute inset-0 rounded-3xl border border-white/10" aria-hidden="true" />
