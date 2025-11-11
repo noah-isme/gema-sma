@@ -653,27 +653,48 @@ export default function HomePage() {
                 return;
               }
               
-              // Native JS counter animation
-              const duration = 2000; // 2 seconds
-              const steps = 60;
+              // Enhanced counter animation with ease-out-quint + stagger
+              const duration = 2500; // 2.5 seconds for smoother animation
+              const startTime = Date.now() + (index * 200); // 0.2s delay per card
               const targetValue = stat.value ?? 0;
-              const increment = targetValue / steps;
-              let currentValue = 0;
-              let step = 0;
               
-              const timer = setInterval(() => {
-                step++;
-                currentValue = Math.min(currentValue + increment, targetValue);
-                counterElement.textContent = formatStatValue(
-                  Math.round(currentValue),
-                  stat.suffix,
-                );
+              // Ease-out-quint easing function
+              const easeOutQuint = (t: number): number => {
+                return 1 - Math.pow(1 - t, 5);
+              };
+              
+              const animate = () => {
+                const now = Date.now();
+                const elapsed = Math.max(0, now - startTime);
+                const progress = Math.min(elapsed / duration, 1);
+                const easedProgress = easeOutQuint(progress);
+                const currentValue = Math.round(easedProgress * targetValue);
                 
-                if (step >= steps) {
-                  clearInterval(timer);
+                counterElement.textContent = formatStatValue(currentValue, stat.suffix);
+                
+                if (progress < 1) {
+                  requestAnimationFrame(animate);
+                } else {
+                  // Counter finished - trigger confetti for last card
                   counterElement.textContent = formatStatValue(targetValue, stat.suffix);
+                  const cardElement = counterElement.closest('.group\\/stat');
+                  if (cardElement) {
+                    cardElement.classList.add('counter-finished');
+                    // Trigger confetti animation for assignment card (last one)
+                    if (index === statsItems.length - 1) {
+                      const iconElement = cardElement.querySelector('.stat-icon');
+                      if (iconElement) {
+                        iconElement.classList.add('icon-confetti-pop');
+                        setTimeout(() => {
+                          iconElement?.classList.remove('icon-confetti-pop');
+                        }, 600);
+                      }
+                    }
+                  }
                 }
-              }, duration / steps);
+              };
+              
+              requestAnimationFrame(animate);
             });
             observer?.disconnect();
           }
@@ -1565,11 +1586,16 @@ export default function HomePage() {
                 const isFirst = index === 0;
                 const isLast = index === statsItems.length - 1;
                 
+                // Icon animation classes based on card type
+                const iconAnimationClass = index === 0 ? 'icon-pulse-glow' :
+                                          index === 1 ? 'icon-flip-book' :
+                                          index === 2 ? 'icon-electric-spark' : '';
+                
                 return (
                   <article
                     key={stat.label}
                     data-scroll-reveal
-                    className="group/stat relative flex flex-col overflow-hidden rounded-3xl border-2 bg-white/95 p-8 shadow-xl backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:scale-[1.02] dark:bg-slate-900/90 sm:p-10"
+                    className="stat-card group/stat relative flex flex-col overflow-hidden rounded-3xl border-2 bg-white/95 p-8 shadow-xl backdrop-blur-xl stat-card-animate transition-all duration-500 hover:-translate-y-1 hover:scale-[1.02] dark:bg-slate-900/90 sm:p-10"
                     style={{
                       borderColor: `${stat.color}40`,
                       boxShadow: `0 20px 50px ${stat.color}15`,
@@ -1589,11 +1615,11 @@ export default function HomePage() {
                       {stat.emoji}
                     </div>
 
-                    {/* Icon with Glow & Shimmer */}
+                    {/* Icon with Glow, Shimmer & Personality Animation */}
                     <div className="relative mb-6 flex items-center gap-4">
                       <div
                         data-shimmer
-                        className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl shadow-2xl transition-all duration-500 group-hover/stat:scale-110 group-hover/stat:rotate-3"
+                        className={`stat-icon relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl shadow-2xl transition-all duration-500 group-hover/stat:scale-110 group-hover/stat:rotate-3 ${iconAnimationClass}`}
                         style={{
                           background: `linear-gradient(135deg, ${stat.color}, ${stat.color}CC)`,
                         }}
@@ -1609,10 +1635,14 @@ export default function HomePage() {
                         />
                       </div>
 
-                      {/* Label */}
-                      <div>
+                      {/* Label with Growth Indicator */}
+                      <div className="flex-1">
                         <p className="font-['Inter'] text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                           {stat.label}
+                        </p>
+                        {/* Growth Indicator on Hover */}
+                        <p className="growth-indicator mt-1 font-['Inter'] text-xs font-medium text-slate-400 dark:text-slate-500">
+                          📈 +{index === 0 ? '5' : index === 1 ? '3' : index === 2 ? '8' : '2'} minggu terakhir
                         </p>
                       </div>
                     </div>
@@ -1667,17 +1697,30 @@ export default function HomePage() {
               })}
             </div>
 
-            {/* CTA Section */}
-            <div className="mt-12 text-center" data-scroll-reveal>
-              <p className="font-['Inter'] text-sm text-slate-600 dark:text-slate-400">
-                Mau jadi bagian dari komunitas yang terus bertumbuh?
+            {/* CTA Section with Animated Entry */}
+            <div className="cta-animate relative mt-16 text-center">
+              {/* Subtle Lottie Background Spark */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+                <dotlottie-wc 
+                  src="https://lottie.host/4df3916f-b2ba-40ef-ad01-4da7298ca301/v7payaGOaf.lottie"
+                  style={{ width: '300px', height: '300px' } as CSSProperties}
+                  autoplay
+                  loop
+                />
+              </div>
+              
+              <p className="font-['Inter'] text-base font-medium text-slate-700 dark:text-slate-300">
+                Gabung komunitas GEMA dan{" "}
+                <span className="font-semibold text-[#6366F1] dark:text-[#A5B4FC]">tumbuh bareng</span>{" "}
+                teman-teman codingmu! 🚀
               </p>
               <Link
                 href="/student/register"
-                className="mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#6366F1] to-[#06B6D4] px-6 py-3 font-['Inter'] text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-[#6366F1]/30"
+                className="group mt-6 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#6366F1] to-[#06B6D4] px-8 py-4 font-['Inter'] text-base font-bold text-white shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:shadow-[#6366F1]/50 focus:outline-none focus:ring-4 focus:ring-[#6366F1]/30"
               >
+                <Sparkles className="h-5 w-5 transition-transform duration-300 group-hover:rotate-180" />
                 Gabung Sekarang
-                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-2" />
               </Link>
             </div>
           </div>
