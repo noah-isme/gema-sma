@@ -580,32 +580,44 @@ export default function HomePage() {
   const statsItems = useMemo(
     () => [
       {
-        label: "Siswa Terdaftar",
+        label: "Siswa Aktif",
         value: stats.totalStudents,
         suffix: "+",
-        description: "siswa yang aktif menggunakan platform GEMA untuk belajar.",
+        description: "Lebih dari 20 siswa aktif belajar dan bereksperimen di GEMA setiap hari.",
+        emoji: "👨‍💻",
         icon: Users,
+        color: "#6366F1", // Indigo - community & trust
+        gradient: "from-[#6366F1] to-[#06B6D4]",
       },
       {
-        label: "Tutorial & Materi",
+        label: "Materi Pembelajaran",
         value: stats.totalTutorials,
         suffix: "+",
-        description: "artikel tutorial dan materi pembelajaran terstruktur.",
+        description: "Tutorial dan artikel interaktif yang bikin belajar coding jadi lebih asik!",
+        emoji: "📚",
         icon: BookOpenCheck,
+        color: "#06B6D4", // Cyan - exploration & ideas
+        gradient: "from-[#06B6D4] to-[#10B981]",
       },
       {
-        label: "Coding Lab",
+        label: "Coding Lab Interaktif",
         value: stats.totalCodingLabs,
         suffix: "+",
-        description: "latihan coding interaktif dengan auto-grading system.",
+        description: "Lab coding dengan instant feedback — langsung praktik, langsung paham.",
+        emoji: "⚡",
         icon: Code2,
+        color: "#F59E0B", // Amber - energy & action
+        gradient: "from-[#F59E0B] to-[#EF4444]",
       },
       {
-        label: "Assignment Selesai",
+        label: "Tugas Berhasil",
         value: stats.completedAssignments,
         suffix: "+",
-        description: "tugas yang telah diselesaikan siswa dengan sukses.",
+        description: "Setiap minggu, tugas-tugas coding selesai dengan bangga! 💪",
+        emoji: "🎯",
         icon: GraduationCap,
+        color: "#EC4899", // Pink - achievement & passion
+        gradient: "from-[#EC4899] to-[#A855F7]",
       },
     ],
     [stats],
@@ -1492,91 +1504,180 @@ export default function HomePage() {
         <section
           id="stats"
           ref={statsRef}
-          className="relative overflow-hidden bg-[#f7f9ff] py-20 transition-colors duration-500 sm:py-24 dark:bg-[#050513]"
+          className="relative overflow-hidden bg-gradient-to-b from-[#F8FAFC] to-[#EEF2FF] py-24 transition-colors duration-500 sm:py-32 dark:from-[#050513] dark:to-[#0F0A1F]"
           aria-labelledby="stats-heading"
           data-parallax-root
         >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(94,234,212,0.16),transparent_70%)] dark:bg-[radial-gradient(circle_at_center,_rgba(94,234,212,0.14),transparent_65%)]" />
-          <div className="absolute inset-0 opacity-75">
+          {/* Living Background Elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,_rgba(99,102,241,0.08),transparent_60%)] dark:bg-[radial-gradient(circle_at_30%_30%,_rgba(99,102,241,0.12),transparent_60%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_70%,_rgba(6,182,212,0.06),transparent_60%)] dark:bg-[radial-gradient(circle_at_70%_70%,_rgba(6,182,212,0.1),transparent_60%)]" />
+          </div>
+          
+          {/* Animated Particles */}
+          <div className="absolute inset-0 opacity-40">
             <div
-              data-parallax="0.18"
-              className="absolute right-16 top-12 h-48 w-48 rounded-full border border-[#6C63FF]/30"
+              data-parallax="0.15"
+              className="absolute right-20 top-16 h-32 w-32 rounded-full border-2 border-[#6366F1]/20 dark:border-[#6366F1]/30"
+              style={{ animation: 'float 6s ease-in-out infinite' }}
             />
             <div
-              data-parallax="0.28"
-              className="absolute -left-10 bottom-8 h-60 w-60 rounded-full bg-gradient-to-br from-[#6C63FF]/30 to-transparent blur-3xl"
+              data-parallax="0.25"
+              className="absolute left-16 bottom-20 h-48 w-48 rounded-full bg-gradient-to-br from-[#06B6D4]/10 via-[#EC4899]/10 to-transparent blur-2xl"
+              style={{ animation: 'float 8s ease-in-out infinite 1s' }}
             />
           </div>
-          <div className="stats-grid relative mx-auto max-w-6xl px-6 sm:px-10">
-            <div className="text-center" data-scroll-reveal>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[#5EEAD4]/80">
-                Dampak Komunitas
+          
+          <div className="stats-grid relative mx-auto max-w-7xl px-6 sm:px-10">
+            {/* Living Community Header */}
+            <div className="mx-auto max-w-3xl text-center" data-scroll-reveal>
+              <span className="inline-flex items-center gap-2 rounded-full border border-[#6366F1]/20 bg-white/60 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-[#6366F1] backdrop-blur-sm dark:border-[#6366F1]/30 dark:bg-white/5 dark:text-[#A5B4FC]">
+                🌍 Living Community
               </span>
-              <h2 id="stats-heading" className="mt-5 text-3xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white sm:text-4xl">
-                Pertumbuhan ekosistem belajar yang terukur dan kolaboratif
+              <h2 
+                id="stats-heading" 
+                className="mt-6 font-['Clash_Display',_'Satoshi',_system-ui] text-4xl font-bold leading-tight text-slate-900 sm:text-5xl lg:text-6xl dark:text-white"
+              >
+                Setiap angka mewakili{" "}
+                <span className="bg-gradient-to-r from-[#6366F1] via-[#06B6D4] to-[#EC4899] bg-clip-text text-transparent">
+                  kisah pertumbuhan nyata
+                </span>
               </h2>
-              <p className="mx-auto mt-4 max-w-3xl text-base leading-relaxed text-slate-600 dark:text-slate-200/75">
-                Data berikut diperbarui secara realtime dari dashboard komunitas, memberikan gambaran
-                nyata bagaimana siswa dan guru berinteraksi dalam program GEMA.
+              <p className="mx-auto mt-6 max-w-2xl font-['Inter'] text-lg leading-relaxed text-slate-600 dark:text-slate-300">
+                Setiap hari komunitas GEMA bertumbuh — makin banyak siswa yang{" "}
+                <span className="font-semibold text-[#6366F1] dark:text-[#A5B4FC]">belajar</span>,{" "}
+                <span className="font-semibold text-[#06B6D4] dark:text-[#22D3EE]">berbagi</span>, dan{" "}
+                <span className="font-semibold text-[#EC4899] dark:text-[#F9A8D4]">berkreasi</span>.
               </p>
+              
+              {/* Animated Progress Indicator */}
+              <div className="mx-auto mt-8 flex items-center justify-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-[#6366F1] animate-pulse" />
+                <div className="h-2 w-2 rounded-full bg-[#06B6D4] animate-pulse" style={{ animationDelay: '0.3s' }} />
+                <div className="h-2 w-2 rounded-full bg-[#EC4899] animate-pulse" style={{ animationDelay: '0.6s' }} />
+              </div>
             </div>
 
-            <div className="mt-12 grid gap-6 md:grid-cols-2">
+            {/* Living Stats Grid */}
+            <div className="mt-16 grid gap-6 md:grid-cols-2 lg:gap-8">
               {statsItems.map((stat, index) => {
                 const Icon = stat.icon;
-                const accent = statsAccents[index % statsAccents.length];
-                const statCardStyle = {
-                  borderColor: `${accent.primary}26`,
-                  boxShadow: accent.glow,
-                } as CSSProperties;
+                const isFirst = index === 0;
+                const isLast = index === statsItems.length - 1;
+                
                 return (
                   <article
                     key={stat.label}
                     data-scroll-reveal
-                    className="stat-card relative flex flex-col gap-4 overflow-hidden rounded-3xl border border-white/20 bg-white/90 p-8 shadow-xl shadow-[#040410]/10 backdrop-blur-xl transition-colors duration-500 dark:border-white/10 dark:bg-white/5 dark:shadow-[#040410]/60"
-                    style={statCardStyle}
+                    className="group/stat relative flex flex-col overflow-hidden rounded-3xl border-2 bg-white/95 p-8 shadow-xl backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:scale-[1.02] dark:bg-slate-900/90 sm:p-10"
+                    style={{
+                      borderColor: `${stat.color}40`,
+                      boxShadow: `0 20px 50px ${stat.color}15`,
+                      animationDelay: `${index * 0.15}s`,
+                    } as CSSProperties}
                   >
-                    <div
-                      className="relative flex items-center gap-4"
-                      data-shimmer
-                    >
+                    {/* Glowing Background on Hover */}
+                    <div 
+                      className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover/stat:opacity-100 pointer-events-none"
+                      style={{
+                        background: `radial-gradient(circle at 50% 50%, ${stat.color}10, transparent 70%)`,
+                      }}
+                    />
+
+                    {/* Emoji Badge */}
+                    <div className="absolute -right-4 -top-4 text-6xl opacity-10 transition-all duration-500 group-hover/stat:opacity-20 group-hover/stat:scale-110">
+                      {stat.emoji}
+                    </div>
+
+                    {/* Icon with Glow */}
+                    <div className="relative mb-6 flex items-center gap-4">
                       <div
-                        className="stat-card-icon relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl"
+                        className="relative flex h-16 w-16 items-center justify-center rounded-2xl shadow-2xl transition-all duration-500 group-hover/stat:scale-110 group-hover/stat:rotate-3"
                         style={{
-                          background: `linear-gradient(135deg, ${accent.primary}, ${accent.secondary})`,
+                          background: `linear-gradient(135deg, ${stat.color}, ${stat.color}CC)`,
                         }}
                       >
-                        <Icon className="h-7 w-7 text-[#050513]" aria-hidden="true" />
+                        <Icon className="h-8 w-8 text-white transition-transform duration-500 group-hover/stat:scale-110" aria-hidden="true" />
+                        
+                        {/* Pulsing ring */}
+                        <div 
+                          className="absolute inset-0 -z-10 rounded-2xl opacity-0 blur-xl transition-opacity duration-500 group-hover/stat:opacity-60"
+                          style={{
+                            background: `linear-gradient(135deg, ${stat.color}, ${stat.color}80)`,
+                          }}
+                        />
                       </div>
+
+                      {/* Label */}
                       <div>
-                        <p className="text-sm font-medium uppercase tracking-wide text-slate-600 dark:text-slate-200/70">
+                        <p className="font-['Inter'] text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                           {stat.label}
-                        </p>
-                        <p className="mt-1 flex items-baseline gap-2 text-3xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">
-                          <span
-                            ref={(element) => {
-                              countersRef.current[index] = element;
-                              if (prefersReducedMotion && element) {
-                                element.textContent = formatStatValue(stat.value, stat.suffix);
-                              }
-                            }}
-                          >
-                            {prefersReducedMotion ? formatStatValue(stat.value, stat.suffix) : "0"}
-                          </span>
                         </p>
                       </div>
                     </div>
-                    <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-200/70">{stat.description}</p>
-                    {index === 0 && (
-                      <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white/80 px-4 py-3 text-xs text-slate-600 transition-colors duration-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-200/70">
-                        <Sparkles className="h-4 w-4 text-[#5EEAD4]" aria-hidden="true" />
-                        {stats.upcomingEventsToday} agenda berlangsung hari ini ·{" "}
-                        {stats.upcomingEventsThisWeek} agenda dalam satu pekan
+
+                    {/* Giant Gradient Number */}
+                    <div className="relative mb-4">
+                      <p 
+                        className={`font-['Clash_Display',_'Satoshi',_system-ui] text-6xl font-bold leading-none bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent sm:text-7xl`}
+                      >
+                        <span
+                          ref={(element) => {
+                            countersRef.current[index] = element;
+                            if (prefersReducedMotion && element) {
+                              element.textContent = formatStatValue(stat.value, stat.suffix);
+                            }
+                          }}
+                        >
+                          {prefersReducedMotion ? formatStatValue(stat.value, stat.suffix) : "0"}
+                        </span>
+                      </p>
+                    </div>
+
+                    {/* Description */}
+                    <p className="font-['Inter'] text-base leading-relaxed text-slate-600 dark:text-slate-300">
+                      {stat.description}
+                    </p>
+
+                    {/* Special Badge for First Card */}
+                    {isFirst && stats.upcomingEventsToday > 0 && (
+                      <div className="mt-6 flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-medium transition-all duration-300 hover:scale-105"
+                        style={{
+                          borderColor: `${stat.color}30`,
+                          backgroundColor: `${stat.color}08`,
+                          color: stat.color,
+                        }}
+                      >
+                        <Sparkles className="h-4 w-4" aria-hidden="true" />
+                        <span>
+                          {stats.upcomingEventsToday} kegiatan hari ini
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Celebration Effect for Last Card */}
+                    {isLast && (
+                      <div className="absolute -top-16 right-4 opacity-0 transition-opacity duration-500 group-hover/stat:opacity-100 pointer-events-none">
+                        <span className="text-4xl animate-bounce">🎉</span>
                       </div>
                     )}
                   </article>
                 );
               })}
+            </div>
+
+            {/* CTA Section */}
+            <div className="mt-12 text-center" data-scroll-reveal>
+              <p className="font-['Inter'] text-sm text-slate-600 dark:text-slate-400">
+                Mau jadi bagian dari komunitas yang terus bertumbuh?
+              </p>
+              <Link
+                href="/student/register"
+                className="mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#6366F1] to-[#06B6D4] px-6 py-3 font-['Inter'] text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-[#6366F1]/30"
+              >
+                Gabung Sekarang
+                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+              </Link>
             </div>
           </div>
         </section>
