@@ -1589,10 +1589,11 @@ export default function HomePage() {
                       {stat.emoji}
                     </div>
 
-                    {/* Icon with Glow */}
+                    {/* Icon with Glow & Shimmer */}
                     <div className="relative mb-6 flex items-center gap-4">
                       <div
-                        className="relative flex h-16 w-16 items-center justify-center rounded-2xl shadow-2xl transition-all duration-500 group-hover/stat:scale-110 group-hover/stat:rotate-3"
+                        data-shimmer
+                        className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl shadow-2xl transition-all duration-500 group-hover/stat:scale-110 group-hover/stat:rotate-3"
                         style={{
                           background: `linear-gradient(135deg, ${stat.color}, ${stat.color}CC)`,
                         }}
@@ -1616,10 +1617,10 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {/* Giant Gradient Number */}
-                    <div className="relative mb-4">
+                    {/* Giant Gradient Number with Shimmer */}
+                    <div className="relative mb-4 overflow-hidden" data-shimmer>
                       <p 
-                        className={`font-['Clash_Display',_'Satoshi',_system-ui] text-6xl font-bold leading-none bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent sm:text-7xl`}
+                        className={`stat-number-gradient font-['Clash_Display',_'Satoshi',_system-ui] text-6xl font-bold leading-none bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent sm:text-7xl`}
                       >
                         <span
                           ref={(element) => {
