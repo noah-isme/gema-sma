@@ -132,51 +132,51 @@ interface FeatureCardConfig {
 
 const featuresData: FeatureCardConfig[] = [
   {
-    title: "Dashboard & Progress Tracking",
+    title: "Dashboard & Tracking",
     description:
-      "Monitor progress belajar siswa secara real-time dengan visualisasi yang jelas. Lihat statistik, achievement, dan area yang perlu improvement.",
-    highlights: ["Progress real-time", "Analitik mendalam", "Export laporan"],
+      "Pantau progres belajarmu secara real-time. Lihat achievement yang sudah kamu raih dan area yang perlu ditingkatkan dengan visualisasi yang jelas dan menarik.",
+    highlights: ["Progress Real-time", "Analitik Visual", "Badge Achievement"],
     icon: BarChart3,
     accent: {
-      primary: "#6C63FF",
-      secondary: "#7F7FFF",
-      spotlight: "rgba(108, 99, 255, 0.28)",
-      shadow: "0 18px 45px rgba(108, 99, 255, 0.18)",
-      hoverShadow: "0 24px 55px rgba(108, 99, 255, 0.28)",
-      emoji: "📊",
-      label: "Dashboard",
+      primary: "#6366F1", // Indigo
+      secondary: "#06B6D4", // Cyan
+      spotlight: "rgba(99, 102, 241, 0.25)",
+      shadow: "0 20px 50px rgba(99, 102, 241, 0.15)",
+      hoverShadow: "0 25px 60px rgba(99, 102, 241, 0.25)",
+      emoji: "🔮",
+      label: "Step 1",
     },
   },
   {
     title: "Interactive Coding Lab",
     description:
-      "Platform coding lab dengan code editor powerful, test case otomatis, dan feedback instant. Mendukung Python, JavaScript, dan HTML/CSS.",
-    highlights: ["Auto-grading", "Multiple languages", "Instant feedback"],
+      "Latihan coding dengan editor powerful, test case otomatis, dan feedback instant. Coba langsung tanpa install apapun — coding di browser, hasilnya langsung keliatan!",
+    highlights: ["Auto-grading", "Multi-language", "Instant Feedback"],
     icon: Code2,
     accent: {
-      primary: "#5EEAD4",
-      secondary: "#50B0FF",
-      spotlight: "rgba(94, 234, 212, 0.32)",
-      shadow: "0 18px 45px rgba(80, 176, 255, 0.18)",
-      hoverShadow: "0 24px 55px rgba(80, 176, 255, 0.26)",
-      emoji: "💻",
-      label: "Coding Lab",
+      primary: "#06B6D4", // Cyan
+      secondary: "#10B981", // Green
+      spotlight: "rgba(6, 182, 212, 0.25)",
+      shadow: "0 20px 50px rgba(6, 182, 212, 0.15)",
+      hoverShadow: "0 25px 60px rgba(6, 182, 212, 0.25)",
+      emoji: "⚡",
+      label: "Step 2",
     },
   },
   {
-    title: "Tutorial & Learning Path",
+    title: "Learning Path",
     description:
-      "Materi pembelajaran terstruktur dengan video, artikel, dan latihan interaktif. Siswa belajar sesuai pace mereka sendiri.",
-    highlights: ["Kurikulum lengkap", "Video tutorial", "Interactive quiz"],
+      "Jelajahi materi dari dasar sampai mahir dengan alur yang terstruktur. Video tutorial, artikel interaktif, dan quiz — semua ada di satu tempat!",
+    highlights: ["Kurikulum Lengkap", "Video Tutorial", "Interactive Quiz"],
     icon: MonitorPlay,
     accent: {
-      primary: "#FF99CC",
-      secondary: "#FDB9FF",
-      spotlight: "rgba(255, 153, 204, 0.3)",
-      shadow: "0 18px 45px rgba(255, 153, 204, 0.22)",
-      hoverShadow: "0 24px 55px rgba(255, 153, 204, 0.3)",
-      emoji: "📚",
-      label: "Tutorial",
+      primary: "#EC4899", // Pink
+      secondary: "#A855F7", // Purple
+      spotlight: "rgba(236, 72, 153, 0.25)",
+      shadow: "0 20px 50px rgba(236, 72, 153, 0.15)",
+      hoverShadow: "0 25px 60px rgba(236, 72, 153, 0.25)",
+      emoji: "🧠",
+      label: "Step 3",
     },
   },
 ];
@@ -1197,48 +1197,78 @@ export default function HomePage() {
 
         <section
           id="features"
-          className="relative overflow-hidden bg-[#eef3ff] py-20 transition-colors duration-500 sm:py-24 dark:bg-[#06081C]"
+          className="relative overflow-hidden bg-gradient-to-b from-[#F8FAFC] to-[#EEF2FF] py-24 transition-colors duration-500 sm:py-32 dark:from-[#06081C] dark:to-[#0F0A1F]"
           aria-labelledby="features-heading"
         >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(108,99,255,0.08),transparent_60%)] dark:bg-[radial-gradient(circle_at_top,_rgba(108,99,255,0.12),transparent_60%)]" />
+          {/* Animated Background Elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,_rgba(99,102,241,0.06),transparent_50%)] dark:bg-[radial-gradient(circle_at_30%_20%,_rgba(99,102,241,0.1),transparent_50%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,_rgba(236,72,153,0.06),transparent_50%)] dark:bg-[radial-gradient(circle_at_70%_80%,_rgba(236,72,153,0.1),transparent_50%)]" />
+          </div>
+          
+          {/* Top Border Glow */}
           <div
-            className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#6C63FF]/30 to-transparent dark:via-white/20"
+            className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#6366F1]/30 to-transparent dark:via-[#6366F1]/50"
             aria-hidden="true"
           />
-          <div className="relative mx-auto max-w-6xl px-6 sm:px-10">
-            <div className="max-w-2xl" data-scroll-reveal>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[#5EEAD4]/80">
-                Program Unggulan
+          
+          <div className="relative mx-auto max-w-7xl px-6 sm:px-10">
+            {/* Section Header */}
+            <div className="mx-auto max-w-3xl text-center" data-scroll-reveal>
+              <span className="inline-flex items-center gap-2 rounded-full border border-[#6366F1]/20 bg-white/60 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-[#6366F1] backdrop-blur-sm dark:border-[#6366F1]/30 dark:bg-white/5 dark:text-[#A5B4FC]">
+                Learning Journey
               </span>
               <h2
                 id="features-heading"
-                className="mt-5 text-3xl font-semibold text-slate-900 dark:text-white sm:text-4xl"
+                className="mt-6 font-['Clash_Display',_'Satoshi',_system-ui] text-4xl font-bold leading-tight text-slate-900 sm:text-5xl lg:text-6xl dark:text-white"
               >
-                Jalur belajar modern yang mengalir dari teori ke praktik
+                Setiap siswa punya{" "}
+                <span className="bg-gradient-to-r from-[#6366F1] via-[#06B6D4] to-[#EC4899] bg-clip-text text-transparent">
+                  perjalanan belajar
+                </span>{" "}
+                sendiri
               </h2>
-              <p className="mt-4 text-base leading-relaxed text-slate-600 dark:text-slate-200/80">
-                Setiap fitur dirancang untuk menjaga fokus siswa, mempermudah guru memantau progres,
-                serta mempercepat ide menjadi prototipe nyata.
+              <p className="mx-auto mt-6 max-w-2xl font-['Inter'] text-lg leading-relaxed text-slate-600 dark:text-slate-300">
+                GEMA memandumu dari <span className="font-semibold text-[#6366F1] dark:text-[#A5B4FC]">dasar</span> sampai{" "}
+                <span className="font-semibold text-[#EC4899] dark:text-[#F9A8D4]">jago coding</span> lewat 3 tahap yang menyenangkan.
               </p>
             </div>
 
+            {/* Learning Journey Timeline */}
             <div
               ref={featuresRef}
-              className="mt-12 grid gap-6 md:grid-cols-3 lg:[grid-template-columns:1.1fr_1fr_0.95fr]"
+              className="mt-16 relative"
               aria-live="polite"
               aria-busy="false"
             >
+              {/* Timeline Progress Line (Desktop) */}
+              <div className="absolute top-[4.5rem] left-0 right-0 hidden h-1 md:block" aria-hidden="true">
+                <div className="mx-auto max-w-5xl px-12">
+                  <div className="h-full bg-gradient-to-r from-[#6366F1]/20 via-[#06B6D4]/20 to-[#EC4899]/20 dark:from-[#6366F1]/30 dark:via-[#06B6D4]/30 dark:to-[#EC4899]/30" />
+                  {/* Animated Progress Indicator */}
+                  <div className="absolute inset-0 h-full w-0 animate-[progressFlow_3s_ease-in-out_infinite] bg-gradient-to-r from-[#6366F1] via-[#06B6D4] to-[#EC4899] opacity-50 blur-sm" 
+                    style={{ animation: 'progressFlow 4s ease-in-out infinite' }} />
+                </div>
+              </div>
+
+              {/* Journey Steps Grid */}
+              <div className="grid gap-8 md:grid-cols-3 md:gap-6"
+              >
               {featuresData.map((feature, index) => {
                 const Icon = feature.icon;
+                const isFirst = index === 0;
+                const isLast = index === featuresData.length - 1;
+                
                 const cardStyle = {
                   boxShadow: feature.accent.shadow,
-                  borderColor: `${feature.accent.primary}26`,
+                  borderColor: `${feature.accent.primary}40`,
                   "--card-accent-primary": feature.accent.primary,
                   "--card-accent-secondary": feature.accent.secondary,
                   "--card-accent-tertiary": feature.accent.spotlight,
                   "--card-shadow-hover": feature.accent.hoverShadow,
                   "--spotlight-x": "50%",
                   "--spotlight-y": "50%",
+                  animationDelay: `${index * 0.2}s`,
                 } as CSSProperties;
 
                 return (
@@ -1246,58 +1276,101 @@ export default function HomePage() {
                     key={feature.title}
                     data-feature-card
                     data-scroll-reveal
-                    className="group feature-card relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/20 bg-white/90 p-8 shadow-xl shadow-[#050513]/10 backdrop-blur-xl transition-colors duration-500 will-change-transform dark:border-white/10 dark:bg-white/5 dark:shadow-[#050513]/40 sm:p-9"
+                    className="group feature-card relative flex h-full flex-col overflow-hidden rounded-3xl border-2 bg-white/95 p-8 shadow-xl backdrop-blur-xl transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] will-change-transform dark:bg-slate-900/90 sm:p-10"
                     style={cardStyle}
                     onPointerMove={handleFeaturePointerMove}
                     onPointerLeave={handleFeaturePointerLeave}
                     onPointerUp={handleFeaturePointerLeave}
                   >
-                    <div className="absolute inset-0 pointer-events-none">
-                      <span className="feature-card-ornament" aria-hidden="true" />
-                    </div>
-                    <div
+                    {/* Glow Effect on Hover */}
+                    <div 
+                      className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100 pointer-events-none"
+                      style={{
+                        background: `radial-gradient(circle at var(--spotlight-x) var(--spotlight-y), ${feature.accent.spotlight}, transparent 60%)`,
+                      }}
                       aria-hidden="true"
-                      className="absolute inset-0 bg-gradient-to-br from-white/[0.05] via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                     />
-                    <div className="flex items-center justify-between text-xs uppercase tracking-[0.35em] text-slate-500 dark:text-slate-200/70">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/40 px-3 py-1 text-[0.65rem] font-semibold transition-colors duration-500 dark:bg-white/10">
-                        {feature.accent.emoji} {feature.accent.label}
-                      </span>
-                      <span className="hidden text-[0.65rem] font-semibold text-[#5EEAD4]/80 sm:inline">
-                        #{(index + 1).toString().padStart(2, "0")}
-                      </span>
-                    </div>
-                    <div className="relative mt-4 flex items-center gap-4">
-                      <div
-                        className="feature-card-icon flex h-12 w-12 items-center justify-center rounded-2xl text-[#050513] shadow-lg"
+
+                    {/* Step Number Badge */}
+                    <div className="relative mb-6 flex items-center justify-between">
+                      <span 
+                        className="inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-bold uppercase tracking-wider text-white shadow-lg"
                         style={{
                           background: `linear-gradient(135deg, ${feature.accent.primary}, ${feature.accent.secondary})`,
                         }}
                       >
-                        <Icon className="h-6 w-6" aria-hidden="true" />
-                      </div>
-                      <h3 className="text-xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{feature.title}</h3>
+                        {feature.accent.emoji}
+                        <span className="hidden sm:inline">{feature.accent.label}</span>
+                      </span>
+                      {/* Connection Indicator (Desktop Only) */}
+                      {!isLast && (
+                        <div className="absolute -right-4 top-1/2 hidden h-0.5 w-8 md:block" aria-hidden="true">
+                          <div 
+                            className="h-full"
+                            style={{
+                              background: `linear-gradient(90deg, ${feature.accent.secondary}, ${featuresData[index + 1].accent.primary})`,
+                              opacity: 0.3,
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
-                    <p className="relative mt-4 text-sm leading-relaxed text-slate-600 dark:text-slate-200/80">
+
+                    {/* Icon */}
+                    <div className="relative mb-5">
+                      <div
+                        className="inline-flex h-16 w-16 items-center justify-center rounded-2xl text-white shadow-2xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
+                        style={{
+                          background: `linear-gradient(135deg, ${feature.accent.primary}, ${feature.accent.secondary})`,
+                        }}
+                      >
+                        <Icon className="h-8 w-8" aria-hidden="true" />
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    <h3 className="font-['Poppins',_system-ui] text-2xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">
+                      {feature.title}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="mt-4 font-['Inter'] text-base leading-relaxed text-slate-600 dark:text-slate-300">
                       {feature.description}
                     </p>
-                    <ul className="relative mt-6 flex flex-wrap gap-2 text-xs text-[#5EEAD4]/90">
+
+                    {/* Highlights Tags */}
+                    <ul className="mt-6 flex flex-wrap gap-2">
                       {feature.highlights.map((highlight) => (
                         <li
                           key={highlight}
-                          className="rounded-full border border-[#5EEAD4]/30 bg-[#06081C]/60 px-3 py-1"
+                          className="inline-flex items-center rounded-full border px-3 py-1.5 font-['Inter'] text-xs font-medium uppercase tracking-wide transition-colors"
+                          style={{
+                            borderColor: `${feature.accent.primary}30`,
+                            color: feature.accent.primary,
+                            backgroundColor: `${feature.accent.primary}10`,
+                          }}
                         >
                           {highlight}
                         </li>
                       ))}
                     </ul>
-                    <div className="relative mt-auto flex items-center gap-2 pt-6 text-sm font-semibold text-[#5EEAD4]/80">
-                      Selengkapnya
-                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+
+                    {/* CTA Link */}
+                    <div className="relative mt-auto pt-8">
+                      <Link
+                        href={isFirst ? "/student/dashboard" : isLast ? "/tutorial" : "/student/coding-lab"}
+                        className="inline-flex items-center gap-2 font-['Inter'] text-sm font-semibold transition-all duration-300 hover:gap-3"
+                        style={{ color: feature.accent.primary }}
+                        aria-label={`${isFirst ? "Lihat Progresku" : isLast ? "Jelajahi Materi" : "Mulai Tantangan"}`}
+                      >
+                        {isFirst ? "Lihat Progresku" : isLast ? "Jelajahi Materi" : "Mulai Tantangan"}
+                        <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                      </Link>
                     </div>
                   </article>
                 );
               })}
+              </div>
             </div>
           </div>
         </section>
