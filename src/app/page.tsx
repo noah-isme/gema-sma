@@ -134,7 +134,7 @@ const featuresData: FeatureCardConfig[] = [
   {
     title: "Dashboard & Tracking",
     description:
-      "Pantau progres belajarmu secara real-time. Lihat achievement yang sudah kamu raih dan area yang perlu ditingkatkan dengan visualisasi yang jelas dan menarik.",
+      "Lihat sejauh mana kamu sudah melangkah — tiap baris kode bikinmu makin jago! 🚀 Dashboard real-time yang bikin kamu paham progress belajar dengan visualisasi yang keren.",
     highlights: ["Progress Real-time", "Analitik Visual", "Badge Achievement"],
     icon: BarChart3,
     accent: {
@@ -142,7 +142,7 @@ const featuresData: FeatureCardConfig[] = [
       secondary: "#06B6D4", // Cyan
       spotlight: "rgba(99, 102, 241, 0.25)",
       shadow: "0 20px 50px rgba(99, 102, 241, 0.15)",
-      hoverShadow: "0 25px 60px rgba(99, 102, 241, 0.25)",
+      hoverShadow: "0 8px 30px rgba(99, 102, 241, 0.15)",
       emoji: "🔮",
       label: "Step 1",
     },
@@ -150,7 +150,7 @@ const featuresData: FeatureCardConfig[] = [
   {
     title: "Interactive Coding Lab",
     description:
-      "Latihan coding dengan editor powerful, test case otomatis, dan feedback instant. Coba langsung tanpa install apapun — coding di browser, hasilnya langsung keliatan!",
+      "Langsung praktik coding di browser. Dapat feedback instan kayak punya mentor pribadi! 💻 Nggak perlu install apapun — code, test, dan lihat hasilnya langsung.",
     highlights: ["Auto-grading", "Multi-language", "Instant Feedback"],
     icon: Code2,
     accent: {
@@ -158,7 +158,7 @@ const featuresData: FeatureCardConfig[] = [
       secondary: "#10B981", // Green
       spotlight: "rgba(6, 182, 212, 0.25)",
       shadow: "0 20px 50px rgba(6, 182, 212, 0.15)",
-      hoverShadow: "0 25px 60px rgba(6, 182, 212, 0.25)",
+      hoverShadow: "0 8px 30px rgba(6, 182, 212, 0.15)",
       emoji: "⚡",
       label: "Step 2",
     },
@@ -166,7 +166,7 @@ const featuresData: FeatureCardConfig[] = [
   {
     title: "Learning Path",
     description:
-      "Jelajahi materi dari dasar sampai mahir dengan alur yang terstruktur. Video tutorial, artikel interaktif, dan quiz — semua ada di satu tempat!",
+      "Belajar konsepnya, lalu coba bikin proyekmu sendiri. Belajar nggak harus ngebosenin! 🎯 Video, artikel, dan quiz interaktif yang bikin kamu paham lebih dalam.",
     highlights: ["Kurikulum Lengkap", "Video Tutorial", "Interactive Quiz"],
     icon: MonitorPlay,
     accent: {
@@ -174,7 +174,7 @@ const featuresData: FeatureCardConfig[] = [
       secondary: "#A855F7", // Purple
       spotlight: "rgba(236, 72, 153, 0.25)",
       shadow: "0 20px 50px rgba(236, 72, 153, 0.15)",
-      hoverShadow: "0 25px 60px rgba(236, 72, 153, 0.25)",
+      hoverShadow: "0 8px 30px rgba(236, 72, 153, 0.15)",
       emoji: "🧠",
       label: "Step 3",
     },
@@ -1216,14 +1216,14 @@ export default function HomePage() {
             {/* Section Header */}
             <div className="mx-auto max-w-3xl text-center" data-scroll-reveal>
               <span className="inline-flex items-center gap-2 rounded-full border border-[#6366F1]/20 bg-white/60 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-[#6366F1] backdrop-blur-sm dark:border-[#6366F1]/30 dark:bg-white/5 dark:text-[#A5B4FC]">
-                Learning Journey
+                ✨ Learning Journey
               </span>
               <h2
                 id="features-heading"
                 className="mt-6 font-['Clash_Display',_'Satoshi',_system-ui] text-4xl font-bold leading-tight text-slate-900 sm:text-5xl lg:text-6xl dark:text-white"
               >
                 Setiap siswa punya{" "}
-                <span className="bg-gradient-to-r from-[#6366F1] via-[#06B6D4] to-[#EC4899] bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[#6366F1] via-[#06B6D4] to-[#EC4899] bg-clip-text text-transparent animate-shimmer">
                   perjalanan belajar
                 </span>{" "}
                 sendiri
@@ -1232,6 +1232,17 @@ export default function HomePage() {
                 GEMA memandumu dari <span className="font-semibold text-[#6366F1] dark:text-[#A5B4FC]">dasar</span> sampai{" "}
                 <span className="font-semibold text-[#EC4899] dark:text-[#F9A8D4]">jago coding</span> lewat 3 tahap yang menyenangkan.
               </p>
+              
+              {/* Animated Progress Ribbon */}
+              <div className="mx-auto mt-8 h-1 w-32 overflow-hidden rounded-full bg-gradient-to-r from-[#6366F1]/20 via-[#06B6D4]/20 to-[#EC4899]/20">
+                <div 
+                  className="h-full w-1/3 rounded-full bg-gradient-to-r from-[#6366F1] via-[#06B6D4] to-[#EC4899]"
+                  style={{
+                    animation: 'slideRight 3s ease-in-out infinite',
+                    filter: 'blur(1px)',
+                  }}
+                />
+              </div>
             </div>
 
             {/* Learning Journey Timeline */}
@@ -1276,11 +1287,16 @@ export default function HomePage() {
                     key={feature.title}
                     data-feature-card
                     data-scroll-reveal
-                    className="group feature-card relative flex h-full flex-col overflow-hidden rounded-3xl border-2 bg-white/95 p-8 shadow-xl backdrop-blur-xl transition-all duration-500 hover:-translate-y-2 hover:scale-[1.02] will-change-transform dark:bg-slate-900/90 sm:p-10"
-                    style={cardStyle}
+                    className="group feature-card relative flex h-full flex-col overflow-hidden rounded-3xl border-2 bg-white/95 p-8 shadow-xl backdrop-blur-xl transition-all duration-500 hover:-translate-y-[6px] hover:scale-[1.02] will-change-transform focus-within:ring-4 focus-within:ring-offset-2 dark:bg-slate-900/90 sm:p-10"
+                    style={{
+                      ...cardStyle,
+                      '--hover-shadow': '0 8px 30px rgba(99, 102, 241, 0.15)',
+                    } as CSSProperties}
                     onPointerMove={handleFeaturePointerMove}
                     onPointerLeave={handleFeaturePointerLeave}
                     onPointerUp={handleFeaturePointerLeave}
+                    role="article"
+                    tabIndex={0}
                   >
                     {/* Glow Effect on Hover */}
                     <div 
@@ -1291,41 +1307,84 @@ export default function HomePage() {
                       aria-hidden="true"
                     />
 
-                    {/* Step Number Badge */}
+                    {/* Timeline Connector Dot + Badge */}
                     <div className="relative mb-6 flex items-center justify-between">
-                      <span 
-                        className="inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-bold uppercase tracking-wider text-white shadow-lg"
-                        style={{
-                          background: `linear-gradient(135deg, ${feature.accent.primary}, ${feature.accent.secondary})`,
-                        }}
-                      >
-                        {feature.accent.emoji}
-                        <span className="hidden sm:inline">{feature.accent.label}</span>
-                      </span>
-                      {/* Connection Indicator (Desktop Only) */}
-                      {!isLast && (
-                        <div className="absolute -right-4 top-1/2 hidden h-0.5 w-8 md:block" aria-hidden="true">
+                      <div className="flex items-center gap-3">
+                        {/* Glowing Timeline Dot */}
+                        <div 
+                          className="relative h-3 w-3 rounded-full transition-all duration-500 group-hover:scale-125"
+                          style={{
+                            background: `linear-gradient(135deg, ${feature.accent.primary}, ${feature.accent.secondary})`,
+                            boxShadow: `0 0 15px ${feature.accent.spotlight}`,
+                          }}
+                        >
                           <div 
-                            className="h-full"
+                            className="absolute inset-0 rounded-full animate-ping opacity-75"
                             style={{
-                              background: `linear-gradient(90deg, ${feature.accent.secondary}, ${featuresData[index + 1].accent.primary})`,
-                              opacity: 0.3,
+                              background: feature.accent.primary,
                             }}
                           />
+                        </div>
+                        
+                        {/* Step Badge */}
+                        <span 
+                          className="inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-bold uppercase tracking-wider text-white shadow-lg transition-all duration-300 group-hover:scale-105"
+                          style={{
+                            background: `linear-gradient(135deg, ${feature.accent.primary}, ${feature.accent.secondary})`,
+                          }}
+                        >
+                          {feature.accent.emoji}
+                          <span className="hidden sm:inline">{feature.accent.label}</span>
+                        </span>
+                      </div>
+                      
+                      {/* Enhanced Connection Line with Glow (Desktop Only) */}
+                      {!isLast && (
+                        <div className="absolute -right-4 top-1/2 hidden h-1 w-8 md:block" aria-hidden="true">
+                          <div 
+                            className="relative h-full overflow-hidden rounded-full"
+                            style={{
+                              background: `linear-gradient(90deg, ${feature.accent.secondary}, ${featuresData[index + 1].accent.primary})`,
+                              opacity: 0.4,
+                            }}
+                          >
+                            {/* Animated glow effect */}
+                            <div 
+                              className="absolute inset-0 h-full w-1/2 animate-[slideRight_2s_ease-in-out_infinite]"
+                              style={{
+                                background: `linear-gradient(90deg, transparent, ${feature.accent.secondary})`,
+                                filter: 'blur(2px)',
+                              }}
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
 
-                    {/* Icon */}
+                    {/* Icon with Glow Effect */}
                     <div className="relative mb-5">
                       <div
-                        className="inline-flex h-16 w-16 items-center justify-center rounded-2xl text-white shadow-2xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
+                        className="inline-flex h-16 w-16 items-center justify-center rounded-2xl text-white shadow-2xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-3"
+                        style={{
+                          background: `linear-gradient(135deg, ${feature.accent.primary}, ${feature.accent.secondary})`,
+                          filter: 'drop-shadow(0 0 0px transparent)',
+                        }}
+                      >
+                        <Icon 
+                          className="h-8 w-8 transition-all duration-500" 
+                          style={{
+                            filter: `drop-shadow(0 0 15px ${feature.accent.spotlight})`,
+                          }}
+                          aria-hidden="true" 
+                        />
+                      </div>
+                      {/* Pulsing glow ring on hover */}
+                      <div 
+                        className="absolute inset-0 -z-10 rounded-2xl opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-60"
                         style={{
                           background: `linear-gradient(135deg, ${feature.accent.primary}, ${feature.accent.secondary})`,
                         }}
-                      >
-                        <Icon className="h-8 w-8" aria-hidden="true" />
-                      </div>
+                      />
                     </div>
 
                     {/* Title */}
@@ -1338,34 +1397,89 @@ export default function HomePage() {
                       {feature.description}
                     </p>
 
-                    {/* Highlights Tags */}
+                    {/* Highlights Tags with Tooltips */}
                     <ul className="mt-6 flex flex-wrap gap-2">
-                      {feature.highlights.map((highlight) => (
-                        <li
-                          key={highlight}
-                          className="inline-flex items-center rounded-full border px-3 py-1.5 font-['Inter'] text-xs font-medium uppercase tracking-wide transition-colors"
-                          style={{
-                            borderColor: `${feature.accent.primary}30`,
-                            color: feature.accent.primary,
-                            backgroundColor: `${feature.accent.primary}10`,
-                          }}
-                        >
-                          {highlight}
-                        </li>
-                      ))}
+                      {feature.highlights.map((highlight, highlightIndex) => {
+                        const tooltips = {
+                          "Progress Real-time": "Lihat progres belajarmu update langsung setiap hari",
+                          "Analitik Visual": "Grafik dan chart yang mudah dipahami",
+                          "Badge Achievement": "Kumpulkan badge setiap selesai materi",
+                          "Auto-grading": "Kode kamu dinilai otomatis dalam hitungan detik",
+                          "Multi-language": "Python, JavaScript, HTML/CSS — pilih sesukamu",
+                          "Instant Feedback": "Error? Langsung tau dimana dan gimana benerin",
+                          "Kurikulum Lengkap": "Dari dasar sampai advanced, step by step",
+                          "Video Tutorial": "Penjelasan visual yang bikin kamu cepat paham",
+                          "Interactive Quiz": "Quiz yang seru buat ngecek pemahamanmu",
+                        };
+                        
+                        return (
+                          <li
+                            key={highlight}
+                            className="group/tag relative inline-flex items-center rounded-full border px-3 py-1.5 font-['Inter'] text-xs font-medium uppercase tracking-wide transition-all duration-300 hover:scale-105 cursor-help"
+                            style={{
+                              borderColor: `${feature.accent.primary}30`,
+                              color: feature.accent.primary,
+                              backgroundColor: `${feature.accent.primary}10`,
+                              animationDelay: `${(index * 0.2) + (highlightIndex * 0.1)}s`,
+                            }}
+                            title={tooltips[highlight as keyof typeof tooltips]}
+                          >
+                            {highlight}
+                            {/* Tooltip on hover */}
+                            <span 
+                              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/tag:block w-max max-w-xs rounded-lg px-3 py-2 text-xs font-normal normal-case tracking-normal text-white shadow-xl z-50 pointer-events-none"
+                              style={{
+                                background: `linear-gradient(135deg, ${feature.accent.primary}, ${feature.accent.secondary})`,
+                              }}
+                            >
+                              {tooltips[highlight as keyof typeof tooltips]}
+                              {/* Tooltip arrow */}
+                              <span 
+                                className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent"
+                                style={{
+                                  borderTopColor: feature.accent.primary,
+                                }}
+                              />
+                            </span>
+                          </li>
+                        );
+                      })}
                     </ul>
 
-                    {/* CTA Link */}
+                    {/* CTA Link with Enhanced Interaction */}
                     <div className="relative mt-auto pt-8">
                       <Link
                         href={isFirst ? "/student/dashboard" : isLast ? "/tutorial" : "/student/coding-lab"}
-                        className="inline-flex items-center gap-2 font-['Inter'] text-sm font-semibold transition-all duration-300 hover:gap-3"
-                        style={{ color: feature.accent.primary }}
+                        className="group/cta inline-flex items-center gap-2 font-['Inter'] text-sm font-semibold transition-all duration-300 hover:gap-3 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-lg px-4 py-2 -ml-4"
+                        style={{ 
+                          color: feature.accent.primary,
+                          '--ring-color': feature.accent.primary,
+                        } as CSSProperties}
                         aria-label={`${isFirst ? "Lihat Progresku" : isLast ? "Jelajahi Materi" : "Mulai Tantangan"}`}
                       >
                         {isFirst ? "Lihat Progresku" : isLast ? "Jelajahi Materi" : "Mulai Tantangan"}
-                        <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                        <ArrowRight 
+                          className="h-4 w-4 transition-transform duration-300 group-hover/cta:translate-x-1" 
+                          aria-hidden="true" 
+                        />
+                        {/* Underline animation */}
+                        <span 
+                          className="absolute bottom-1.5 left-4 right-4 h-0.5 origin-left scale-x-0 transition-transform duration-300 group-hover/cta:scale-x-100"
+                          style={{ backgroundColor: feature.accent.primary }}
+                        />
                       </Link>
+                      
+                      {/* Confetti celebration for last card on hover */}
+                      {isLast && (
+                        <div className="absolute -top-20 left-1/2 -translate-x-1/2 opacity-0 transition-opacity duration-500 group-hover:opacity-100 pointer-events-none">
+                          <dotlottie-wc 
+                            src="https://lottie.host/aaf47914-4948-429a-a847-7c4a6fc42756/BaVwXUiAmV.lottie"
+                            style={{ width: '150px', height: '150px' } as CSSProperties}
+                            autoplay
+                            loop
+                          />
+                        </div>
+                      )}
                     </div>
                   </article>
                 );

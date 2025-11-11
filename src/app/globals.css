@@ -1816,3 +1816,96 @@ a:focus-visible {
   box-shadow: var(--card-shadow-hover, 0 25px 60px rgba(0, 0, 0, 0.15));
 }
 
+
+/* Enhanced Journey Animations */
+@keyframes slideRight {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* Feature Card Enhanced Hover */
+.feature-card:hover {
+  box-shadow: var(--hover-shadow, 0 8px 30px rgba(99, 102, 241, 0.15));
+}
+
+.feature-card:hover .feature-card-icon {
+  animation: float 2s ease-in-out infinite;
+}
+
+/* Scroll Progress Indicator */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #6366F1, #06B6D4, #EC4899);
+  transform-origin: left;
+  z-index: 9999;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .feature-card {
+    animation: none;
+  }
+}
+
+/* Mobile Scroll Snap for Journey Cards */
+@media (max-width: 768px) {
+  .journey-scroll-container {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .journey-scroll-container > * {
+    scroll-snap-align: center;
+  }
+}
+
+/* Tooltip animations */
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 5px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.group\/tag:hover span[class*="tooltip"] {
+  animation: tooltipFadeIn 0.2s ease-out;
+}
+
