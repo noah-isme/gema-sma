@@ -31,7 +31,7 @@ export async function GET() {
       prisma.registration.count({
         where: { status: 'PENDING' }
       }),
-      prisma.activity.count({
+      prisma.event.count({
         where: { isActive: true }
       }),
       prisma.contact.count({
@@ -65,7 +65,7 @@ export async function GET() {
       prisma.student.count({
         where: { status: 'ACTIVE' }
       }),
-      prisma.activity.count({
+      prisma.event.count({
         where: { 
           isActive: true,
           createdAt: { gte: lastMonth }

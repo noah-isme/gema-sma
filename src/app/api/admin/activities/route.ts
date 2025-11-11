@@ -22,7 +22,7 @@ export async function GET() {
 
     await ensureActivityHomepageColumn();
 
-    const activities = await prisma.activity.findMany({
+    const activities = await prisma.event.findMany({
       orderBy: { createdAt: 'desc' }
     });
 
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const activity = await prisma.activity.create({
+    const activity = await prisma.event.create({
       data: {
         title,
         description,
@@ -105,7 +105,7 @@ export async function PATCH(request: NextRequest) {
       updateData.date = new Date(updateData.date);
     }
 
-    const updatedActivity = await prisma.activity.update({
+    const updatedActivity = await prisma.event.update({
       where: { id: id },
       data: updateData
     });
@@ -138,7 +138,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await prisma.activity.delete({
+    await prisma.event.delete({
       where: { id: id }
     });
 

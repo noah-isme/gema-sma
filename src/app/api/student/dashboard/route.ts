@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
       }),
 
       // Student activity count (generic activity tracking)
-      prisma.activity.count({
+      prisma.event.count({
         where: { 
           AND: [
             { description: { contains: studentId } },

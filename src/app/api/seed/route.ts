@@ -74,9 +74,9 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const existingActivities = await prisma.activity.count()
+    const existingActivities = await prisma.event.count()
     if (existingActivities === 0) {
-      await prisma.activity.createMany({
+      await prisma.event.createMany({
         data: [
           {
             title: 'Workshop Web Development',

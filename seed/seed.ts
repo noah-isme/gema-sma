@@ -97,9 +97,9 @@ async function main() {
 
   console.log('✅ Created 3 announcements')
 
-  // Create sample activities
-  console.log('📅 Creating activities...')
-  await prisma.activity.createMany({
+  // Create sample events
+  console.log('📅 Creating events...')
+  await prisma.event.createMany({
     data: [
       {
         title: 'Workshop Web Development',
@@ -136,7 +136,7 @@ async function main() {
     ]
   })
 
-  console.log('✅ Created 4 activities')
+  console.log('✅ Created 4 events')
 
   // Create sample gallery items
   console.log('🖼️ Creating gallery items...')

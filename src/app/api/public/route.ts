@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'activities':
-        const activities = await prisma.activity.findMany({
+        const activities = await prisma.event.findMany({
           where: {
             isActive: true,
             ...(highlightOnly ? { showOnHomepage: true } : {}),
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
         
       case 'stats':
         const totalRegistrations = await prisma.registration.count()
-        const totalActivities = await prisma.activity.count({ where: { isActive: true } })
+        const totalActivities = await prisma.event.count({ where: { isActive: true } })
         const totalAnnouncements = await prisma.announcement.count({ where: { isActive: true } })
         const totalGallery = await prisma.gallery.count({ where: { isActive: true } })
         
@@ -92,14 +92,14 @@ export async function GET(request: NextRequest) {
         
       default:
         // Return all data for homepage
-        const selectedActivities = await prisma.activity.findMany({
+        const selectedActivities = await prisma.event.findMany({
           where: { isActive: true, showOnHomepage: true },
           orderBy: { date: 'asc' },
           take: 3
         })
         const activitiesData = selectedActivities.length > 0
           ? selectedActivities
-          : await prisma.activity.findMany({
+          : await prisma.event.findMany({
               where: { isActive: true },
               orderBy: { date: 'asc' },
               take: 3
@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
 
         const statsData = {
           totalMembers: await prisma.registration.count(),
-          activeProjects: await prisma.activity.count({ where: { isActive: true } }),
+          activeProjects: await prisma.event.count({ where: { isActive: true } }),
           completedWorkshops: 45,
           achievements: 12
         }

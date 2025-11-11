@@ -94,7 +94,7 @@ interface Stats {
   totalAnnouncements: number;
   totalGalleryItems: number;
   totalAssignments: number;
-  totalAchievements: number;
+  completedAssignments: number;
   upcomingEventsToday: number;
   upcomingEventsThisWeek: number;
 }
@@ -349,8 +349,8 @@ class InteractiveBackgroundBoundary
   }
 }
 
-const formatStatValue = (value: number, suffix = "") =>
-  `${value.toLocaleString("id-ID")}${suffix}`;
+const formatStatValue = (value: number | undefined, suffix = "") =>
+  `${(value ?? 0).toLocaleString("id-ID")}${suffix}`;
 
 const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleDateString("id-ID", {
@@ -386,7 +386,7 @@ export default function HomePage() {
     totalAnnouncements: 0,
     totalGalleryItems: 0,
     totalAssignments: 0,
-    totalAchievements: 0,
+    completedAssignments: 0,
     upcomingEventsToday: 0,
     upcomingEventsThisWeek: 0,
   });
@@ -602,7 +602,7 @@ export default function HomePage() {
       },
       {
         label: "Assignment Selesai",
-        value: stats.totalAchievements,
+        value: stats.completedAssignments,
         suffix: "+",
         description: "tugas yang telah diselesaikan siswa dengan sukses.",
         icon: GraduationCap,
@@ -637,20 +637,21 @@ export default function HomePage() {
             hasTriggered = true;
             statsItems.forEach((stat, index) => {
               const counterElement = countersRef.current[index];
-              if (!counterElement) {
+              if (!counterElement || stat.value === undefined) {
                 return;
               }
               
               // Native JS counter animation
               const duration = 2000; // 2 seconds
               const steps = 60;
-              const increment = stat.value / steps;
+              const targetValue = stat.value ?? 0;
+              const increment = targetValue / steps;
               let currentValue = 0;
               let step = 0;
               
               const timer = setInterval(() => {
                 step++;
-                currentValue = Math.min(currentValue + increment, stat.value);
+                currentValue = Math.min(currentValue + increment, targetValue);
                 counterElement.textContent = formatStatValue(
                   Math.round(currentValue),
                   stat.suffix,
@@ -658,7 +659,7 @@ export default function HomePage() {
                 
                 if (step >= steps) {
                   clearInterval(timer);
-                  counterElement.textContent = formatStatValue(stat.value, stat.suffix);
+                  counterElement.textContent = formatStatValue(targetValue, stat.suffix);
                 }
               }, duration / steps);
             });

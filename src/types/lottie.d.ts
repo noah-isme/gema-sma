@@ -1,14 +1,18 @@
-declare namespace JSX {
-  interface IntrinsicElements {
-    'dotlottie-wc': React.DetailedHTMLProps<
-      React.HTMLAttributes<HTMLElement> & {
-        src?: string;
-        autoplay?: boolean;
-        loop?: boolean;
-        speed?: number;
-        mode?: 'normal' | 'bounce' | 'reverse';
-      },
-      HTMLElement
-    >;
+import 'react';
+
+declare module 'react' {
+  namespace JSX {
+    interface IntrinsicElements {
+      'dotlottie-wc': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement> & {
+          src?: string;
+          autoplay?: boolean;
+          loop?: boolean;
+          speed?: number;
+          mode?: 'normal' | 'bounce' | 'reverse';
+        },
+        HTMLElement
+      >;
+    }
   }
 }

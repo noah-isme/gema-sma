@@ -16,7 +16,7 @@ export async function GET() {
       totalAnnouncements,
       totalGalleryItems,
       totalAssignments,
-      completedSubmissions,
+      completedAssignmentsCount,
     ] = await Promise.all([
       // Total active students
       prisma.student.count(),
@@ -41,7 +41,7 @@ export async function GET() {
       }),
 
       // Total activities
-      prisma.activity.count(),
+      prisma.event.count(),
 
       // Total announcements
       prisma.announcement.count(),
@@ -52,10 +52,12 @@ export async function GET() {
       // Total assignments
       prisma.assignment.count(),
 
-      // Total completed submissions (for achievement stat)
-      prisma.submission.count({
+      // Count assignments that have at least one submission (completed assignments)
+      prisma.assignment.count({
         where: {
-          status: "COMPLETED",
+          submissions: {
+            some: {},
+          },
         },
       }),
     ]);
@@ -69,7 +71,7 @@ export async function GET() {
       totalAnnouncements,
       totalGalleryItems,
       totalAssignments,
-      totalAchievements: completedSubmissions, // Use completed submissions as achievements
+      completedAssignments: completedAssignmentsCount, // Assignments that have submissions
       upcomingEventsToday: 0, // Will be calculated separately
       upcomingEventsThisWeek: 0, // Will be calculated separately
     };
@@ -85,7 +87,7 @@ export async function GET() {
     endOfWeek.setDate(endOfWeek.getDate() + 7);
 
     const [upcomingEventsToday, upcomingEventsThisWeek] = await Promise.all([
-      prisma.activity.count({
+      prisma.event.count({
         where: {
           date: {
             gte: startOfToday.toISOString(),
@@ -94,7 +96,7 @@ export async function GET() {
         },
       }),
 
-      prisma.activity.count({
+      prisma.event.count({
         where: {
           date: {
             gte: startOfToday.toISOString(),
@@ -126,7 +128,7 @@ export async function GET() {
           totalAnnouncements: 0,
           totalGalleryItems: 0,
           totalAssignments: 0,
-          totalAchievements: 0,
+          completedAssignments: 0,
           upcomingEventsToday: 0,
           upcomingEventsThisWeek: 0,
         },

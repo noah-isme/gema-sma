@@ -78,6 +78,7 @@ model Module {
   // Relations
   course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
   lessons Lesson[]
+  competencyMaps CompetencyMap[]
 
   @@index([courseId])
   @@index([chapter])
@@ -124,6 +125,8 @@ model Activity {
   // Relations
   lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   quiz   Quiz?  @relation(fields: [quizId], references: [id])
+  competencyMaps CompetencyMap[]
+  grades Grade[]
 
   @@index([lessonId])
   @@index([type])
@@ -230,6 +233,7 @@ model Admin {
   hostedQuizSessions  QuizSession[]
   quizResponsesGraded QuizResponse[]     @relation("QuizResponseGrader")
   quizSessionEvents   QuizSessionEvent[]
+  grades              Grade[]
 
   @@map("admins")
 }
@@ -288,7 +292,7 @@ model Settings {
   @@map("settings")
 }
 
-model Activity {
+model Event {
   id             String   @id @default(cuid())
   title          String
   description    String?
@@ -301,7 +305,7 @@ model Activity {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  @@map("activities")
+  @@map("events")
 }
 
 model Gallery {
@@ -666,6 +670,8 @@ model Quiz {
   createdByAdmin Admin          @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   questions      QuizQuestion[]
   sessions       QuizSession[]
+  activities     Activity[]
+  competencyMaps CompetencyMap[]
 
   @@index([createdBy])
   @@index([isPublic])

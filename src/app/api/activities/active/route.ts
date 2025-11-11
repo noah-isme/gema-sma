@@ -7,7 +7,7 @@ export async function GET(_request: NextRequest) {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    const activeActivitiesCount = await prisma.activity.count({
+    const activeActivitiesCount = await prisma.event.count({
       where: {
         isActive: true,
         date: {
