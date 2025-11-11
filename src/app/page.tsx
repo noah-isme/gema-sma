@@ -1588,8 +1588,7 @@ export default function HomePage() {
                 
                 // Icon animation classes based on card type
                 const iconAnimationClass = index === 0 ? 'icon-pulse-glow' :
-                                          index === 1 ? 'icon-flip-book' :
-                                          index === 2 ? 'icon-electric-spark' : '';
+                                          index === 1 ? 'icon-flip-book' : '';
                 
                 return (
                   <article
@@ -1686,10 +1685,15 @@ export default function HomePage() {
                       </div>
                     )}
 
-                    {/* Celebration Effect for Last Card */}
+                    {/* Confetti Celebration for Last Card */}
                     {isLast && (
-                      <div className="absolute -top-16 right-4 opacity-0 transition-opacity duration-500 group-hover/stat:opacity-100 pointer-events-none">
-                        <span className="text-4xl animate-bounce">🎉</span>
+                      <div className="absolute -top-20 left-1/2 -translate-x-1/2 opacity-0 transition-opacity duration-500 group-hover/stat:opacity-100 pointer-events-none">
+                        <dotlottie-wc 
+                          src="https://lottie.host/aaf47914-4948-429a-a847-7c4a6fc42756/BaVwXUiAmV.lottie"
+                          style={{ width: '150px', height: '150px' } as CSSProperties}
+                          autoplay
+                          loop
+                        />
                       </div>
                     )}
                   </article>
@@ -1699,11 +1703,11 @@ export default function HomePage() {
 
             {/* CTA Section with Animated Entry */}
             <div className="cta-animate relative mt-16 text-center">
-              {/* Subtle Lottie Background Spark */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+              {/* Lottie Background Spark - More Visible */}
+              <div className="absolute inset-0 -z-10 flex items-center justify-center opacity-20 dark:opacity-15 pointer-events-none">
                 <dotlottie-wc 
                   src="https://lottie.host/4df3916f-b2ba-40ef-ad01-4da7298ca301/v7payaGOaf.lottie"
-                  style={{ width: '300px', height: '300px' } as CSSProperties}
+                  style={{ width: '400px', height: '400px' } as CSSProperties}
                   autoplay
                   loop
                 />
