@@ -1618,11 +1618,23 @@ export default function HomePage() {
                     <div className="relative mb-6 flex items-center gap-4">
                       <div
                         data-shimmer
-                        className={`stat-icon relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl shadow-2xl transition-all duration-500 group-hover/stat:scale-110 group-hover/stat:rotate-3 ${iconAnimationClass}`}
+                        className={`stat-icon relative flex h-16 w-16 items-center justify-center overflow-visible rounded-2xl shadow-2xl transition-all duration-500 group-hover/stat:scale-110 group-hover/stat:rotate-3 ${iconAnimationClass}`}
                         style={{
                           background: `linear-gradient(135deg, ${stat.color}, ${stat.color}CC)`,
                         }}
                       >
+                        {/* Confetti Background for Card 4 Only */}
+                        {isLast && (
+                          <div className="absolute inset-0 -z-10 flex items-center justify-center pointer-events-none">
+                            <dotlottie-wc 
+                              src="https://lottie.host/aaf47914-4948-429a-a847-7c4a6fc42756/BaVwXUiAmV.lottie"
+                              style={{ width: '120px', height: '120px', opacity: '0.6' } as CSSProperties}
+                              autoplay
+                              loop
+                            />
+                          </div>
+                        )}
+                        
                         <Icon className="h-8 w-8 text-white transition-transform duration-500 group-hover/stat:scale-110" aria-hidden="true" />
                         
                         {/* Pulsing ring */}
@@ -1685,17 +1697,7 @@ export default function HomePage() {
                       </div>
                     )}
 
-                    {/* Confetti Celebration for Last Card */}
-                    {isLast && (
-                      <div className="absolute -top-20 left-1/2 -translate-x-1/2 opacity-0 transition-opacity duration-500 group-hover/stat:opacity-100 pointer-events-none">
-                        <dotlottie-wc 
-                          src="https://lottie.host/aaf47914-4948-429a-a847-7c4a6fc42756/BaVwXUiAmV.lottie"
-                          style={{ width: '150px', height: '150px' } as CSSProperties}
-                          autoplay
-                          loop
-                        />
-                      </div>
-                    )}
+
                   </article>
                 );
               })}
