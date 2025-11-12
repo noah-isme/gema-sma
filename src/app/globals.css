@@ -2194,3 +2194,22 @@ a:focus-visible {
   }
 }
 
+
+/* Fix Card 1 Animation - Prevent Transform Conflicts */
+.icon-pulse-glow {
+  animation: pulse-glow-community 5s ease-in-out infinite;
+  will-change: transform, filter;
+}
+
+/* Fix Card 2 Animation - 3D Transform */
+.icon-flip-book {
+  animation: flip-book 6s ease-in-out infinite;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* Remove confetti-pop from CSS since we use Lottie */
+.icon-confetti-pop {
+  animation: none;
+}
+

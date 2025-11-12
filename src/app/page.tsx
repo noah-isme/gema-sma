@@ -1616,34 +1616,36 @@ export default function HomePage() {
 
                     {/* Icon with Glow, Shimmer & Personality Animation */}
                     <div className="relative mb-6 flex items-center gap-4">
-                      <div
-                        data-shimmer
-                        className={`stat-icon relative flex h-16 w-16 items-center justify-center overflow-visible rounded-2xl shadow-2xl transition-all duration-500 group-hover/stat:scale-110 group-hover/stat:rotate-3 ${iconAnimationClass}`}
-                        style={{
-                          background: `linear-gradient(135deg, ${stat.color}, ${stat.color}CC)`,
-                        }}
-                      >
-                        {/* Confetti Background for Card 4 Only */}
+                      <div className="relative">
+                        {/* Confetti Background for Card 4 - OUTSIDE icon container */}
                         {isLast && (
-                          <div className="absolute inset-0 -z-10 flex items-center justify-center pointer-events-none">
+                          <div className="absolute inset-0 -z-10 scale-150 pointer-events-none">
                             <dotlottie-wc 
                               src="https://lottie.host/aaf47914-4948-429a-a847-7c4a6fc42756/BaVwXUiAmV.lottie"
-                              style={{ width: '120px', height: '120px', opacity: '0.6' } as CSSProperties}
+                              style={{ width: '100%', height: '100%' } as CSSProperties}
                               autoplay
                               loop
                             />
                           </div>
                         )}
                         
-                        <Icon className="h-8 w-8 text-white transition-transform duration-500 group-hover/stat:scale-110" aria-hidden="true" />
-                        
-                        {/* Pulsing ring */}
-                        <div 
-                          className="absolute inset-0 -z-10 rounded-2xl opacity-0 blur-xl transition-opacity duration-500 group-hover/stat:opacity-60"
+                        <div
+                          data-shimmer
+                          className={`stat-icon relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl shadow-2xl transition-all duration-500 group-hover/stat:scale-110 group-hover/stat:rotate-3 ${iconAnimationClass}`}
                           style={{
-                            background: `linear-gradient(135deg, ${stat.color}, ${stat.color}80)`,
+                            background: `linear-gradient(135deg, ${stat.color}, ${stat.color}CC)`,
                           }}
-                        />
+                        >
+                          <Icon className="relative z-10 h-8 w-8 text-white transition-transform duration-500 group-hover/stat:scale-110" aria-hidden="true" />
+                          
+                          {/* Pulsing ring */}
+                          <div 
+                            className="absolute inset-0 -z-10 rounded-2xl opacity-0 blur-xl transition-opacity duration-500 group-hover/stat:opacity-60"
+                            style={{
+                              background: `linear-gradient(135deg, ${stat.color}, ${stat.color}80)`,
+                            }}
+                          />
+                        </div>
                       </div>
 
                       {/* Label with Growth Indicator */}
@@ -1658,8 +1660,8 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {/* Giant Gradient Number with Shimmer */}
-                    <div className="relative mb-4 overflow-hidden" data-shimmer>
+                    {/* Giant Gradient Number with Gradient Shine */}
+                    <div className="relative mb-4">
                       <p 
                         className={`stat-number-gradient font-['Clash_Display',_'Satoshi',_system-ui] text-6xl font-bold leading-none bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent sm:text-7xl`}
                       >
