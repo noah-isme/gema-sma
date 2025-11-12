@@ -276,6 +276,38 @@ const activityAccents: AccentPalette[] = [
 ];
 
 const announcementAccentMap: Record<string, AccentPalette> = {
+  info: {
+    primary: "#0ea5e9", // sky-500
+    secondary: "#22d3ee", // cyan-400
+    glow: "0 20px 45px rgba(14, 165, 233, 0.25)",
+    surface: "",
+    label: "Info",
+    emoji: "ℹ️",
+  },
+  warning: {
+    primary: "#fbbf24", // amber-400
+    secondary: "#f97316", // orange-500
+    glow: "0 20px 45px rgba(251, 191, 36, 0.3)",
+    surface: "",
+    label: "Penting",
+    emoji: "⚠️",
+  },
+  success: {
+    primary: "#10b981", // emerald-500
+    secondary: "#22c55e", // green-400
+    glow: "0 20px 45px rgba(16, 185, 129, 0.25)",
+    surface: "",
+    label: "Kabar Baik",
+    emoji: "✅",
+  },
+  highlight: {
+    primary: "#4f46e5", // indigo-600
+    secondary: "#8b5cf6", // violet-500
+    glow: "0 20px 45px rgba(79, 70, 229, 0.35)",
+    surface: "",
+    label: "Featured",
+    emoji: "✨",
+  },
   event: {
     primary: "#6C63FF",
     secondary: "#8F83FF",
@@ -285,20 +317,12 @@ const announcementAccentMap: Record<string, AccentPalette> = {
     emoji: "📅",
   },
   achievement: {
-    primary: "#FFB347",
-    secondary: "#FFCF86",
-    glow: "0 20px 45px rgba(255, 179, 71, 0.22)",
+    primary: "#10b981",
+    secondary: "#22c55e",
+    glow: "0 20px 45px rgba(16, 185, 129, 0.25)",
     surface: "",
     label: "Prestasi",
-    emoji: "🌟",
-  },
-  info: {
-    primary: "#5EEAD4",
-    secondary: "#63B8FF",
-    glow: "0 20px 45px rgba(94, 234, 212, 0.2)",
-    surface: "",
-    label: "Info",
-    emoji: "ℹ️",
+    emoji: "🏆",
   },
 };
 
@@ -325,6 +349,44 @@ const galleryAccents: AccentPalette[] = [
     label: "Eksplorasi",
   },
 ];
+
+const galleryCategoryMap: Record<string, { primary: string; secondary: string; mood: string; emoji: string; label: string }> = {
+  workshop: {
+    primary: "#06b6d4", // cyan-500
+    secondary: "#6366f1", // indigo-500
+    mood: "Fokus & Produktif",
+    emoji: "💻",
+    label: "Workshop",
+  },
+  prestasi: {
+    primary: "#fbbf24", // amber-400
+    secondary: "#f59e0b", // amber-500
+    mood: "Membanggakan",
+    emoji: "🏆",
+    label: "Prestasi",
+  },
+  sosial: {
+    primary: "#ec4899", // pink-500
+    secondary: "#f472b6", // pink-400
+    mood: "Kolaboratif",
+    emoji: "🤝",
+    label: "Sosial",
+  },
+  keagamaan: {
+    primary: "#10b981", // emerald-500
+    secondary: "#14b8a6", // teal-500
+    mood: "Reflektif",
+    emoji: "🕌",
+    label: "Keagamaan",
+  },
+  umum: {
+    primary: "#3b82f6", // blue-500
+    secondary: "#64748b", // slate-500
+    mood: "Kredibel",
+    emoji: "📸",
+    label: "Umum",
+  },
+};
 
 
 class InteractiveBackgroundBoundary
@@ -378,6 +440,7 @@ export default function HomePage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
+  const [activeActivityFilter, setActiveActivityFilter] = useState<string>("Semua");
   const [stats, setStats] = useState<Stats>({
     totalStudents: 0,
     totalTutorials: 0,
@@ -754,9 +817,136 @@ export default function HomePage() {
     [resolvedTheme],
   );
 
-  const featuredActivities = useMemo(() => activities.slice(0, 3), [activities]);
+  const featuredActivities = useMemo(() => {
+    const filtered = activeActivityFilter === "Semua" 
+      ? activities 
+      : activities.filter(a => a.category === activeActivityFilter);
+    return filtered.slice(0, 6);
+  }, [activities, activeActivityFilter]);
+  
+  const activityCategories = ["Semua", "Workshop", "Bootcamp", "Community", "Competition"];
+  
+  const categoryIcons: Record<string, string> = {
+    Semua: "🌟",
+    Workshop: "💻",
+    Bootcamp: "⚡",
+    Community: "🤝",
+    Competition: "🏆"
+  };
   const latestAnnouncements = useMemo(() => announcements.slice(0, 3), [announcements]);
   const highlightedGallery = useMemo(() => gallery.slice(0, 6), [gallery]);
+  
+  const [activeGalleryFilter, setActiveGalleryFilter] = useState<string>("Semua");
+  const galleryCategories = ["Semua", "Workshop", "Prestasi", "Sosial", "Keagamaan", "Umum"];
+  
+  const [gallerySortBy, setGallerySortBy] = useState<string>("terbaru");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  
+  const filteredGallery = useMemo(() => {
+    let filtered = gallery;
+    
+    // Apply category filter
+    if (activeGalleryFilter !== "Semua") {
+      filtered = filtered.filter(item => 
+        item.category?.toLowerCase() === activeGalleryFilter.toLowerCase()
+      );
+    }
+    
+    // Apply sorting
+    if (gallerySortBy === "terbaru") {
+      filtered = [...filtered].reverse(); // Assume array is already sorted by ID
+    } else if (gallerySortBy === "populer") {
+      // For now, keep original order (can add views field later)
+      filtered = [...filtered];
+    }
+    
+    return filtered;
+  }, [gallery, activeGalleryFilter, gallerySortBy]);
+  
+  const heroGallery = filteredGallery[0];
+  const gridGallery = filteredGallery.slice(1, 7); // 6 items for grid
+  
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+    document.body.style.overflow = 'hidden';
+  };
+  
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+    document.body.style.overflow = '';
+  };
+  
+  const nextPhoto = () => {
+    setLightboxIndex((prev) => (prev + 1) % filteredGallery.length);
+  };
+  
+  const prevPhoto = () => {
+    setLightboxIndex((prev) => (prev - 1 + filteredGallery.length) % filteredGallery.length);
+  };
+  
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!lightboxOpen) return;
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowRight') nextPhoto();
+      if (e.key === 'ArrowLeft') prevPhoto();
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxOpen, lightboxIndex, filteredGallery.length]);
+
+  const getTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffMs = now.getTime() - past.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) {
+      if (diffMins < 1) return { text: "🟢 Baru saja", color: "text-emerald-500", fresh: true };
+      return { text: `🟢 ${diffMins} menit lalu`, color: "text-emerald-500", fresh: true };
+    } else if (diffHours < 24) {
+      return { text: `🟢 ${diffHours} jam lalu`, color: "text-emerald-500", fresh: true };
+    } else if (diffDays < 7) {
+      return { text: `📅 ${diffDays} hari lalu`, color: "text-slate-500", fresh: false };
+    } else {
+      return { text: `📅 ${formatDate(dateString)}`, color: "text-slate-500", fresh: false };
+    }
+  };
+
+  const featuredAnnouncement = latestAnnouncements[0];
+  const secondaryAnnouncements = latestAnnouncements.slice(1);
+  
+  const [activeAnnouncementFilter, setActiveAnnouncementFilter] = useState<string>("Semua");
+  const announcementCategories = ["Semua", "Info", "Penting", "Kegiatan", "Prestasi"];
+  
+  const filteredLatestAnnouncements = useMemo(() => {
+    if (activeAnnouncementFilter === "Semua") return latestAnnouncements;
+    
+    const filterMap: Record<string, string[]> = {
+      "Info": ["info"],
+      "Penting": ["warning", "highlight"],
+      "Kegiatan": ["event"],
+      "Prestasi": ["achievement", "success"],
+    };
+    
+    const types = filterMap[activeAnnouncementFilter] || [];
+    return latestAnnouncements.filter(a => types.includes(a.type));
+  }, [latestAnnouncements, activeAnnouncementFilter]);
+  
+  const filteredFeaturedAnnouncement = filteredLatestAnnouncements[0];
+  const filteredSecondaryAnnouncements = filteredLatestAnnouncements.slice(1);
+  
+  const getUrgencyBadge = (type: string) => {
+    if (type === "warning") return { text: "‼️ Penting", show: true };
+    if (type === "highlight") return { text: "⚡ Segera Dibaca", show: true };
+    return { text: "", show: false };
+  };
 
   if (loading) {
     return (
@@ -1737,98 +1927,334 @@ export default function HomePage() {
         <section
           id="activities"
           ref={activitiesRef}
-          className="relative overflow-hidden bg-[#f2f5ff] py-20 transition-colors duration-500 sm:py-24 dark:bg-[#06081C]"
+          className="relative overflow-hidden bg-gradient-to-b from-indigo-50/50 via-sky-50/30 to-white py-20 transition-colors duration-500 sm:py-24 dark:from-[#06081C] dark:via-[#050513] dark:to-[#06081C]"
           aria-labelledby="activities-heading"
         >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(108,99,255,0.08),transparent_65%)] dark:bg-[radial-gradient(circle_at_top,_rgba(108,99,255,0.08),transparent_65%)]" />
-          <div className="relative mx-auto max-w-6xl px-6 sm:px-10">
-            <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
-              <div className="max-w-2xl" data-scroll-reveal>
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[#5EEAD4]/80">
-                  Kegiatan Komunitas
+          {/* Animated background blobs */}
+          <div className="absolute inset-0 -z-10 overflow-hidden">
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-indigo-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
+            <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-pink-400/15 to-violet-400/15 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '1s' }} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-gradient-to-r from-purple-400/10 to-blue-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '5s', animationDelay: '2s' }} />
+          </div>
+          
+          {/* Floating particles effect */}
+          <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+            {[...Array(12)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-1 h-1 bg-gradient-to-r from-cyan-400 to-indigo-400 rounded-full opacity-40"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animation: `float ${5 + Math.random() * 10}s ease-in-out infinite`,
+                  animationDelay: `${Math.random() * 5}s`,
+                }}
+              />
+            ))}
+          </div>
+          
+          <div className="relative mx-auto max-w-7xl px-6 sm:px-10">
+            {/* Header Section */}
+            <div className="text-center mb-12" data-scroll-reveal>
+              <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500/10 to-cyan-400/10 border border-indigo-500/20 backdrop-blur-sm">
+                <span className="text-2xl animate-bounce" style={{ animationDuration: '2s' }}>🎯</span>
+                <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                  Learning Playground
                 </span>
-                <h2
-                  id="activities-heading"
-                  className="mt-5 text-3xl font-semibold text-slate-900 dark:text-white sm:text-4xl"
-                >
-                  Agenda dan project yang membuat belajar semakin nyata
-                </h2>
-                <p className="mt-4 text-base leading-relaxed text-slate-600 dark:text-slate-200/80">
-                  Dari kelas mini, bootcamp, hingga showcase produk—semua dirancang untuk membangun
-                  budaya eksplorasi dan kolaborasi.
-                </p>
               </div>
-              <Link
-                href="/tutorial"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-[#5EEAD4] transition-colors hover:text-[#7cf1e2] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5EEAD4]"
+              <h2
+                id="activities-heading"
+                className="inline-block bg-gradient-to-r from-[#6C63FF] to-[#5EEAD4] bg-clip-text text-3xl font-extrabold text-transparent sm:text-5xl leading-tight"
               >
-                Lihat roadmap lengkap
-                <ChevronRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
+                Ayo Gabung di Kegiatan Seru!
+              </h2>
+              <p className="mx-auto mt-6 max-w-2xl text-base sm:text-lg text-slate-600 dark:text-slate-200/80 leading-relaxed">
+                Temukan kegiatan seru tiap pekan. Belajar bareng, bikin proyek, dan tunjukkan ide kamu 💡
+              </p>
+              
+              {/* Motivational microcopy */}
+              <p className="mx-auto mt-4 max-w-xl text-sm text-slate-500 dark:text-slate-400 italic">
+                &ldquo;Setiap proyek kecil di GEMA bisa jadi langkah besar buat karirmu 🚀&rdquo;
+              </p>
             </div>
 
-            <div className="mt-12 grid gap-6 md:grid-cols-3">
+            {/* Filter Tabs */}
+            <div className="flex flex-wrap justify-center gap-3 mb-12" data-scroll-reveal>
+              {activityCategories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setActiveActivityFilter(category)}
+                  className={`
+                    group relative px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300
+                    ${activeActivityFilter === category
+                      ? 'text-white scale-105 shadow-lg'
+                      : 'text-slate-600 dark:text-slate-300 hover:scale-105 bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10'
+                    }
+                  `}
+                  style={activeActivityFilter === category ? {
+                    background: category === "Semua" 
+                      ? 'linear-gradient(135deg, #6C63FF, #5EEAD4)'
+                      : category === "Workshop"
+                      ? 'linear-gradient(135deg, #6366f1, #06b6d4)'
+                      : category === "Bootcamp"
+                      ? 'linear-gradient(135deg, #fbbf24, #f97316)'
+                      : category === "Community"
+                      ? 'linear-gradient(135deg, #ec4899, #8b5cf6)'
+                      : 'linear-gradient(135deg, #3b82f6, #a855f7)',
+                  } : undefined}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className={activeActivityFilter === category ? 'animate-bounce' : ''} style={{ animationDuration: '1s' }}>
+                      {categoryIcons[category]}
+                    </span>
+                    {category}
+                  </span>
+                  
+                  {/* Underline animation */}
+                  {activeActivityFilter === category && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/50 rounded-full" />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-12 grid gap-8 md:grid-cols-3">
               {featuredActivities.length === 0 ? (
-                <p className="text-sm text-slate-600 dark:text-slate-200/70" data-scroll-reveal>
-                  Belum ada kegiatan terbaru. Tim kami sedang menyiapkan agenda berikutnya.
-                </p>
+                <div className="col-span-3 text-center py-12" data-scroll-reveal>
+                  <div className="text-6xl mb-4">🔍</div>
+                  <p className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">
+                    Belum ada kegiatan saat ini
+                  </p>
+                  <p className="text-sm text-slate-600 dark:text-slate-200/80">
+                    Pantau terus update terbaru atau gabung di komunitas!
+                  </p>
+                </div>
               ) : (
                 featuredActivities.map((activity, index) => {
                   const accent = activityAccents[index % activityAccents.length];
                   const activityStyle = {
                     borderColor: `${accent.primary}26`,
-                    boxShadow: accent.glow,
+                    boxShadow: `0 20px 40px -12px ${accent.primary}40`,
                   } as CSSProperties;
+                  
+                  const participants = activity.participants || 0;
+                  const capacity = activity.capacity || 100;
+                  const percentage = (participants / capacity) * 100;
+                  const isFull = participants >= capacity;
+                  
+                  let urgencyMessage = `👥 ${participants} siswa sudah bergabung!`;
+                  let urgencyColor = "text-blue-500";
+                  if (percentage >= 90) {
+                    urgencyMessage = "🔥 Slot hampir penuh!";
+                    urgencyColor = "text-red-500";
+                  } else if (percentage >= 70) {
+                    urgencyMessage = "⚡ Buruan daftar!";
+                    urgencyColor = "text-orange-500";
+                  }
 
                   return (
                     <article
                       key={activity.id}
                       data-scroll-reveal
-                      className="activities-card relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/20 bg-white/90 p-6 shadow-xl shadow-[#040410]/10 backdrop-blur-xl transition-transform duration-300 dark:border-white/10 dark:bg-white/5 dark:shadow-[#040410]/40"
+                      className="group activities-card relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/20 bg-white/90 shadow-xl backdrop-blur-xl transition-all duration-500 hover:-translate-y-2 dark:border-white/10 dark:bg-white/5"
                       style={activityStyle}
                       onPointerMove={prefersReducedMotion ? undefined : handleFeaturePointerMove}
                       onPointerLeave={prefersReducedMotion ? undefined : handleFeaturePointerLeave}
                       onPointerUp={prefersReducedMotion ? undefined : handleFeaturePointerLeave}
                     >
-                      <div className="absolute inset-x-6 top-6 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-60" aria-hidden="true" />
-                      <div className="flex items-center justify-between text-xs uppercase tracking-[0.25em] text-slate-500 dark:text-slate-200/70">
-                        <span className="inline-flex items-center gap-2">
-                          <span className="h-2 w-2 rounded-full" style={{ background: accent.primary }} />
-                          {activity.category}
-                        </span>
-                        <span className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-200/70">
-                          <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
-                          {formatDate(activity.date)}
-                        </span>
+                      {/* Gradient Banner with Icon */}
+                      <div 
+                        className="relative h-36 flex items-center justify-center overflow-hidden group-hover:h-40 transition-all duration-500"
+                        style={{
+                          background: `linear-gradient(135deg, ${accent.primary}dd, ${accent.secondary}dd)`,
+                        }}
+                      >
+                        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/5 transition-colors duration-500" />
+                        
+                        {/* Shine effect on hover */}
+                        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                        
+                        <div className="relative z-10">
+                          <Calendar className="w-16 h-16 text-white/90 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500" />
+                        </div>
+                        
+                        {/* Floating particles */}
+                        <div className="absolute inset-0 opacity-30 group-hover:opacity-50 transition-opacity duration-500">
+                          <div className="absolute top-4 left-4 w-2 h-2 bg-white rounded-full animate-pulse" />
+                          <div className="absolute bottom-6 right-8 w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.15s' }} />
+                          <div className="absolute top-1/2 right-1/4 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
+                          <div className="absolute top-8 right-12 w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.45s' }} />
+                        </div>
                       </div>
-                      <h3 className="mt-4 text-xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{activity.title}</h3>
-                      <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-200/75">
-                        {activity.description}
-                      </p>
-                      <dl className="mt-4 space-y-2 text-xs text-slate-500 dark:text-slate-200/60">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4" aria-hidden="true" style={{ color: accent.primary }} />
-                          <dd>{activity.location}</dd>
+
+                      {/* Card Content */}
+                      <div className="p-6 flex flex-col flex-1">
+                        {/* Category Badge */}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="group/badge inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-all duration-300 hover:scale-105 hover:shadow-md"
+                            style={{
+                              background: `linear-gradient(135deg, ${accent.primary}20, ${accent.secondary}10)`,
+                              color: accent.primary,
+                            }}
+                          >
+                            <span className="h-2 w-2 rounded-full group-hover/badge:animate-ping" style={{ background: accent.primary }} />
+                            <span className="h-2 w-2 rounded-full -ml-2" style={{ background: accent.primary }} />
+                            {activity.category}
+                          </div>
+                          {isFull && (
+                            <span className="text-xs font-semibold text-red-500 bg-red-50 dark:bg-red-500/10 px-2 py-1 rounded-full animate-pulse">
+                              PENUH
+                            </span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4" aria-hidden="true" style={{ color: accent.primary }} />
-                          <dd>
-                            {activity.participants}/{activity.capacity} peserta
-                          </dd>
+
+                        {/* Title */}
+                        <h3 className="text-xl sm:text-[22px] font-bold text-slate-900 dark:text-white leading-tight line-clamp-2 min-h-[3.5rem]">
+                          {activity.title}
+                        </h3>
+
+                        {/* Description */}
+                        <p className="mt-3 text-sm text-slate-600 dark:text-slate-200/80 line-clamp-2 leading-relaxed min-h-[2.5rem]">
+                          {activity.description}
+                        </p>
+
+                        {/* Meta Info */}
+                        <dl className="mt-4 space-y-2.5 text-xs text-slate-600 dark:text-slate-200/70">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4" aria-hidden="true" style={{ color: accent.primary }} />
+                            <dd>
+                              {formatDate(activity.date)} · {activity.time}
+                            </dd>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4" aria-hidden="true" style={{ color: accent.primary }} />
+                            <dd className="truncate">{activity.location}</dd>
+                          </div>
+                        </dl>
+
+                        {/* Participants Progress */}
+                        <div className="mt-4 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <Users className="h-3.5 w-3.5 text-slate-500" />
+                              <span className="font-medium text-slate-700 dark:text-slate-300">
+                                {participants}/{capacity} peserta
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-semibold text-slate-500">
+                              {Math.round(percentage)}%
+                            </span>
+                          </div>
+                          <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div
+                              className="h-full rounded-full transition-all duration-1000 ease-out"
+                              style={{
+                                width: `${Math.min(percentage, 100)}%`,
+                                background: `linear-gradient(90deg, ${accent.primary}, ${accent.secondary})`,
+                              }}
+                              aria-label={`${Math.round(percentage)}% terisi`}
+                            />
+                          </div>
                         </div>
-                      </dl>
-                      <div className="mt-auto flex items-center justify-between pt-6 text-xs text-[#5EEAD4]/80">
-                        <span className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-200/70">
-                          <span className="rounded-full bg-white/50 px-2 py-1 text-[0.55rem] font-semibold uppercase tracking-[0.35em] dark:bg-white/10">
-                            {accent.label}
-                          </span>
-                        </span>
-                        <span className="text-slate-500 dark:text-slate-200/70">{activity.time}</span>
+
+                        {/* Urgency Message */}
+                        <div className={`mt-3 text-xs font-semibold ${urgencyColor} flex items-center gap-1`}>
+                          <span>{urgencyMessage}</span>
+                        </div>
+
+                        {/* CTA Button */}
+                        <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <Link
+                            href={`/activities/${activity.id}`}
+                            className={`
+                              group/cta relative overflow-hidden block w-full text-center py-3 rounded-xl font-semibold text-sm text-white
+                              transform transition-all duration-300
+                              hover:shadow-xl hover:scale-[1.02]
+                              ${isFull ? 'opacity-50 cursor-not-allowed bg-slate-400' : ''}
+                            `}
+                            style={!isFull ? {
+                              background: `linear-gradient(135deg, ${accent.primary}, ${accent.secondary})`,
+                            } : undefined}
+                            onClick={isFull ? (e) => e.preventDefault() : undefined}
+                          >
+                            <span className="relative z-10 flex items-center justify-center gap-2">
+                              {isFull ? "Sudah Penuh" : "Ikuti Sekarang"}
+                              {!isFull && <span className="group-hover/cta:translate-x-1 transition-transform duration-300">→</span>}
+                            </span>
+                            
+                            {/* Shine effect on button hover */}
+                            {!isFull && (
+                              <div className="absolute inset-0 -translate-x-full group-hover/cta:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                            )}
+                          </Link>
+                        </div>
+                      </div>
+
+                      {/* Glow effect on hover */}
+                      <div 
+                        className="absolute -inset-1 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none -z-10 blur-2xl"
+                        style={{
+                          background: `linear-gradient(135deg, ${accent.primary}80, ${accent.secondary}80)`,
+                        }}
+                      />
+                      
+                      {/* Border shine effect */}
+                      <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                        <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                       </div>
                     </article>
                   );
                 })
               )}
+            </div>
+
+            {/* Stats / Progress Gamification (if user has participated) */}
+            {activities.length > 0 && (
+              <div className="mt-12 mx-auto max-w-2xl" data-scroll-reveal>
+                <div className="rounded-2xl bg-gradient-to-r from-indigo-500/5 via-purple-500/5 to-pink-500/5 border border-indigo-500/10 p-6 backdrop-blur-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        🎉 Komunitas GEMA Aktif!
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        {activities.length} event tersedia bulan ini
+                      </p>
+                    </div>
+                    <div className="flex -space-x-2">
+                      {[...Array(3)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-800 bg-gradient-to-br from-indigo-400 to-cyan-400 flex items-center justify-center text-white text-xs font-bold"
+                        >
+                          {String.fromCharCode(65 + i)}
+                        </div>
+                      ))}
+                      <div className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-800 bg-gradient-to-br from-pink-400 to-violet-400 flex items-center justify-center text-white text-xs font-bold">
+                        +{Math.max(0, activities.reduce((sum, a) => sum + (a.participants || 0), 0) - 3)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Bottom CTA - Join Community */}
+            <div className="mt-16 rounded-3xl bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 p-8 sm:p-12 text-center border border-indigo-500/20" data-scroll-reveal>
+              <div className="text-4xl mb-4">🚀</div>
+              <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-3">
+                Belum Gabung di GEMA?
+              </h3>
+              <p className="text-slate-600 dark:text-slate-200/80 mb-6 max-w-xl mx-auto">
+                Daftar sekarang dan dapatkan akses ke semua kegiatan, workshop eksklusif, dan komunitas developer muda!
+              </p>
+              <Link
+                href="/student/register"
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-violet-500 px-8 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-pink-500/50 hover:scale-105"
+              >
+                <Users className="w-4 h-4" />
+                Daftar Jadi Member GEMA
+              </Link>
             </div>
           </div>
         </section>
@@ -1836,168 +2262,920 @@ export default function HomePage() {
         <section
           id="announcements"
           ref={announcementsRef}
-          className="relative overflow-hidden bg-[#f7f8ff] py-20 transition-colors duration-500 sm:py-24 dark:bg-[#050513]"
+          className="relative overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50/50 py-20 transition-colors duration-500 sm:py-24 dark:from-[#050513] dark:via-[#06081C] dark:to-[#050513]"
           aria-labelledby="announcements-heading"
         >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(94,234,212,0.12),transparent_60%)] dark:bg-[radial-gradient(circle_at_bottom,_rgba(94,234,212,0.1),transparent_60%)]" />
-          <div className="relative mx-auto max-w-6xl px-6 sm:px-10">
-            <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
-              <div className="max-w-2xl" data-scroll-reveal>
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[#5EEAD4]/80">
-                  Pengumuman
+          {/* Animated background effects */}
+          <div className="absolute inset-0 -z-10 overflow-hidden">
+            <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-gradient-to-tl from-cyan-400/15 to-emerald-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '5s' }} />
+            <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-gradient-to-br from-indigo-400/10 to-violet-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '7s', animationDelay: '1s' }} />
+          </div>
+          
+          <div className="relative mx-auto max-w-7xl px-6 sm:px-10">
+            {/* Header Section */}
+            <div className="text-center mb-12" data-scroll-reveal>
+              <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-500/10 to-emerald-400/10 border border-cyan-500/20 backdrop-blur-sm">
+                <span className="text-2xl animate-pulse" style={{ animationDuration: '2s' }}>📢</span>
+                <span className="text-sm font-semibold text-cyan-600 dark:text-cyan-400">
+                  Update Terkini
                 </span>
-                <h2
-                  id="announcements-heading"
-                  className="mt-5 text-3xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white sm:text-4xl"
-                >
-                  Update terbaru dari tim GEMA
-                </h2>
-                <p className="mt-4 text-base leading-relaxed text-slate-600 dark:text-slate-200/80">
-                  Informasi kegiatan, prestasi siswa, dan highlight program dirangkum agar kamu tetap
-                  terhubung dengan ekosistem komunitas.
-                </p>
               </div>
-              <Link
-                href="/contact"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-[#5EEAD4] transition-colors hover:text-[#7cf1e2] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5EEAD4]"
+              <h2
+                id="announcements-heading"
+                className="inline-block bg-gradient-to-r from-cyan-600 to-emerald-500 bg-clip-text text-3xl font-extrabold text-transparent sm:text-5xl leading-tight"
               >
-                Kirim pertanyaan
-                <Megaphone className="h-4 w-4" aria-hidden="true" />
-              </Link>
+                Kabar Terbaru dari Tim GEMA 💡
+              </h2>
+              <p className="mx-auto mt-6 max-w-2xl text-base sm:text-lg text-slate-600 dark:text-slate-200/80 leading-relaxed">
+                Simak kegiatan terbaru, pengumuman penting, dan prestasi keren dari komunitas GEMA!
+              </p>
+              
+              {/* Motivational quote */}
+              <p className="mx-auto mt-4 max-w-xl text-sm text-slate-500 dark:text-slate-400 italic">
+                Sudah lihat update minggu ini? 💻 Klik untuk tahu selengkapnya!
+              </p>
             </div>
 
-            <div className="mt-12 grid gap-6 md:grid-cols-3">
-              {latestAnnouncements.length === 0 ? (
-                <p className="text-sm text-slate-600 dark:text-slate-200/70" data-scroll-reveal>
-                  Belum ada pengumuman baru. Pantau terus laman ini untuk informasi selanjutnya.
-                </p>
-              ) : (
-                latestAnnouncements.map((announcement) => {
-                  const accent = announcementAccentMap[announcement.type] ?? {
-                    primary: "#6C63FF",
-                    secondary: "#5EEAD4",
-                    glow: "0 20px 45px rgba(108, 99, 255, 0.2)",
-                    surface: "",
-                    label: "Update",
-                    emoji: "✨",
+            {/* Filter Tabs */}
+            {latestAnnouncements.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-3 mb-12" data-scroll-reveal>
+                {announcementCategories.map((category) => {
+                  const categoryIcons: Record<string, string> = {
+                    "Semua": "🌟",
+                    "Info": "ℹ️",
+                    "Penting": "⚠️",
+                    "Kegiatan": "📅",
+                    "Prestasi": "🏆",
                   };
-
-                  const announcementStyle = {
-                    borderColor: `${accent.primary}26`,
-                    boxShadow: accent.glow,
-                    "--announcement-glow": accent.glow,
-                  } as CSSProperties;
-
+                  
                   return (
-                    <article
-                      key={announcement.id}
-                      data-scroll-reveal
-                      className="announcement-card relative flex h-full flex-col gap-4 overflow-hidden rounded-3xl border border-white/20 bg-white/90 p-6 shadow-xl shadow-[#040410]/10 backdrop-blur-xl transition-colors duration-500 dark:border-white/10 dark:bg-white/5 dark:shadow-[#040410]/40"
-                      style={announcementStyle}
+                    <button
+                      key={category}
+                      onClick={() => setActiveAnnouncementFilter(category)}
+                      className={`
+                        group relative px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300
+                        ${activeAnnouncementFilter === category
+                          ? 'text-white scale-105 shadow-lg'
+                          : 'text-slate-600 dark:text-slate-300 hover:scale-105 bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10'
+                        }
+                      `}
+                      style={activeAnnouncementFilter === category ? {
+                        background: category === "Semua"
+                          ? 'linear-gradient(135deg, #0ea5e9, #10b981)'
+                          : category === "Info"
+                          ? 'linear-gradient(135deg, #0ea5e9, #22d3ee)'
+                          : category === "Penting"
+                          ? 'linear-gradient(135deg, #fbbf24, #f97316)'
+                          : category === "Kegiatan"
+                          ? 'linear-gradient(135deg, #6C63FF, #8F83FF)'
+                          : 'linear-gradient(135deg, #10b981, #22c55e)',
+                      } : undefined}
+                      aria-pressed={activeAnnouncementFilter === category}
+                      aria-label={`Filter ${category}`}
                     >
-                      <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-[#5EEAD4]/80">
-                        <span>
-                          {accent.emoji} {announcement.type}
+                      <span className="flex items-center gap-2">
+                        <span className={activeAnnouncementFilter === category ? 'animate-bounce' : ''} style={{ animationDuration: '1s' }}>
+                          {categoryIcons[category]}
                         </span>
-                        <time
-                          dateTime={announcement.publishedAt}
-                          className="text-[11px] text-slate-500 dark:text-slate-200/70"
-                        >
-                          {formatDate(announcement.publishedAt)}
-                        </time>
-                      </div>
-                      <span data-label className="text-[#5EEAD4]/80">
-                        {accent.label}
+                        {category}
                       </span>
-                      <h3 className="text-lg font-semibold text-slate-900 transition-colors duration-500 dark:text-white">{announcement.title}</h3>
-                      <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-200/75">
-                        {announcement.content}
-                      </p>
-                    </article>
+                    </button>
                   );
-                })
-              )}
-            </div>
+                })}
+              </div>
+            )}
+
+            {filteredLatestAnnouncements.length === 0 ? (
+              <div className="col-span-3 text-center py-16" data-scroll-reveal>
+                <div className="text-7xl mb-6 animate-bounce" style={{ animationDuration: '3s' }}>📭</div>
+                <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-200 mb-2">
+                  Belum ada pengumuman {activeAnnouncementFilter !== "Semua" ? activeAnnouncementFilter : ""} saat ini
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-slate-200/80 mb-6">
+                  Pantau terus halaman ini untuk update dari tim GEMA atau coba filter lain
+                </p>
+                <Link
+                  href="/contact"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-semibold text-sm shadow-lg hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-105"
+                >
+                  <Megaphone className="w-4 h-4" />
+                  Kirim Pertanyaan
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {/* Hero Announcement */}
+                {filteredFeaturedAnnouncement && (
+                  <article
+                    data-scroll-reveal
+                    className="group relative overflow-hidden rounded-3xl border border-white/20 bg-white/90 shadow-2xl backdrop-blur-xl transition-all duration-500 hover:-translate-y-2 dark:border-white/10 dark:bg-white/5"
+                    style={{
+                      borderColor: `${announcementAccentMap[filteredFeaturedAnnouncement.type]?.primary || "#6C63FF"}40`,
+                      boxShadow: `0 25px 50px -12px ${announcementAccentMap[filteredFeaturedAnnouncement.type]?.primary || "#6C63FF"}30`,
+                    }}
+                  >
+                    {/* Accent Stripe */}
+                    <div 
+                      className="absolute left-0 top-0 bottom-0 w-1 group-hover:w-1.5 transition-all duration-300"
+                      style={{
+                        background: `linear-gradient(180deg, ${announcementAccentMap[filteredFeaturedAnnouncement.type]?.primary || "#6C63FF"}, ${announcementAccentMap[filteredFeaturedAnnouncement.type]?.secondary || "#5EEAD4"})`,
+                      }}
+                    />
+                    
+                    {/* Background Gradient */}
+                    <div 
+                      className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity duration-500"
+                      style={{
+                        background: `linear-gradient(135deg, ${announcementAccentMap[filteredFeaturedAnnouncement.type]?.primary || "#6C63FF"}20, transparent 60%)`,
+                      }}
+                    />
+                    
+                    {/* Shine Effect */}
+                    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                    
+                    <div className="relative p-8 sm:p-10">
+                      {/* Header */}
+                      <div className="flex items-start justify-between gap-4 mb-6">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm uppercase tracking-wider"
+                            style={{
+                              background: `linear-gradient(135deg, ${announcementAccentMap[filteredFeaturedAnnouncement.type]?.primary || "#6C63FF"}15, ${announcementAccentMap[filteredFeaturedAnnouncement.type]?.secondary || "#5EEAD4"}10)`,
+                              color: announcementAccentMap[filteredFeaturedAnnouncement.type]?.primary || "#6C63FF",
+                            }}
+                          >
+                            <span className="text-xl">{announcementAccentMap[filteredFeaturedAnnouncement.type]?.emoji || "✨"}</span>
+                            <span>FEATURED UPDATE</span>
+                          </div>
+                          
+                          {/* Urgency Badge */}
+                          {getUrgencyBadge(filteredFeaturedAnnouncement.type).show && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-xs font-bold animate-pulse">
+                              {getUrgencyBadge(filteredFeaturedAnnouncement.type).text}
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className={`flex items-center gap-1.5 text-xs font-semibold ${getTimeAgo(filteredFeaturedAnnouncement.publishedAt).color}`}>
+                          {getTimeAgo(filteredFeaturedAnnouncement.publishedAt).fresh && (
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                          )}
+                          <time dateTime={filteredFeaturedAnnouncement.publishedAt}>
+                            {getTimeAgo(filteredFeaturedAnnouncement.publishedAt).text}
+                          </time>
+                        </div>
+                      </div>
+                      
+                      {/* Title */}
+                      <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white leading-tight mb-4">
+                        {filteredFeaturedAnnouncement.title}
+                      </h3>
+                      
+                      {/* Content Preview */}
+                      <p className="text-base text-slate-600 dark:text-slate-200/80 leading-relaxed mb-6 italic">
+                        &ldquo;{filteredFeaturedAnnouncement.content.substring(0, 150)}{filteredFeaturedAnnouncement.content.length > 150 ? "..." : ""}&rdquo;
+                      </p>
+                      
+                      {/* Meta Footer */}
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mb-6">
+                        Diposting oleh: <span className="font-semibold">Tim GEMA</span>
+                      </div>
+                      
+                      {/* CTAs */}
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          className="group/cta inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-white transition-all duration-300 hover:shadow-lg hover:scale-105 relative overflow-hidden"
+                          style={{
+                            background: `linear-gradient(135deg, ${announcementAccentMap[filteredFeaturedAnnouncement.type]?.primary || "#6C63FF"}, ${announcementAccentMap[filteredFeaturedAnnouncement.type]?.secondary || "#5EEAD4"})`,
+                          }}
+                        >
+                          <span className="relative z-10">Baca Selengkapnya</span>
+                          <ChevronRight className="w-4 h-4 relative z-10 group-hover/cta:translate-x-1 transition-transform duration-300" />
+                          <div className="absolute inset-0 -translate-x-full group-hover/cta:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                        </button>
+                        
+                        <Link
+                          href="/contact"
+                          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm border-2 transition-all duration-300 hover:scale-105"
+                          style={{
+                            borderColor: announcementAccentMap[filteredFeaturedAnnouncement.type]?.primary || "#6C63FF",
+                            color: announcementAccentMap[filteredFeaturedAnnouncement.type]?.primary || "#6C63FF",
+                          }}
+                        >
+                          <Megaphone className="w-4 h-4" />
+                          Hubungi Tim
+                        </Link>
+                      </div>
+                    </div>
+                    
+                    {/* Glow effect */}
+                    <div 
+                      className="absolute -inset-1 opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10 blur-2xl"
+                      style={{
+                        background: `linear-gradient(135deg, ${announcementAccentMap[filteredFeaturedAnnouncement.type]?.primary || "#6C63FF"}60, ${announcementAccentMap[filteredFeaturedAnnouncement.type]?.secondary || "#5EEAD4"}60)`,
+                      }}
+                    />
+                  </article>
+                )}
+                
+                {/* Secondary Announcements */}
+                {filteredSecondaryAnnouncements.length > 0 && (
+                  <div>
+                    {/* Desktop/Tablet Grid */}
+                    <div className="hidden sm:grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      {filteredSecondaryAnnouncements.map((announcement, index) => {
+                      const accent = announcementAccentMap[announcement.type] ?? {
+                        primary: "#6C63FF",
+                        secondary: "#5EEAD4",
+                        glow: "0 20px 45px rgba(108, 99, 255, 0.2)",
+                        surface: "",
+                        label: "Update",
+                        emoji: "✨",
+                      };
+                      const timeAgo = getTimeAgo(announcement.publishedAt);
+                      const urgency = getUrgencyBadge(announcement.type);
+
+                      return (
+                        <article
+                          key={announcement.id}
+                          data-scroll-reveal
+                          className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/20 bg-white/90 p-6 shadow-xl backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 dark:border-white/10 dark:bg-white/5"
+                          style={{
+                            borderColor: `${accent.primary}30`,
+                            boxShadow: `0 15px 35px -10px ${accent.primary}25`,
+                          }}
+                        >
+                          {/* Accent Stripe */}
+                          <div 
+                            className="absolute left-0 top-0 bottom-0 w-1 group-hover:w-1.5 transition-all duration-300"
+                            style={{
+                              background: `linear-gradient(180deg, ${accent.primary}, ${accent.secondary})`,
+                            }}
+                          />
+                          
+                          {/* Urgency Badge - Top Right */}
+                          {urgency.show && (
+                            <div className="absolute top-4 right-4 px-2 py-1 rounded-md bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-[10px] font-bold animate-pulse">
+                              {urgency.text}
+                            </div>
+                          )}
+                          
+                          {/* Header */}
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider group-hover:scale-105 transition-transform duration-300"
+                              style={{
+                                background: `linear-gradient(135deg, ${accent.primary}20, ${accent.secondary}10)`,
+                                color: accent.primary,
+                              }}
+                            >
+                              <span className="text-base group-hover:animate-bounce">{accent.emoji}</span>
+                              <span>{accent.label}</span>
+                            </div>
+                            
+                            <time className={`text-xs font-semibold ${timeAgo.color}`} dateTime={announcement.publishedAt}>
+                              {timeAgo.text}
+                            </time>
+                          </div>
+                          
+                          {/* Title */}
+                          <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight mb-3 line-clamp-2">
+                            {announcement.title}
+                          </h3>
+                          
+                          {/* Content */}
+                          <p className="text-sm text-slate-600 dark:text-slate-200/80 leading-relaxed mb-3 line-clamp-3 flex-1">
+                            {announcement.content}
+                          </p>
+                          
+                          {/* Meta Footer */}
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500 mb-4">
+                            Diposting oleh: Tim GEMA
+                          </div>
+                          
+                          {/* CTA */}
+                          <button
+                            className="group/btn inline-flex items-center gap-2 text-sm font-semibold transition-all duration-300"
+                            style={{ color: accent.primary }}
+                            aria-label={`Lihat detail ${announcement.title}`}
+                          >
+                            <span>Lihat Detail</span>
+                            <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-300" />
+                          </button>
+                          
+                          {/* Glow on hover */}
+                          <div 
+                            className="absolute -inset-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10 blur-xl"
+                            style={{
+                              background: `linear-gradient(135deg, ${accent.primary}40, ${accent.secondary}40)`,
+                            }}
+                          />
+                        </article>
+                      );
+                    })}
+                    </div>
+                    
+                    {/* Mobile Carousel with Snap Scroll */}
+                    <div className="sm:hidden relative">
+                      <div 
+                        className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide"
+                        style={{
+                          scrollbarWidth: 'none',
+                          msOverflowStyle: 'none',
+                        }}
+                      >
+                        {filteredSecondaryAnnouncements.map((announcement, index) => {
+                          const accent = announcementAccentMap[announcement.type] ?? {
+                            primary: "#6C63FF",
+                            secondary: "#5EEAD4",
+                            glow: "0 20px 45px rgba(108, 99, 255, 0.2)",
+                            surface: "",
+                            label: "Update",
+                            emoji: "✨",
+                          };
+                          const timeAgo = getTimeAgo(announcement.publishedAt);
+                          const urgency = getUrgencyBadge(announcement.type);
+
+                          return (
+                            <article
+                              key={announcement.id}
+                              className="group relative flex-none w-[85%] flex flex-col overflow-hidden rounded-2xl border border-white/20 bg-white/90 p-6 shadow-xl backdrop-blur-xl snap-center"
+                              style={{
+                                borderColor: `${accent.primary}30`,
+                                boxShadow: `0 15px 35px -10px ${accent.primary}25`,
+                              }}
+                            >
+                              {/* Accent Stripe */}
+                              <div 
+                                className="absolute left-0 top-0 bottom-0 w-1"
+                                style={{
+                                  background: `linear-gradient(180deg, ${accent.primary}, ${accent.secondary})`,
+                                }}
+                              />
+                              
+                              {/* Urgency Badge */}
+                              {urgency.show && (
+                                <div className="absolute top-4 right-4 px-2 py-1 rounded-md bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-[10px] font-bold animate-pulse">
+                                  {urgency.text}
+                                </div>
+                              )}
+                              
+                              {/* Header */}
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider"
+                                  style={{
+                                    background: `linear-gradient(135deg, ${accent.primary}20, ${accent.secondary}10)`,
+                                    color: accent.primary,
+                                  }}
+                                >
+                                  <span className="text-base">{accent.emoji}</span>
+                                  <span>{accent.label}</span>
+                                </div>
+                                
+                                <time className={`text-xs font-semibold ${timeAgo.color}`} dateTime={announcement.publishedAt}>
+                                  {timeAgo.text}
+                                </time>
+                              </div>
+                              
+                              {/* Title */}
+                              <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight mb-3">
+                                {announcement.title}
+                              </h3>
+                              
+                              {/* Content */}
+                              <p className="text-sm text-slate-600 dark:text-slate-200/80 leading-relaxed mb-3 flex-1 line-clamp-4">
+                                {announcement.content}
+                              </p>
+                              
+                              {/* Meta */}
+                              <div className="text-[11px] text-slate-400 dark:text-slate-500 mb-4">
+                                Diposting oleh: Tim GEMA
+                              </div>
+                              
+                              {/* CTA */}
+                              <button
+                                className="inline-flex items-center gap-2 text-sm font-semibold"
+                                style={{ color: accent.primary }}
+                              >
+                                <span>Lihat Detail</span>
+                                <ChevronRight className="w-4 h-4" />
+                              </button>
+                            </article>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Scroll Indicators */}
+                      <div className="flex justify-center gap-2 mt-4">
+                        {filteredSecondaryAnnouncements.map((_, i) => (
+                          <div
+                            key={i}
+                            className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600"
+                            aria-label={`Slide ${i + 1}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* "Kirim Pertanyaan" CTA - Prominent Position */}
+            {filteredLatestAnnouncements.length > 0 && (
+              <div className="mt-12 grid gap-6 sm:grid-cols-2 items-center" data-scroll-reveal>
+                <div className="text-center sm:text-left">
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+                    Punya Pertanyaan? 💬
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-200/80">
+                    Tim GEMA siap membantu menjawab pertanyaan kamu seputar kegiatan, program, atau apapun!
+                  </p>
+                </div>
+                <div className="text-center sm:text-right">
+                  <Link
+                    href="/contact"
+                    className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-pink-500 to-violet-500 text-white font-bold text-base shadow-2xl transition-all duration-300 hover:shadow-pink-500/50 hover:scale-105"
+                  >
+                    <Megaphone className="w-5 h-5" />
+                    Kirim Pertanyaan
+                  </Link>
+                </div>
+              </div>
+            )}
+            
+            {/* View All CTA */}
+            {filteredLatestAnnouncements.length > 0 && (
+              <div className="mt-8 text-center" data-scroll-reveal>
+                <Link
+                  href="/announcements"
+                  className="group inline-flex items-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-bold text-base shadow-2xl transition-all duration-300 hover:shadow-cyan-500/50 hover:scale-105 relative overflow-hidden"
+                  aria-label="Lihat semua pengumuman GEMA"
+                >
+                  <span className="relative z-10">Lihat Semua Pengumuman</span>
+                  <ChevronRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform duration-300" />
+                  <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                </Link>
+              </div>
+            )}
           </div>
         </section>
 
         <section
           id="gallery"
           ref={galleryRef}
-          className="relative overflow-hidden bg-[#f3f4ff] py-20 transition-colors duration-500 sm:py-24 dark:bg-[#06081C]"
+          className="relative overflow-hidden bg-gradient-to-b from-indigo-50 via-white to-sky-50 py-20 transition-colors duration-500 sm:py-24 dark:from-[#06081C] dark:via-[#050513] dark:to-[#06081C]"
           aria-labelledby="gallery-heading"
         >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(108,99,255,0.12),transparent_60%)] dark:bg-[radial-gradient(circle_at_top,_rgba(108,99,255,0.1),transparent_60%)]" />
-          <div className="relative mx-auto max-w-6xl px-6 sm:px-10">
-            <div className="max-w-2xl" data-scroll-reveal>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-[#5EEAD4]/80">
-                Galeri Kegiatan
-              </span>
+          {/* Animated ambient particles */}
+          <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+            {[...Array(8)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-2 h-2 bg-gradient-to-r from-indigo-400/20 to-cyan-400/20 rounded-full"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animation: `float ${10 + Math.random() * 15}s ease-in-out infinite`,
+                  animationDelay: `${Math.random() * 5}s`,
+                  filter: 'blur(2px)',
+                }}
+              />
+            ))}
+          </div>
+          
+          {/* Ambient glow blobs */}
+          <div className="absolute inset-0 -z-10 overflow-hidden">
+            <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-gradient-to-br from-purple-400/10 to-pink-400/10 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '8s' }} />
+            <div className="absolute bottom-1/4 left-1/4 w-[600px] h-[600px] bg-gradient-to-tr from-cyan-400/10 to-blue-400/10 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
+          </div>
+          
+          <div className="relative mx-auto max-w-7xl px-6 sm:px-10">
+            {/* Header Section */}
+            <div className="text-center mb-12" data-scroll-reveal>
+              <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-pink-400/10 border border-purple-500/20 backdrop-blur-sm">
+                <span className="text-2xl">🎥</span>
+                <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">
+                  Living Showcase
+                </span>
+              </div>
               <h2
                 id="gallery-heading"
-                className="mt-5 text-3xl font-semibold text-slate-900 transition-colors duration-500 dark:text-white sm:text-4xl"
+                className="inline-block bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-3xl font-extrabold text-transparent sm:text-5xl leading-tight"
               >
-                Sekilas dokumentasi karya dan eksplorasi komunitas
+                Hidupkan Kembali Momen Komunitas 💫
               </h2>
-              <p className="mt-4 text-base leading-relaxed text-slate-600 dark:text-slate-200/80">
-                Potret momen kolaborasi, sesi mentoring, hingga showcase proyek yang menggambarkan
-                suasana belajar yang hidup.
+              <p className="mx-auto mt-6 max-w-2xl text-base sm:text-lg text-slate-600 dark:text-slate-200/80 leading-relaxed">
+                Potret kolaborasi, eksplorasi, dan kebanggaan visual dari setiap kegiatan GEMA
               </p>
-            </div>
-
-            <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {highlightedGallery.length === 0 ? (
-                <p className="text-sm text-slate-600 dark:text-slate-200/70" data-scroll-reveal>
-                  Dokumentasi akan segera hadir setelah kegiatan terbaru berlangsung.
+              
+              {/* Motivational quote */}
+              <p className="mx-auto mt-4 max-w-xl text-sm text-slate-500 dark:text-slate-400 italic">
+                &ldquo;Setiap foto bercerita — bukan hanya dokumentasi&rdquo;
+              </p>
+              
+              {/* Storytelling Context */}
+              <div className="mx-auto mt-8 max-w-3xl p-6 rounded-2xl bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-900/10 dark:to-pink-900/10 border border-purple-200/30 dark:border-purple-500/20">
+                <p className="text-sm sm:text-base text-slate-700 dark:text-slate-200 leading-relaxed">
+                  Di balik setiap foto, ada <span className="font-semibold text-purple-600 dark:text-purple-400">kisah siswa yang belajar, berkarya, dan berkolaborasi</span>. Jelajahi momen terbaik komunitas GEMA di sini — dari workshop coding hingga perayaan prestasi bersama 🌟
                 </p>
-              ) : (
-                highlightedGallery.map((item, index) => {
-                  const accent = galleryAccents[index % galleryAccents.length];
-                  const galleryStyle = {
-                    boxShadow: accent.glow,
-                    borderColor: `${accent.primary}26`,
-                    "--gallery-primary": accent.primary,
-                    "--gallery-secondary": accent.secondary,
-                  } as CSSProperties;
-
+              </div>
+            </div>
+            
+            {/* Filters + Sorting Bar */}
+            {gallery.length > 0 && (
+              <div className="mb-12 space-y-6" data-scroll-reveal>
+                {/* Category Filter Tabs */}
+                <div className="flex flex-wrap justify-center gap-3">
+                  {galleryCategories.map((category) => {
+                  const categoryData = category === "Semua" ? null : galleryCategoryMap[category.toLowerCase()];
+                  const icon = category === "Semua" ? "🌟" : categoryData?.emoji || "📸";
+                  
                   return (
-                    <article
-                      key={item.id}
-                      data-scroll-reveal
-                      className="gallery-card group relative overflow-hidden rounded-3xl border border-white/20 bg-white/95 shadow-xl shadow-[#040410]/10 backdrop-blur-xl transition-transform duration-300 dark:border-white/10 dark:bg-white/5 dark:shadow-[#040410]/40"
-                      style={galleryStyle}
+                    <button
+                      key={category}
+                      onClick={() => setActiveGalleryFilter(category)}
+                      className={`
+                        group relative px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300
+                        ${activeGalleryFilter === category
+                          ? 'text-white scale-105 shadow-lg'
+                          : 'text-slate-600 dark:text-slate-300 hover:scale-105 bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10'
+                        }
+                      `}
+                      style={activeGalleryFilter === category && categoryData ? {
+                        background: `linear-gradient(135deg, ${categoryData.primary}, ${categoryData.secondary})`,
+                      } : activeGalleryFilter === category ? {
+                        background: 'linear-gradient(135deg, #a855f7, #ec4899)',
+                      } : undefined}
+                      aria-pressed={activeGalleryFilter === category}
+                      aria-label={`Filter ${category}`}
                     >
-                      <div className="relative h-56 overflow-hidden">
-                        <OptimizedImage
-                          src={item.image}
-                          alt={item.title}
-                          width={600}
-                          height={360}
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="gallery-card-overlay absolute inset-0" />
-                        <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.3em] text-slate-200">
-                              {item.category}
-                            </p>
-                            <h3 className="mt-2 text-lg font-semibold text-white transition-colors duration-500 dark:text-white">
-                              {item.title}
-                            </h3>
+                      <span className="flex items-center gap-2">
+                        <span className={activeGalleryFilter === category ? 'animate-bounce' : ''} style={{ animationDuration: '1s' }}>
+                          {icon}
+                        </span>
+                        {category}
+                      </span>
+                    </button>
+                  );
+                })}
+                </div>
+                
+                {/* Sorting Dropdown */}
+                <div className="flex justify-center items-center gap-3">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">Urutkan:</span>
+                  <div className="relative">
+                    <select
+                      value={gallerySortBy}
+                      onChange={(e) => setGallerySortBy(e.target.value)}
+                      className="appearance-none pl-4 pr-10 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 cursor-pointer transition-all duration-300 hover:border-purple-400 dark:hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                      aria-label="Urutkan galeri"
+                    >
+                      <option value="terbaru">🕓 Terbaru</option>
+                      <option value="populer">🔥 Terpopuler</option>
+                      <option value="kategori">🌈 Kategori</option>
+                    </select>
+                    <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 rotate-90 w-4 h-4 text-slate-400 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {filteredGallery.length === 0 ? (
+              <div className="text-center py-16" data-scroll-reveal>
+                <div className="text-7xl mb-6">📷</div>
+                <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-200 mb-2">
+                  Belum ada dokumentasi {activeGalleryFilter !== "Semua" ? activeGalleryFilter : ""} saat ini
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-slate-200/80 mb-6">
+                  Dokumentasi akan muncul setelah kegiatan berlangsung
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {/* Hero Gallery - Featured */}
+                {heroGallery && (
+                  <article
+                    data-scroll-reveal
+                    onClick={() => openLightbox(0)}
+                    className="group relative overflow-hidden rounded-3xl shadow-2xl transition-all duration-700 hover:-translate-y-2 cursor-pointer"
+                  >
+                    {/* Hero Image Container */}
+                    <div className="relative h-[400px] sm:h-[500px] overflow-hidden">
+                      <OptimizedImage
+                        src={heroGallery.image}
+                        alt={heroGallery.title}
+                        width={1200}
+                        height={500}
+                        className="h-full w-full object-cover transition-all duration-700 group-hover:scale-105 group-hover:blur-[2px] saturate-[0.9] contrast-105"
+                      />
+                      
+                      {/* Gradient Overlay - intensifies on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-700" />
+                      
+                      {/* Category Badge - Top Left */}
+                      {heroGallery.category && galleryCategoryMap[heroGallery.category.toLowerCase()] && (
+                        <div className="absolute top-6 left-6 z-10">
+                          <div 
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl backdrop-blur-md font-bold text-sm uppercase tracking-wider shadow-lg transition-all duration-300 group-hover:scale-110"
+                            style={{
+                              background: `linear-gradient(135deg, ${galleryCategoryMap[heroGallery.category.toLowerCase()].primary}cc, ${galleryCategoryMap[heroGallery.category.toLowerCase()].secondary}cc)`,
+                              boxShadow: `0 8px 24px ${galleryCategoryMap[heroGallery.category.toLowerCase()].primary}40`,
+                            }}
+                          >
+                            <span className="text-xl text-white">{galleryCategoryMap[heroGallery.category.toLowerCase()].emoji}</span>
+                            <span className="text-white">{galleryCategoryMap[heroGallery.category.toLowerCase()].label}</span>
                           </div>
-                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/40 bg-white/10 text-sm font-semibold text-white">
-                            {(accent.label ?? " ").slice(0, 1)}
-                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Content - slides up on hover */}
+                      <div className="absolute bottom-0 left-0 right-0 p-8 sm:p-10 transform transition-transform duration-500 group-hover:translate-y-0 translate-y-2">
+                        {/* Title */}
+                        <h3 className="text-2xl sm:text-4xl font-bold text-white leading-tight mb-4 transition-all duration-500 opacity-100 group-hover:opacity-100">
+                          {heroGallery.title}
+                        </h3>
+                        
+                        {/* Description - fades in on hover */}
+                        <p className="text-base sm:text-lg text-white/90 leading-relaxed mb-6 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500 delay-100 max-w-2xl">
+                          {heroGallery.description}
+                        </p>
+                        
+                        {/* CTA - appears on hover */}
+                        <div className="opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500 delay-200">
+                          <button 
+                            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 text-white font-semibold text-sm hover:bg-white/30 transition-all duration-300"
+                            aria-label={`Lihat detail ${heroGallery.title}`}
+                          >
+                            <span>Lihat Detail</span>
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
-                      <p className="p-6 text-sm leading-relaxed text-slate-600 dark:text-slate-200/75">{item.description}</p>
-                    </article>
-                  );
-                })
-              )}
-            </div>
+                      
+                      {/* Ambient glow matching category */}
+                      {heroGallery.category && galleryCategoryMap[heroGallery.category.toLowerCase()] && (
+                        <div 
+                          className="absolute -inset-1 opacity-0 group-hover:opacity-30 transition-opacity duration-700 -z-10 blur-3xl"
+                          style={{
+                            background: `radial-gradient(circle, ${galleryCategoryMap[heroGallery.category.toLowerCase()].primary}, ${galleryCategoryMap[heroGallery.category.toLowerCase()].secondary})`,
+                          }}
+                        />
+                      )}
+                    </div>
+                  </article>
+                )}
+                
+                {/* Asymmetric Grid Gallery */}
+                {gridGallery.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 auto-rows-[200px]">
+                    {gridGallery.map((item, index) => {
+                      // Asymmetric sizing - create visual rhythm
+                      const getGridClass = (idx: number) => {
+                        // Pattern: large, medium, small, medium, large, small
+                        const pattern = idx % 6;
+                        if (pattern === 0) return "col-span-2 row-span-2"; // Large
+                        if (pattern === 1) return "col-span-1 row-span-2"; // Tall
+                        if (pattern === 2) return "col-span-1 row-span-1"; // Small
+                        if (pattern === 3) return "col-span-2 row-span-1"; // Wide
+                        if (pattern === 4) return "col-span-2 row-span-2"; // Large
+                        return "col-span-1 row-span-1"; // Small
+                      };
+                      
+                      const categoryData = item.category ? galleryCategoryMap[item.category.toLowerCase()] : null;
+                      
+                      return (
+                        <article
+                          key={item.id}
+                          data-scroll-reveal
+                          onClick={() => openLightbox(index + 1)}
+                          style={{ animationDelay: `${index * 100}ms` }}
+                          className={`
+                            group relative overflow-hidden rounded-2xl shadow-lg
+                            transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl cursor-pointer
+                            ${getGridClass(index)}
+                          `}
+                        >
+                          {/* Image */}
+                          <OptimizedImage
+                            src={item.image}
+                            alt={item.title}
+                            width={600}
+                            height={400}
+                            className="h-full w-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:blur-[1px] saturate-[0.95] contrast-[1.03]"
+                          />
+                          
+                          {/* Overlay gradient - appears on hover */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-60 group-hover:opacity-95 transition-opacity duration-500" />
+                          
+                          {/* Category Badge - with glow */}
+                          {categoryData && (
+                            <div className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                              <div 
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg backdrop-blur-md text-xs font-bold uppercase tracking-wider"
+                                style={{
+                                  background: `linear-gradient(135deg, ${categoryData.primary}dd, ${categoryData.secondary}dd)`,
+                                  boxShadow: `0 0 20px ${categoryData.primary}60`,
+                                  animation: 'glow-pulse 2s ease-in-out infinite',
+                                }}
+                              >
+                                <span>{categoryData.emoji}</span>
+                                <span className="text-white text-[10px]">{categoryData.label}</span>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Content - slides up */}
+                          <div className="absolute bottom-0 left-0 right-0 p-4 transform transition-all duration-500 translate-y-2 group-hover:translate-y-0">
+                            <h3 className="text-base sm:text-lg font-bold text-white leading-tight mb-2 line-clamp-2">
+                              {item.title}
+                            </h3>
+                            
+                            <p className="text-xs sm:text-sm text-white/80 leading-relaxed opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-500 delay-100 line-clamp-2">
+                              {item.description}
+                            </p>
+                            
+                            {/* Lihat Detail CTA - small */}
+                            <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-200">
+                              <span className="inline-flex items-center gap-1 text-xs font-semibold text-white">
+                                Lihat Detail
+                                <ChevronRight className="w-3 h-3" />
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Glow effect on hover */}
+                          {categoryData && (
+                            <div 
+                              className="absolute -inset-0.5 opacity-0 group-hover:opacity-40 transition-opacity duration-500 -z-10 blur-xl"
+                              style={{
+                                background: `linear-gradient(135deg, ${categoryData.primary}, ${categoryData.secondary})`,
+                              }}
+                            />
+                          )}
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Bottom CTAs */}
+            {filteredGallery.length > 0 && (
+              <div className="mt-16 grid gap-6 sm:grid-cols-2" data-scroll-reveal>
+                {/* Lihat Semua */}
+                <div className="text-center sm:text-left">
+                  <Link
+                    href="/gallery"
+                    className="group inline-flex items-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-base shadow-2xl transition-all duration-300 hover:shadow-purple-500/50 hover:scale-105 relative overflow-hidden"
+                  >
+                    <span className="relative z-10">Lihat Semua Dokumentasi</span>
+                    <ChevronRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform duration-300" />
+                    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                  </Link>
+                </div>
+                
+                {/* Kirim Karya */}
+                <div className="text-center sm:text-right">
+                  <Link
+                    href="/contact"
+                    className="inline-flex items-center gap-2 px-8 py-4 rounded-full border-2 border-purple-500 text-purple-600 dark:text-purple-400 font-bold text-base transition-all duration-300 hover:bg-purple-500 hover:text-white hover:scale-105"
+                  >
+                    <span className="text-xl">📸</span>
+                    Kirim Karya Kamu
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </section>
+
+        {/* Lightbox Modal */}
+        {lightboxOpen && filteredGallery[lightboxIndex] && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md"
+            onClick={closeLightbox}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="lightbox-title"
+          >
+            {/* White flash effect on photo change */}
+            <div 
+              key={lightboxIndex}
+              className="absolute inset-0 bg-white pointer-events-none"
+              style={{
+                animation: 'flash 150ms ease-out',
+                opacity: 0,
+              }}
+            />
+            
+            {/* Close Button */}
+            <button
+              onClick={closeLightbox}
+              className="absolute top-6 right-6 z-10 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all duration-300 group"
+              aria-label="Tutup lightbox"
+            >
+              <svg className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            {/* Navigation Arrows */}
+            {filteredGallery.length > 1 && (
+              <>
+                {/* Previous */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); prevPhoto(); }}
+                  className="absolute left-6 top-1/2 -translate-y-1/2 z-10 w-14 h-14 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 hover:scale-110 transition-all duration-300"
+                  aria-label="Foto sebelumnya"
+                >
+                  <ChevronRight className="w-8 h-8 rotate-180" />
+                </button>
+                
+                {/* Next */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); nextPhoto(); }}
+                  className="absolute right-6 top-1/2 -translate-y-1/2 z-10 w-14 h-14 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 hover:scale-110 transition-all duration-300"
+                  aria-label="Foto selanjutnya"
+                >
+                  <ChevronRight className="w-8 h-8" />
+                </button>
+              </>
+            )}
+            
+            {/* Content Container */}
+            <div
+              className="relative max-w-6xl mx-auto px-6 sm:px-10 w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Image Container with scale animation */}
+              <div 
+                className="relative mb-6 rounded-2xl overflow-hidden shadow-2xl"
+                style={{
+                  animation: 'scaleIn 500ms ease-out',
+                }}
+              >
+                <OptimizedImage
+                  src={filteredGallery[lightboxIndex].image}
+                  alt={filteredGallery[lightboxIndex].title}
+                  width={1200}
+                  height={800}
+                  className="w-full h-auto max-h-[70vh] object-contain"
+                />
+                
+                {/* Category Badge */}
+                {filteredGallery[lightboxIndex].category && galleryCategoryMap[filteredGallery[lightboxIndex].category.toLowerCase()] && (
+                  <div className="absolute top-4 left-4">
+                    <div 
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl backdrop-blur-md font-bold text-sm uppercase tracking-wider shadow-lg"
+                      style={{
+                        background: `linear-gradient(135deg, ${galleryCategoryMap[filteredGallery[lightboxIndex].category.toLowerCase()].primary}dd, ${galleryCategoryMap[filteredGallery[lightboxIndex].category.toLowerCase()].secondary}dd)`,
+                      }}
+                    >
+                      <span className="text-xl text-white">{galleryCategoryMap[filteredGallery[lightboxIndex].category.toLowerCase()].emoji}</span>
+                      <span className="text-white">{galleryCategoryMap[filteredGallery[lightboxIndex].category.toLowerCase()].label}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Description Below Image */}
+              <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 sm:p-8">
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <h3 
+                    id="lightbox-title"
+                    className="text-2xl sm:text-3xl font-bold text-white leading-tight"
+                  >
+                    {filteredGallery[lightboxIndex].title}
+                  </h3>
+                  <div className="text-sm text-white/60">
+                    {lightboxIndex + 1} / {filteredGallery.length}
+                  </div>
+                </div>
+                
+                <p className="text-base sm:text-lg text-white/80 leading-relaxed">
+                  {filteredGallery[lightboxIndex].description}
+                </p>
+                
+                {/* Optional metadata - commented until createdAt added to type
+                {filteredGallery[lightboxIndex].createdAt && (
+                  <div className="mt-4 pt-4 border-t border-white/10 text-sm text-white/60">
+                    📅 {formatDate(filteredGallery[lightboxIndex].createdAt)}
+                  </div>
+                )}
+                */}
+              </div>
+              
+              {/* Keyboard hints */}
+              <div className="mt-4 flex justify-center gap-6 text-xs text-white/40">
+                <span>← → Navigasi</span>
+                <span>ESC Tutup</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         <section
           id="cta"
