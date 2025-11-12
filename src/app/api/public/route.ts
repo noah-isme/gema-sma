@@ -172,9 +172,17 @@ export async function GET(request: NextRequest) {
     }
   } catch (error) {
     console.error('Error fetching public data:', error)
+    
+    // Return fallback data with 200 status for graceful degradation
     return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
+      { 
+        success: false, 
+        message: process.env.NODE_ENV === 'development' ? String(error) : 'Failed to fetch data',
+        data: type === 'activities' ? [] : 
+              type === 'announcements' ? [] :
+              type === 'gallery' ? [] : null
+      },
+      { status: 200 } // Changed from 500 to 200 for graceful fallback
     )
   }
 }
