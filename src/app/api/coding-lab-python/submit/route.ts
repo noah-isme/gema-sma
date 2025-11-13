@@ -6,6 +6,7 @@ import {
   LANGUAGE_IDS, 
   runTestCases
 } from '@/lib/judge0';
+import { applyPythonTaskOverrides } from '@/lib/pythonTaskOverrides';
 
 /**
  * POST /api/python-coding-lab/submit
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
       );
     }
     // Get task with test cases
-    const task = await prisma.pythonCodingTask.findUnique({
+    const rawTask = await prisma.pythonCodingTask.findUnique({
       where: { id: taskId },
       include: {
         testCases: {
@@ -40,12 +41,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (!task) {
+    if (!rawTask) {
       return NextResponse.json(
         { error: 'Task not found' },
         { status: 404 }
       );
     }
+
+    const task = applyPythonTaskOverrides(rawTask, { includeHidden: true });
 
     if (!task.isActive) {
       return NextResponse.json(

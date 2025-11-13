@@ -519,7 +519,9 @@ if __name__ == "__main__":
 
 Contoh:
 - Input: 5, 3 → Output: 8
-- Input: -2, 7 → Output: 5`,
+- Input: -2, 7 → Output: 5
+
+Format input: dua bilangan dipisahkan spasi. Cetak hasil penjumlahannya.`,
       difficulty: 'EASY',
       category: 'math',
       tags: '["math", "basic", "arithmetic"]',
@@ -527,16 +529,21 @@ Contoh:
     # TODO: Return the sum of a and b
     pass
 
-# Test your solution
 if __name__ == "__main__":
-    print(add_numbers(5, 3))
-    print(add_numbers(-2, 7))`,
+    import sys
+    raw = sys.stdin.read().strip().split()
+    if len(raw) >= 2:
+        a, b = map(int, raw[:2])
+        print(add_numbers(a, b))`,
       solutionCode: `def add_numbers(a, b):
     return a + b
 
 if __name__ == "__main__":
-    print(add_numbers(5, 3))
-    print(add_numbers(-2, 7))`,
+    import sys
+    raw = sys.stdin.read().strip().split()
+    if len(raw) >= 2:
+        a, b = map(int, raw[:2])
+        print(add_numbers(a, b))`,
       hints: JSON.parse('["Gunakan operator + untuk penjumlahan", "Fungsi harus return hasilnya, bukan print", "Python otomatis menangani bilangan negatif"]'),
       timeLimit: 2,
       memoryLimit: 128,
@@ -551,7 +558,7 @@ if __name__ == "__main__":
       {
         taskId: task2.id,
         name: 'Test Case 1: Bilangan Positif',
-        input: '',
+        input: '5 3',
         expectedOutput: '8',
         isHidden: false,
         points: 50,
@@ -560,7 +567,7 @@ if __name__ == "__main__":
       {
         taskId: task2.id,
         name: 'Test Case 2: Bilangan Negatif',
-        input: '',
+        input: '-2 7',
         expectedOutput: '5',
         isHidden: false,
         points: 50,
@@ -586,7 +593,9 @@ Contoh:
 - Input: 3 → Output: "Fizz"
 - Input: 5 → Output: "Buzz"
 - Input: 15 → Output: "FizzBuzz"
-- Input: 7 → Output: "7"`,
+- Input: 7 → Output: "7"
+
+Format input: satu bilangan bulat n. Cetak hasil FizzBuzz untuk n.`,
       difficulty: 'MEDIUM',
       category: 'algorithm',
       tags: '["logic", "conditional", "modulo"]',
@@ -594,21 +603,20 @@ Contoh:
     # TODO: Implement FizzBuzz logic
     pass
 
-# Test your solution
 if __name__ == "__main__":
-    print(fizzbuzz(3))
-    print(fizzbuzz(5))
-    print(fizzbuzz(15))
-    print(fizzbuzz(7))`,
+    import sys
+    raw = sys.stdin.read().strip()
+    if raw:
+        n = int(raw)
+        print(fizzbuzz(n))`,
       solutionCode: `def fizzbuzz(n):
     if n % 3 == 0 and n % 5 == 0:
         return "FizzBuzz"
-    elif n % 3 == 0:
+    if n % 3 == 0:
         return "Fizz"
-    elif n % 5 == 0:
+    if n % 5 == 0:
         return "Buzz"
-    else:
-        return str(n)`,
+    return str(n)`,
       hints: JSON.parse('["Gunakan operator modulo (%) untuk cek habis dibagi", "Cek kondisi FizzBuzz terlebih dahulu", "Jangan lupa convert angka ke string untuk return"]'),
       timeLimit: 3,
       memoryLimit: 128,
@@ -623,7 +631,7 @@ if __name__ == "__main__":
       {
         taskId: task3.id,
         name: 'Test Case 1: Fizz',
-        input: '',
+        input: '3',
         expectedOutput: 'Fizz',
         isHidden: false,
         points: 37,
@@ -632,7 +640,7 @@ if __name__ == "__main__":
       {
         taskId: task3.id,
         name: 'Test Case 2: Buzz',
-        input: '',
+        input: '5',
         expectedOutput: 'Buzz',
         isHidden: false,
         points: 37,
@@ -641,7 +649,7 @@ if __name__ == "__main__":
       {
         taskId: task3.id,
         name: 'Test Case 3: FizzBuzz',
-        input: '',
+        input: '15',
         expectedOutput: 'FizzBuzz',
         isHidden: false,
         points: 38,
@@ -650,7 +658,7 @@ if __name__ == "__main__":
       {
         taskId: task3.id,
         name: 'Test Case 4: Number',
-        input: '',
+        input: '7',
         expectedOutput: '7',
         isHidden: false,
         points: 38,

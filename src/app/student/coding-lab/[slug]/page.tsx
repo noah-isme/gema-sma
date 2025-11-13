@@ -1,181 +1,268 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import dynamic from 'next/dynamic';
-import StudentLayout from '@/components/student/StudentLayout';
-import Breadcrumb from '@/components/ui/Breadcrumb';
-import { studentAuth } from '@/lib/student-auth';
-import { 
-  Code2, 
-  Play, 
-  Trophy, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import dynamic from 'next/dynamic'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRouter, useParams } from 'next/navigation'
+import StudentLayout from '@/components/student/StudentLayout'
+import Breadcrumb from '@/components/ui/Breadcrumb'
+import { studentAuth } from '@/lib/student-auth'
+import {
   AlertCircle,
+  AlertTriangle,
   ArrowLeft,
+  CheckCircle2,
+  ChevronDown,
+  Clock,
+  Flame,
+  History,
   Lightbulb,
-  TestTube
-} from 'lucide-react';
+  Maximize2,
+  Minimize2,
+  Moon,
+  Play,
+  RefreshCcw,
+  Sun,
+  Terminal,
+  TestTube,
+  Trophy,
+  XCircle
+} from 'lucide-react'
 
-// Dynamically import Monaco Editor to avoid SSR issues
-const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
+const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
 
 interface TestCase {
-  id: string;
-  name: string;
-  input: string;
-  expectedOutput: string;
-  isHidden: boolean;
-  points: number;
+  id: string
+  name: string
+  input: string
+  expectedOutput: string
+  isHidden: boolean
+  points: number
 }
 
 interface Task {
-  id: string;
-  title: string;
-  description: string;
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
-  category: string;
-  points: number;
-  timeLimit: number;
-  starterCode: string;
-  hints: string[] | null;
-  testCases: TestCase[];
+  id: string
+  title: string
+  description: string
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD'
+  category: string
+  points: number
+  timeLimit: number
+  starterCode: string
+  hints: string[] | null
+  testCases: TestCase[]
+  updatedAt?: string
 }
 
 interface TestResult {
-  name: string;
-  passed: boolean;
-  input: string;
-  expectedOutput: string;
-  actualOutput: string | null;
-  error: string | null;
-  time: string | null;
-  memory: number | null;
+  name: string
+  passed: boolean
+  input: string
+  expectedOutput: string
+  actualOutput: string | null
+  error: string | null
+  time: string | null
+  memory: number | null
 }
 
 interface SubmissionResult {
-  success: boolean;
-  testResults: TestResult[];
+  success: boolean
+  testResults: TestResult[]
   summary: {
-    passedTests: number;
-    totalTests: number;
-    score: number;
-    percentage: number;
-  };
+    passedTests: number
+    totalTests: number
+    score: number
+    percentage: number
+  }
 }
 
 interface PreviousSubmission {
-  id: string;
-  code: string;
-  score: number;
-  passedTests: number;
-  totalTests: number;
-  status: string;
-  submittedAt: string;
+  id: string
+  code: string
+  score: number
+  passedTests: number
+  totalTests: number
+  status: string
+  submittedAt: string
   task: {
-    points: number;
-  };
+    points: number
+  }
 }
 
-const difficultyColors = {
-  EASY: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  MEDIUM: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-  HARD: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-};
+const difficultyMeta = {
+  EASY: { label: 'Easy', chip: 'python-task-chip python-task-chip--easy' },
+  MEDIUM: { label: 'Medium', chip: 'python-task-chip python-task-chip--medium' },
+  HARD: { label: 'Hard', chip: 'python-task-chip python-task-chip--hard' }
+} as const
+
+const difficultyCopy = {
+  EASY: 'Mudah',
+  MEDIUM: 'Sedang',
+  HARD: 'Sulit'
+} as const
 
 export default function PythonCodingTaskPage() {
-  const router = useRouter();
-  const params = useParams<{ slug: string }>();
-  const slug = params?.slug || '';
-  
-  const [task, setTask] = useState<Task | null>(null);
-  const [code, setCode] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<SubmissionResult | null>(null);
-  const [showHints, setShowHints] = useState(false);
-  const [activeTab, setActiveTab] = useState<'problem' | 'submissions'>('problem');
-  const [submissions, setSubmissions] = useState<PreviousSubmission[]>([]);
-  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  const router = useRouter()
+  const params = useParams<{ slug: string }>()
+  const slug = params?.slug ?? ''
+
+  const [task, setTask] = useState<Task | null>(null)
+  const [code, setCode] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const [result, setResult] = useState<SubmissionResult | null>(null)
+  const [isRunning, setIsRunning] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const [showHints, setShowHints] = useState(false)
+  const [isSubmissionsOpen, setIsSubmissionsOpen] = useState(false)
+  const [submissions, setSubmissions] = useState<PreviousSubmission[]>([])
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false)
+
+  const [editorTheme, setEditorTheme] = useState<'vs-dark' | 'light'>('vs-dark')
+  const [isEditorFullscreen, setIsEditorFullscreen] = useState(false)
+  const [autosaveMessage, setAutosaveMessage] = useState<string>('Belum tersimpan')
+  const [activeTestCaseId, setActiveTestCaseId] = useState<string>('')
+
+  const [lastAction, setLastAction] = useState<'run' | 'submit' | null>(null)
+  const [toast, setToast] = useState<{ type: 'success' | 'info'; text: string } | null>(null)
+
+  const autosaveKey = useMemo(() => {
+    if (!task) return ''
+    const updatedStamp = task.updatedAt ? new Date(task.updatedAt).getTime() : ''
+    return `python-lab-${task.id}-${updatedStamp}`
+  }, [task])
+
+  const breadcrumbItems = useMemo(() => (
+    [
+      { label: 'Dashboard', href: '/student/dashboard' },
+      { label: 'Coding Lab', href: '/student/coding-lab' },
+      { label: task?.title || 'Soal' }
+    ]
+  ), [task?.title])
+
+  const fetchTask = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const session = studentAuth.getSession()
+      if (!session) {
+        router.push('/student/login')
+        return
+      }
+
+      const response = await fetch(`/api/coding-lab-python/tasks/${slug}?studentId=${session.id}`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Gagal memuat soal')
+      }
+
+      setTask(data.task)
+      setCode(data.task.starterCode)
+    } catch (err) {
+      console.error('Error fetching task:', err)
+      setError(err instanceof Error ? err.message : 'Terjadi kesalahan saat memuat soal')
+    } finally {
+      setLoading(false)
+    }
+  }, [router, slug])
 
   useEffect(() => {
-    fetchTask();
-  }, [slug]);
+    fetchTask()
+  }, [fetchTask])
 
   useEffect(() => {
-    if (activeTab === 'submissions' && task) {
-      fetchSubmissions();
+    if (isEditorFullscreen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
     }
-  }, [activeTab, task]);
 
-  const fetchTask = async () => {
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isEditorFullscreen])
+
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(() => setToast(null), 4000)
+    return () => clearTimeout(timer)
+  }, [toast])
+
+  useEffect(() => {
+    if (!task) return
+
+    if (typeof window !== 'undefined' && autosaveKey) {
+      const savedCode = localStorage.getItem(autosaveKey)
+      if (savedCode) {
+        setCode(savedCode)
+        setAutosaveMessage('Draft dipulihkan dari autosave')
+      }
+    }
+
+    if (task.testCases?.length) {
+      setActiveTestCaseId(task.testCases[0].id)
+    }
+  }, [task, autosaveKey])
+
+  useEffect(() => {
+    if (!task || !autosaveKey) return
+    const handler = setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(autosaveKey, code)
+        setAutosaveMessage(`Tersimpan otomatis ${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`)
+      }
+    }, 1200)
+
+    return () => clearTimeout(handler)
+  }, [code, autosaveKey, task])
+
+  const fetchSubmissions = useCallback(async () => {
+    if (!task) return
     try {
-      setLoading(true);
-      
-      // Get student session from custom auth
-      const session = studentAuth.getSession();
+      setLoadingSubmissions(true)
+      const session = studentAuth.getSession()
       if (!session) {
-        router.push('/student/login');
-        return;
+        router.push('/student/login')
+        return
       }
 
-      const response = await fetch(`/api/coding-lab-python/tasks/${slug}?studentId=${session.id}`);
-      const data = await response.json();
+      const response = await fetch(`/api/coding-lab-python/submissions?taskId=${task.id}&studentId=${String(session.id)}`)
+      const data = await response.json()
 
-      if (response.ok) {
-        setTask(data.task);
-        setCode(data.task.starterCode);
-      } else {
-        console.error('Failed to fetch task:', data.error);
+      if (!response.ok) {
+        throw new Error(data.error || 'Gagal memuat riwayat')
       }
-    } catch (error) {
-      console.error('Error fetching task:', error);
+
+      setSubmissions(data.submissions || [])
+    } catch (err) {
+      console.error('Error fetching submissions:', err)
     } finally {
-      setLoading(false);
+      setLoadingSubmissions(false)
     }
-  };
+  }, [router, task])
 
-  const fetchSubmissions = async () => {
-    if (!task) return;
+  useEffect(() => {
+    if (isSubmissionsOpen) {
+      fetchSubmissions()
+    }
+  }, [fetchSubmissions, isSubmissionsOpen])
 
+  const executeSubmission = useCallback(async (mode: 'run' | 'submit') => {
+    if (!task) return
     try {
-      setLoadingSubmissions(true);
-      
-      const session = studentAuth.getSession();
-      if (!session) {
-        router.push('/student/login');
-        return;
-      }
-
-      const response = await fetch(`/api/coding-lab-python/submissions?taskId=${task.id}&studentId=${String(session.id)}`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setSubmissions(data.submissions || []);
+      if (mode === 'run') {
+        setIsRunning(true)
       } else {
-        console.error('Failed to fetch submissions:', data.error);
+        setIsSubmitting(true)
       }
-    } catch (error) {
-      console.error('Error fetching submissions:', error);
-    } finally {
-      setLoadingSubmissions(false);
-    }
-  };
+      setLastAction(mode)
 
-  const handleSubmit = async () => {
-    if (!task) return;
-
-    try {
-      setSubmitting(true);
-      setResult(null);
-
-      // Get student session from custom auth
-      const session = studentAuth.getSession();
+      const session = studentAuth.getSession()
       if (!session) {
-        router.push('/student/login');
-        return;
+        router.push('/student/login')
+        return
       }
 
       const response = await fetch('/api/coding-lab-python/submit', {
@@ -184,430 +271,398 @@ export default function PythonCodingTaskPage() {
         body: JSON.stringify({
           taskId: task.id,
           code,
-          studentId: session.id, // Add studentId
-        }),
-      });
+          studentId: session.id
+        })
+      })
 
-      const data = await response.json();
+      const data = await response.json()
 
-      if (response.ok) {
-        setResult(data);
-        // Refresh submissions after successful submit
-        fetchSubmissions();
-      } else {
-        alert(`Error: ${data.message || data.error}`);
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'Gagal menjalankan kode')
       }
-    } catch (error) {
-      console.error('Error submitting code:', error);
-      alert('Gagal mengirim kode. Silakan coba lagi.');
+
+      setResult(data as SubmissionResult)
+      if (mode === 'submit') {
+        setToast({ type: 'success', text: 'Kode berhasil dikumpulkan' })
+        fetchSubmissions()
+      } else {
+        setToast({ type: 'info', text: 'Kode berhasil dijalankan' })
+      }
+    } catch (err) {
+      console.error('Error executing code:', err)
+      setError(err instanceof Error ? err.message : 'Gagal menjalankan kode')
     } finally {
-      setSubmitting(false);
+      if (mode === 'run') {
+        setIsRunning(false)
+      } else {
+        setIsSubmitting(false)
+      }
     }
-  };
+  }, [code, fetchSubmissions, router, task])
 
   const handleReset = () => {
-    if (task && confirm('Reset kode ke template awal?')) {
-      setCode(task.starterCode);
-      setResult(null);
-    }
-  };
+    if (!task) return
+    setCode(task.starterCode)
+    setAutosaveMessage('Kode dikembalikan ke awal')
+  }
 
-  const breadcrumbItems = [
-    { label: 'Dashboard', href: '/student/dashboard' },
-    { label: 'Coding Lab', href: '/student/coding-lab' },
-    { label: task?.title || 'Loading...', href: `/student/coding-lab/${slug}` },
-  ];
+  const currentTestCase = useMemo(() => task?.testCases.find(tc => tc.id === activeTestCaseId), [task, activeTestCaseId])
+
+  const resultStatus = useMemo(() => {
+    if (!result) return null
+    const passed = result.summary.passedTests === result.summary.totalTests
+    return passed ? 'pass' : 'fail'
+  }, [result])
+
+  const headerStatusText = useMemo(() => {
+    if (!result) return 'Belum dijalankan'
+    const passed = result.summary.passedTests === result.summary.totalTests
+    return passed ? 'Semua test lulus' : `${result.summary.passedTests}/${result.summary.totalTests} test lulus`
+  }, [result])
+
+  const difficultyBadge = task ? difficultyMeta[task.difficulty] : null
+
+  const renderHints = () => {
+    if (!task?.hints || task.hints.length === 0) {
+      return <p className="python-problem-note">Belum ada hints untuk tugas ini.</p>
+    }
+
+    return (
+      <ul className="python-hint-list">
+        {task.hints.map((hint, idx) => (
+          <li key={idx}>
+            <Lightbulb className="h-4 w-4" />
+            <span>{hint}</span>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  const renderOutputPanel = () => {
+    if (!result) {
+      return (
+        <div className="python-output-empty">
+          <Terminal className="h-5 w-5" />
+          <div>
+            <p>Belum ada hasil</p>
+            <span>Jalankan kode untuk melihat output test case.</span>
+          </div>
+        </div>
+      )
+    }
+
+    const passed = resultStatus === 'pass'
+    return (
+      <div className={`python-output-result ${passed ? 'is-pass' : 'is-fail'}`}>
+        <div className="python-output-summary">
+          <div>
+            <p>{passed ? 'Semua test lulus' : 'Masih ada test yang gagal'}</p>
+            <span>{result.summary.passedTests}/{result.summary.totalTests} test • {result.summary.score} XP</span>
+          </div>
+          <span className="python-output-chip">
+            {passed ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+            {passed ? 'PASS' : 'REVIEW' }
+          </span>
+        </div>
+        <ul className="python-output-tests">
+          {result.testResults.map((test, idx) => (
+            <li key={test.name + idx} className={test.passed ? 'is-pass' : 'is-fail'}>
+              <div>
+                {test.passed ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                <span>{test.name}</span>
+              </div>
+              <span>{test.passed ? 'Lulus' : 'Perlu revisi'}</span>
+            </li>
+          ))}
+        </ul>
+        {!passed && result.testResults.some(test => !test.passed) && (
+          <div className="python-output-details">
+            {result.testResults.filter(test => !test.passed).map((test, idx) => (
+              <div key={`detail-${test.name}-${idx}`} className="python-output-detail">
+                <p className="title">{test.name}</p>
+                <div className="detail-grid">
+                  <div>
+                    <span>Input</span>
+                    <pre>{test.input}</pre>
+                  </div>
+                  <div>
+                    <span>Expected</span>
+                    <pre>{test.expectedOutput}</pre>
+                  </div>
+                  <div>
+                    <span>Output kamu</span>
+                    <pre>{test.actualOutput ?? '—'}</pre>
+                  </div>
+                  {test.error && (
+                    <div>
+                      <span>Error</span>
+                      <pre className="error">{test.error}</pre>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <StudentLayout>
+        <div className="python-loading">
+          <div className="spinner" />
+          <p>Menyiapkan ruang coding...</p>
+        </div>
+      </StudentLayout>
+    )
+  }
 
   if (!task) {
     return (
-      <StudentLayout loading={loading}>
-        <div className="text-center py-20">
-          <p className="text-gray-600 dark:text-gray-400">Task tidak ditemukan</p>
-          <button
-            onClick={() => router.push('/student/coding-lab')}
-            className="mt-4 text-blue-600 hover:text-blue-700"
-          >
-            Kembali ke daftar
-          </button>
+      <StudentLayout>
+        <div className="python-loading">
+          <AlertCircle className="h-5 w-5" />
+          <p>Soal tidak ditemukan</p>
         </div>
       </StudentLayout>
-    );
+    )
   }
 
   return (
-    <StudentLayout loading={loading}>
-      <div className="space-y-6">
-        {/* Breadcrumb */}
+    <StudentLayout>
+      <div className={`python-task-page ${isEditorFullscreen ? 'is-editor-fullscreen' : ''}`}>
         <Breadcrumb items={breadcrumbItems} />
-
-        {/* Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-          <button
-            onClick={() => router.push('/student/coding-lab')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white mb-4"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Kembali
-          </button>
-          <div className="flex items-center justify-between">
+        {error && (
+          <div className="python-alert">
+            <AlertTriangle className="h-5 w-5" />
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {task.title}
-                </h1>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${difficultyColors[task.difficulty]}`}>
-                  {task.difficulty}
-                </span>
-              </div>
-              <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                <span className="flex items-center gap-1">
-                  <Trophy className="w-4 h-4" />
-                  {task.points} poin
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  {task.timeLimit}s batas waktu
-                </span>
-                <span className="capitalize">{task.category}</span>
-              </div>
+              <p className="font-semibold">Terjadi kesalahan</p>
+              <p className="text-sm">{error}</p>
             </div>
+            <button type="button" onClick={fetchTask}>Coba lagi</button>
           </div>
-        </div>
+        )}
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Panel - Problem Description */}
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="flex gap-2 mb-4 border-b border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={() => setActiveTab('problem')}
-                  className={`px-4 py-2 font-medium ${
-                    activeTab === 'problem'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-                  }`}
-                >
-                  Deskripsi
-                </button>
-                <button
-                  onClick={() => setActiveTab('submissions')}
-                  className={`px-4 py-2 font-medium ${
-                    activeTab === 'submissions'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-                  }`}
-                >
-                  Submission
-                </button>
-              </div>
-
-              {activeTab === 'problem' && (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                      Deskripsi Soal
-                    </h3>
-                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                      {task.description}
-                    </p>
-                  </div>
-
-                  {/* Test Cases Preview */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                      <TestTube className="w-5 h-5" />
-                      Contoh Test Case
-                    </h3>
-                    <div className="space-y-3">
-                      {task.testCases.filter(tc => !tc.isHidden).map((tc, idx) => (
-                        <div key={tc.id} className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-                          <p className="font-medium text-gray-900 dark:text-white mb-2">
-                            {tc.name || `Test Case ${idx + 1}`}
-                          </p>
-                          <div className="space-y-2 text-sm">
-                            <div>
-                              <span className="font-medium text-gray-700 dark:text-gray-300">Input:</span>
-                              <pre className="mt-1 p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-                                {tc.input}
-                              </pre>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-700 dark:text-gray-300">Expected Output:</span>
-                              <pre className="mt-1 p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-                                {tc.expectedOutput}
-                              </pre>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Hints */}
-                  {task.hints && task.hints.length > 0 && (
-                    <div>
-                      <button
-                        onClick={() => setShowHints(!showHints)}
-                        className="flex items-center gap-2 text-yellow-600 hover:text-yellow-700 dark:text-yellow-500 dark:hover:text-yellow-400"
-                      >
-                        <Lightbulb className="w-5 h-5" />
-                        {showHints ? 'Sembunyikan' : 'Tampilkan'} Hints
-                      </button>
-                      {showHints && (
-                        <div className="mt-3 space-y-2">
-                          {task.hints.map((hint, idx) => (
-                            <div key={idx} className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-                              <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                                💡 {hint}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+        <div className="python-task-layout">
+          <section className="python-problem-panel">
+            <button className="python-back" onClick={() => router.back()}>
+              <ArrowLeft className="h-4 w-4" /> Kembali
+            </button>
+            <header className="python-task-header">
+              <div>
+                <div className="python-task-title">
+                  <h1>{task.title}</h1>
+                  {difficultyBadge && <span className={difficultyBadge.chip}>{difficultyCopy[task.difficulty]}</span>}
+                  <span className="python-task-chip">{task.points} XP</span>
                 </div>
-              )}
+                <div className="python-task-meta">
+                  <span><Trophy className="h-4 w-4" /> {task.category}</span>
+                  <span><Clock className="h-4 w-4" /> {task.timeLimit}s limit</span>
+                  <span><Flame className="h-4 w-4" /> {headerStatusText}</span>
+                </div>
+              </div>
+              <button className="python-chip python-chip--clear" onClick={() => setIsSubmissionsOpen(true)}>
+                <History className="h-4 w-4" /> Riwayat submit
+              </button>
+            </header>
 
-              {activeTab === 'submissions' && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Riwayat Submission
-                    </h3>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      Total: {submissions.length} submission
-                    </span>
+            <div className="python-problem-block">
+              <div className="block-header">
+                <BookIcon />
+                <div>
+                  <p>Deskripsi</p>
+                  <span>Pahami tujuan tugas</span>
+                </div>
+              </div>
+              <p className="python-problem-text">{task.description}</p>
+            </div>
+
+            <div className="python-problem-block">
+              <div className="block-header">
+                <TestTube className="h-4 w-4" />
+                <div>
+                  <p>Test Case</p>
+                  <span>Contoh input/output</span>
+                </div>
+              </div>
+              <div className="python-testcase-tabs">
+                {task.testCases.map(test => (
+                  <button
+                    key={test.id}
+                    type="button"
+                    onClick={() => setActiveTestCaseId(test.id)}
+                    className={`python-testcase-tab ${activeTestCaseId === test.id ? 'is-active' : ''}`}
+                  >
+                    {test.name}
+                    {test.isHidden && <span className="hidden-pill">Hidden</span>}
+                  </button>
+                ))}
+              </div>
+              {currentTestCase ? (
+                <div className="python-testcase-body">
+                  <div>
+                    <span>Input</span>
+                    <pre>{currentTestCase.input}</pre>
                   </div>
+                  <div>
+                    <span>Output</span>
+                    <pre>{currentTestCase.expectedOutput}</pre>
+                  </div>
+                </div>
+              ) : (
+                <p className="python-problem-note">Pilih test case untuk melihat detail.</p>
+              )}
+            </div>
 
-                  {loadingSubmissions ? (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                      <p className="text-gray-600 dark:text-gray-400 mt-2">Loading submissions...</p>
-                    </div>
-                  ) : submissions.length === 0 ? (
-                    <div className="text-center py-8">
-                      <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                      <p className="text-gray-600 dark:text-gray-400">Belum ada submission</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-                        Submit kode Anda untuk melihat riwayat
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {submissions.map((submission, idx) => (
-                        <div
-                          key={submission.id}
-                          className={`p-4 rounded-lg border ${
-                            submission.status === 'COMPLETED'
-                              ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800'
-                              : submission.status === 'RUNTIME_ERROR'
-                              ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800'
-                              : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              {submission.status === 'COMPLETED' && submission.passedTests === submission.totalTests ? (
-                                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-                              ) : submission.status === 'COMPLETED' ? (
-                                <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                              ) : (
-                                <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                              )}
-                              <span className="font-medium text-gray-900 dark:text-white">
-                                Submission #{submissions.length - idx}
-                              </span>
-                            </div>
-                            <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                              {submission.score}/{submission.task.points}
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3 text-sm mb-3">
-                            <div>
-                              <span className="text-gray-600 dark:text-gray-400">Status:</span>
-                              <span className={`ml-2 font-medium ${
-                                submission.status === 'COMPLETED' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                              }`}>
-                                {submission.status === 'COMPLETED' ? '✓ Completed' : '✗ Error'}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-gray-600 dark:text-gray-400">Test Cases:</span>
-                              <span className="ml-2 font-medium text-gray-900 dark:text-white">
-                                {submission.passedTests}/{submission.totalTests} passed
-                              </span>
-                            </div>
-                            <div className="col-span-2">
-                              <span className="text-gray-600 dark:text-gray-400">Waktu:</span>
-                              <span className="ml-2 text-gray-900 dark:text-white">
-                                {new Date(submission.submittedAt).toLocaleString('id-ID', {
-                                  day: '2-digit',
-                                  month: 'short',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
-                              </span>
-                            </div>
-                          </div>
-
-                          <details className="cursor-pointer">
-                            <summary className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-                              Lihat Kode
-                            </summary>
-                            <pre className="mt-2 p-3 bg-gray-900 text-gray-100 rounded text-xs overflow-x-auto">
-                              {submission.code}
-                            </pre>
-                          </details>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+            <div className="python-problem-block">
+              <button className="python-hint-toggle" onClick={() => setShowHints(prev => !prev)}>
+                <Lightbulb className="h-4 w-4" />
+                <span>Hints</span>
+                <ChevronDown className={`h-4 w-4 ${showHints ? 'rotate-180' : ''}`} />
+              </button>
+              {showHints && (
+                <div className="python-hint-panel">
+                  {renderHints()}
                 </div>
               )}
             </div>
-          </div>
+          </section>
 
-          {/* Right Panel - Code Editor */}
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Code2 className="w-5 h-5" />
-                  Python Editor
-                </h3>
-                <button
-                  onClick={handleReset}
-                  className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-                >
-                  Reset
-                </button>
+          <section className="python-workstation">
+            <div className={`python-editor-panel ${isEditorFullscreen ? 'is-fullscreen' : ''}`}>
+              <div className="python-editor-toolbar">
+                <div>
+                  <p>Python 3</p>
+                  <span>Gunakan koding terbaikmu</span>
+                </div>
+                <div className="python-editor-actions">
+                  <button onClick={() => setEditorTheme(prev => prev === 'vs-dark' ? 'light' : 'vs-dark')}>
+                    {editorTheme === 'vs-dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                    {editorTheme === 'vs-dark' ? 'Light' : 'Dark'}
+                  </button>
+                  <button onClick={handleReset}><RefreshCcw className="h-4 w-4" /> Reset</button>
+                  <button onClick={() => setIsEditorFullscreen(prev => !prev)}>
+                    {isEditorFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                    {isEditorFullscreen ? 'Keluar' : 'Fullscreen'}
+                  </button>
+                </div>
               </div>
-              <div className="h-[400px]">
+
+              <div className="python-editor-shell">
                 <Editor
-                  height="100%"
-                  defaultLanguage="python"
+                  language="python"
+                  theme={editorTheme}
                   value={code}
                   onChange={(value) => setCode(value || '')}
-                  theme="vs-dark"
                   options={{
                     minimap: { enabled: false },
+                    fontFamily: 'JetBrains Mono, Fira Code, monospace',
                     fontSize: 14,
-                    lineNumbers: 'on',
                     scrollBeyondLastLine: false,
-                    automaticLayout: true,
+                    smoothScrolling: true
                   }}
+                  height="480px"
                 />
               </div>
-              <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors"
-                >
-                  {submitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      Menjalankan...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-5 h-5" />
-                      Jalankan & Submit
-                    </>
-                  )}
-                </button>
+
+              <div className="python-editor-footer">
+                <span>{autosaveMessage}</span>
+                <div>
+                  <button
+                    type="button"
+                    className="python-run-btn"
+                    onClick={() => executeSubmission('run')}
+                    disabled={isRunning}
+                  >
+                    {isRunning ? <Loader /> : <Play className="h-4 w-4" />}
+                    {isRunning ? 'Running...' : 'Run Code'}
+                  </button>
+                  <button
+                    type="button"
+                    className="python-submit-btn"
+                    onClick={() => executeSubmission('submit')}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? <Loader /> : <CheckCircle2 className="h-4 w-4" />}
+                    {isSubmitting ? 'Submitting...' : 'Submit'}
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Results */}
-            {result && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Hasil Eksekusi
-                </h3>
-                
-                {/* Summary */}
-                <div className="mb-4 p-4 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-700 dark:text-gray-300 font-medium">Skor:</span>
-                    <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                      {result.summary.score}/{task.points}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-700 dark:text-gray-300">Test Cases:</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">
-                      {result.summary.passedTests}/{result.summary.totalTests} passed ({result.summary.percentage}%)
-                    </span>
-                  </div>
+            <div className="python-output-panel">
+              <div className="python-output-header">
+                <div>
+                  <p>Output & Result</p>
+                  <span>{lastAction ? `Terakhir: ${lastAction === 'run' ? 'Run code' : 'Submit'}` : 'Belum ada eksekusi'}</span>
                 </div>
-
-                {/* Test Results */}
-                <div className="space-y-3">
-                  {result.testResults.map((test, idx) => (
-                    <div
-                      key={idx}
-                      className={`p-4 rounded-lg border ${
-                        test.passed
-                          ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                          : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        {test.passed ? (
-                          <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                        )}
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          {test.name}
-                        </span>
-                      </div>
-                      
-                      {!test.passed && (
-                        <div className="space-y-2 text-sm">
-                          {test.error && (
-                            <div>
-                              <span className="font-medium text-red-700 dark:text-red-300">Error:</span>
-                              <pre className="mt-1 p-2 bg-red-100 dark:bg-red-900/30 rounded text-red-800 dark:text-red-200 overflow-x-auto">
-                                {test.error}
-                              </pre>
-                            </div>
-                          )}
-                          {test.actualOutput && (
-                            <div>
-                              <span className="font-medium text-gray-700 dark:text-gray-300">Output Anda:</span>
-                              <pre className="mt-1 p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 overflow-x-auto">
-                                {test.actualOutput}
-                              </pre>
-                            </div>
-                          )}
-                          <div>
-                            <span className="font-medium text-gray-700 dark:text-gray-300">Expected:</span>
-                            <pre className="mt-1 p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 overflow-x-auto">
-                              {test.expectedOutput}
-                            </pre>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {test.time && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                          ⏱️ Waktu: {test.time}s
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <button onClick={() => setResult(null)} className="python-chip python-chip--clear">
+                  Bersihkan
+                </button>
               </div>
+              {renderOutputPanel()}
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {isSubmissionsOpen && (
+        <div className="python-submissions-overlay">
+          <div className="python-submissions-panel">
+            <header>
+              <div>
+                <p>Riwayat Submit</p>
+                <span>{task.title}</span>
+              </div>
+              <button onClick={() => setIsSubmissionsOpen(false)}>
+                <XCircle className="h-4 w-4" />
+              </button>
+            </header>
+            {loadingSubmissions ? (
+              <div className="python-loading">
+                <div className="spinner" />
+                <p>Memuat riwayat...</p>
+              </div>
+            ) : submissions.length === 0 ? (
+              <div className="python-empty-state">
+                <History className="h-6 w-6" />
+                <p>Belum ada submission</p>
+              </div>
+            ) : (
+              <ul className="python-submission-list">
+                {submissions.map(item => (
+                  <li key={item.id}>
+                    <div>
+                      <p>Skor {item.score}/{item.task.points}</p>
+                      <span>{new Date(item.submittedAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                    </div>
+                    <span>{item.passedTests}/{item.totalTests} test</span>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         </div>
-      </div>
+      )}
+
+      {toast && (
+        <div className={`python-toast ${toast.type === 'success' ? 'python-toast--success' : 'python-toast--info'}`}>
+          {toast.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <Terminal className="h-4 w-4" />}
+          <span>{toast.text}</span>
+        </div>
+      )}
     </StudentLayout>
-  );
+  )
 }
+
+const BookIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M6 4H18V20H6V4Z" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M6 8H18" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+
+const Loader = () => <span className="python-btn-loader" />

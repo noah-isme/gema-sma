@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { PythonTaskDifficulty } from '@prisma/client';
+import { applyPythonTaskOverrides } from '@/lib/pythonTaskOverrides';
 
 /**
  * GET /api/python-coding-lab/tasks
@@ -53,17 +54,19 @@ export async function GET(request: NextRequest) {
       ],
     });
 
+    const normalizedTasks = tasks.map(task => applyPythonTaskOverrides(task, { includeHidden: false }));
+
     // Get student's submissions for these tasks (using studentId from query param)
     const submissions = await prisma.pythonSubmission.findMany({
       where: {
         studentId,
-        taskId: { in: tasks.map(t => t.id) },
+        taskId: { in: normalizedTasks.map(t => t.id) },
       },
       orderBy: { submittedAt: 'desc' },
     });
 
     // Merge task data with submission status
-    const tasksWithStatus = tasks.map(task => {
+    const tasksWithStatus = normalizedTasks.map(task => {
       const studentSubmissions = submissions.filter(s => s.taskId === task.id);
       const bestSubmission = studentSubmissions.reduce((best, current) => {
         if (!best || current.score > best.score) return current;

@@ -1,271 +1,456 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import StudentLayout from '@/components/student/StudentLayout';
-import Breadcrumb from '@/components/ui/Breadcrumb';
-import { studentAuth } from '@/lib/student-auth';
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import StudentLayout from '@/components/student/StudentLayout'
+import Breadcrumb from '@/components/ui/Breadcrumb'
+import { studentAuth } from '@/lib/student-auth'
 import {
-  Code2,
-  Trophy,
-  Target,
-  Clock,
-  Filter,
+  AlertTriangle,
+  CheckCircle2,
   ChevronRight,
-  AlertCircle,
-} from 'lucide-react';
+  Flame,
+  Filter,
+  Layers,
+  ListChecks,
+  Play,
+  Star,
+  Target
+} from 'lucide-react'
 
-interface Task {
-  id: string;
-  title: string;
-  slug: string;
-  description: string;
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
-  category: string;
-  points: number;
-  studentStatus: {
-    attempted: boolean;
-    attempts: number;
-    bestScore: number;
-    completed: boolean;
-    lastSubmittedAt: string | null;
-  };
+interface TestCase {
+  id: string
+  name: string
+  input: string
+  expectedOutput: string
+  isHidden: boolean
+  order: number
 }
 
-const difficultyColors = {
-  EASY: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  MEDIUM: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-  HARD: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-};
+interface Task {
+  id: string
+  title: string
+  slug: string
+  description: string
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD'
+  category: string
+  points: number
+  testCases: TestCase[]
+  studentStatus: {
+    attempted: boolean
+    attempts: number
+    bestScore: number
+    completed: boolean
+    lastSubmittedAt: string | null
+  }
+}
 
-const difficultyLabels = {
-  EASY: 'Mudah',
-  MEDIUM: 'Sedang',
-  HARD: 'Sulit',
-};
+const difficultyOrder: Array<Task['difficulty']> = ['EASY', 'MEDIUM', 'HARD']
+
+const difficultyMeta = {
+  EASY: {
+    label: 'Mudah',
+    accent: 'python-chip--easy',
+    cardAccent: 'python-card-accent--easy',
+    badge: 'python-difficulty python-difficulty--easy'
+  },
+  MEDIUM: {
+    label: 'Sedang',
+    accent: 'python-chip--medium',
+    cardAccent: 'python-card-accent--medium',
+    badge: 'python-difficulty python-difficulty--medium'
+  },
+  HARD: {
+    label: 'Sulit',
+    accent: 'python-chip--hard',
+    cardAccent: 'python-card-accent--hard',
+    badge: 'python-difficulty python-difficulty--hard'
+  }
+} as const
+
+const categoryMeta: Record<string, { label: string; icon: string }> = {
+  general: { label: 'General', icon: '📂' },
+  algorithm: { label: 'Algorithm', icon: '⚙️' },
+  'data-structure': { label: 'Data Structure', icon: '🧩' },
+  string: { label: 'String', icon: '🔤' },
+  math: { label: 'Math', icon: '📐' }
+}
+
+const difficultyFilters = [
+  { label: 'Mudah', value: 'EASY', icon: '🔰' },
+  { label: 'Sedang', value: 'MEDIUM', icon: '⚡' },
+  { label: 'Sulit', value: 'HARD', icon: '🔥' }
+]
+
+const categoryFilters = [
+  { label: 'General', value: 'general', icon: '📂' },
+  { label: 'Algorithm', value: 'algorithm', icon: '⚙️' },
+  { label: 'String', value: 'string', icon: '🔡' },
+  { label: 'Math', value: 'math', icon: '📐' },
+  { label: 'Data Structure', value: 'data-structure', icon: '🧩' }
+]
+
+type HeroStat = { label: string; value: string | number; icon: JSX.Element }
+
+type ProgressSummary = {
+  total: number
+  completed: number
+  attempted: number
+  xpEarned: number
+  totalXP: number
+  xpPercent: number
+  streakDays: number
+  weeklyChallenges: number
+}
+
+const formatExample = (testCase?: TestCase) => {
+  if (!testCase) return null
+  const trimmedInput = testCase.input.length > 60 ? `${testCase.input.slice(0, 57)}...` : testCase.input
+  const trimmedOutput = testCase.expectedOutput.length > 60 ? `${testCase.expectedOutput.slice(0, 57)}...` : testCase.expectedOutput
+
+  return {
+    input: trimmedInput || '—',
+    output: trimmedOutput || '—'
+  }
+}
 
 export default function PythonCodingLabPage() {
-  const router = useRouter();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const router = useRouter()
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedDifficulty, setSelectedDifficulty] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('')
+
+  const fetchTasks = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const session = studentAuth.getSession()
+      if (!session) {
+        router.push('/student/login')
+        return
+      }
+
+      const params = new URLSearchParams()
+      params.append('studentId', session.id)
+      if (selectedDifficulty) params.append('difficulty', selectedDifficulty)
+      if (selectedCategory) params.append('category', selectedCategory)
+
+      const response = await fetch(`/api/coding-lab-python/tasks?${params.toString()}`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Gagal memuat data')
+      }
+
+      setTasks(data.tasks || [])
+    } catch (err) {
+      console.error('Error fetching tasks:', err)
+      setError(err instanceof Error ? err.message : 'Terjadi kesalahan saat memuat data')
+    } finally {
+      setLoading(false)
+    }
+  }, [router, selectedCategory, selectedDifficulty])
 
   useEffect(() => {
-    // Fetch tasks on mount and when filters change
-    fetchTasks();
-  }, [selectedDifficulty, selectedCategory]);
+    fetchTasks()
+  }, [fetchTasks])
 
-  const fetchTasks = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const progressSummary: ProgressSummary = useMemo(() => {
+    const total = tasks.length
+    const completed = tasks.filter(task => task.studentStatus.completed).length
+    const attempted = tasks.filter(task => task.studentStatus.attempted && !task.studentStatus.completed).length
+    const xpEarned = tasks.reduce((sum, task) => sum + (task.studentStatus.bestScore || 0), 0)
+    const totalXP = tasks.reduce((sum, task) => sum + task.points, 0)
+    const xpPercent = totalXP ? Math.min(100, Math.round((xpEarned / totalXP) * 100)) : 0
 
-      // Get student session from custom auth
-      const session = studentAuth.getSession();
-      if (!session) {
-        router.push('/student/login');
-        return;
-      }
+    const submissionDates = tasks
+      .map(task => task.studentStatus.lastSubmittedAt)
+      .filter(Boolean)
+      .map(date => new Date(date as string).toDateString())
+    const uniqueRecentDates = Array.from(new Set(submissionDates)).slice(-7)
 
-      const params = new URLSearchParams();
-      params.append('studentId', session.id); // Add studentId to query
-      if (selectedDifficulty) params.append('difficulty', selectedDifficulty);
-      if (selectedCategory) params.append('category', selectedCategory);
-
-      const response = await fetch(`/api/coding-lab-python/tasks?${params}`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setTasks(data.tasks);
-      } else {
-        console.error('Failed to fetch tasks:', data.error);
-        setError(data.error || 'Gagal memuat data');
-      }
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-      setError('Terjadi kesalahan saat memuat data');
-    } finally {
-      setLoading(false);
+    return {
+      total,
+      completed,
+      attempted,
+      xpEarned,
+      totalXP,
+      xpPercent,
+      streakDays: uniqueRecentDates.length,
+      weeklyChallenges: Math.min(uniqueRecentDates.length, completed)
     }
-  };
+  }, [tasks])
 
-  const handleTaskClick = (slug: string) => {
-    router.push(`/student/coding-lab/${slug}`);
-  };
+  const groupedTasks = useMemo(() => {
+    return tasks.reduce<Record<string, Task[]>>((acc, task) => {
+      const key = task.difficulty
+      acc[key] = acc[key] ? [...acc[key], task] : [task]
+      return acc
+    }, {})
+  }, [tasks])
 
-  const stats = {
-    total: tasks.length,
-    completed: tasks.filter(t => t.studentStatus.completed).length,
-    attempted: tasks.filter(t => t.studentStatus.attempted).length,
-    totalPoints: tasks.reduce((sum, t) => sum + (t.studentStatus.bestScore || 0), 0),
-  };
+  const heroStats: HeroStat[] = [
+    { label: 'Total Soal', value: progressSummary.total, icon: <Target className="h-4 w-4 text-indigo-500" /> },
+    { label: 'Selesai', value: progressSummary.completed, icon: <CheckCircle2 className="h-4 w-4 text-emerald-500" /> },
+    { label: 'Dicoba', value: progressSummary.attempted, icon: <ListChecks className="h-4 w-4 text-amber-500" /> },
+    { label: 'Total XP', value: progressSummary.totalXP, icon: <Star className="h-4 w-4 text-sky-500" /> }
+  ]
 
-  const breadcrumbItems = [
-    { label: 'Dashboard', href: '/student/dashboard' },
-    { label: 'Coding Lab', href: '/student/coding-lab' },
-  ];
+  const breadcrumbItems = useMemo(() => (
+    [
+      { label: 'Dashboard', href: '/student/dashboard' },
+      { label: 'Coding Lab', href: '/student/coding-lab' }
+    ]
+  ), [])
+
+  const renderProgressBadge = (task: Task) => {
+    if (task.studentStatus.completed) {
+      return <span className="python-progress-pill python-progress-pill--done">✔ Selesai</span>
+    }
+
+    if (task.studentStatus.attempted) {
+      const percent = Math.min(100, Math.round((task.studentStatus.bestScore / task.points) * 100))
+      return <span className="python-progress-pill python-progress-pill--in">Dicoba · {percent}%</span>
+    }
+
+    return <span className="python-progress-pill">Belum dimulai</span>
+  }
+
+  const noTasksState = (
+    <div className="python-empty-state">
+      <div className="python-empty-illustration">🐍</div>
+      <h3>Tidak ada tantangan di filter ini</h3>
+      <p>Coba kategori atau tingkat lain. Ada banyak misi Python seru buatmu ✨</p>
+      <button
+        type="button"
+        onClick={() => {
+          setSelectedCategory('')
+          setSelectedDifficulty('')
+        }}
+        className="python-chip python-chip--clear"
+      >
+        Reset filter
+      </button>
+    </div>
+  )
 
   return (
     <StudentLayout loading={loading}>
-      <div className="space-y-6">
-        {/* Breadcrumb */}
+      <div className="python-lab-page space-y-6">
         <Breadcrumb items={breadcrumbItems} />
 
-        {/* Page Header */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl text-white">
-            <Code2 className="w-8 h-8" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Python Coding Lab
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Tingkatkan skill programming dengan latihan Python
-            </p>
-          </div>
-        </div>
-
-        {/* Error Alert */}
         {error && (
-          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-              <div>
-                <p className="font-medium text-red-800 dark:text-red-200">Gagal memuat data</p>
-                <p className="text-sm text-red-600 dark:text-red-300">{error}</p>
-              </div>
+          <div className="python-alert">
+            <AlertTriangle className="h-5 w-5" />
+            <div>
+              <p className="font-semibold">Gagal memuat data</p>
+              <p className="text-sm">{error}</p>
             </div>
-            <button
-              onClick={fetchTasks}
-              className="mt-3 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 underline"
-            >
-              Coba lagi
-            </button>
+            <button type="button" onClick={fetchTasks}>Coba lagi</button>
           </div>
         )}
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <Target className="w-5 h-5 text-blue-500" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Total Soal</span>
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <Trophy className="w-5 h-5 text-green-500" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Selesai</span>
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.completed}</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <Clock className="w-5 h-5 text-yellow-500" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Dicoba</span>
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.attempted}</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <Target className="w-5 h-5 text-purple-500" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">Total Poin</span>
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalPoints}</p>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-wrap gap-4">
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-500" />
-            <select
-              value={selectedDifficulty}
-              onChange={(e) => setSelectedDifficulty(e.target.value)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Semua Tingkat</option>
-              <option value="EASY">Mudah</option>
-              <option value="MEDIUM">Sedang</option>
-              <option value="HARD">Sulit</option>
-            </select>
-          </div>
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Semua Kategori</option>
-            <option value="general">Umum</option>
-            <option value="algorithm">Algoritma</option>
-            <option value="data-structure">Struktur Data</option>
-            <option value="string">String</option>
-            <option value="math">Matematika</option>
-          </select>
-        </div>
-
-        {/* Tasks List */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          </div>
-        ) : tasks.length === 0 ? (
-          <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-lg">
-            <Code2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400">
-              Tidak ada soal yang tersedia
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {tasks.map((task) => (
-              <div
-                key={task.id}
-                onClick={() => handleTaskClick(task.slug)}
-                className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-200 dark:border-gray-700 group"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                        {task.title}
-                      </h3>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${difficultyColors[task.difficulty]}`}>
-                        {difficultyLabels[task.difficulty]}
-                      </span>
-                      {task.studentStatus.completed && (
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                          ✓ Selesai
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
-                      {task.description}
-                    </p>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                      <span className="flex items-center gap-1">
-                        <Trophy className="w-4 h-4" />
-                        {task.points} poin
-                      </span>
-                      <span className="capitalize">{task.category}</span>
-                      {task.studentStatus.attempted && (
-                        <span className="text-blue-600 dark:text-blue-400">
-                          Skor terbaik: {task.studentStatus.bestScore}/{task.points}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex-shrink-0" />
+        <section className="python-hero">
+          <div className="python-hero__grid">
+            <div className="python-hero__main">
+              <div className="python-hero__badge">
+                <span role="img" aria-label="Python">🐍</span>
+                Python Coding Lab
+              </div>
+              <h1>Python Coding Lab</h1>
+              <p>Tingkatkan skill programming dengan latihan interaktif</p>
+              <div className="python-xp">
+                <div className="python-xp__header">
+                  <span>XP Progress</span>
+                  <span>{progressSummary.xpEarned} / {progressSummary.totalXP || 0} XP</span>
+                </div>
+                <div className="python-xp__track">
+                  <div className="python-xp__fill" style={{ width: `${progressSummary.xpPercent}%` }}></div>
                 </div>
               </div>
+              <div className="python-streak">
+                <div className="python-streak__icon">
+                  <Flame className="h-5 w-5" />
+                </div>
+                <div>
+                  <p>Streak Coding</p>
+                  <span>{progressSummary.streakDays} Hari • {progressSummary.weeklyChallenges} Tantangan pekan ini</span>
+                </div>
+              </div>
+            </div>
+            <div className="python-hero__stats">
+              {heroStats.map(stat => (
+                <div key={stat.label} className="python-hero-card">
+                  <div className="python-hero-card__icon">{stat.icon}</div>
+                  <p className="python-hero-card__value">{stat.value}</p>
+                  <span>{stat.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="python-filter-card">
+          <div className="python-filter-card__header">
+            <div>
+              <p className="python-filter-card__title">Filter Tantangan</p>
+              <p className="python-filter-card__subtitle">{tasks.length} tugas tersedia</p>
+            </div>
+            {(selectedCategory || selectedDifficulty) && (
+              <button
+                type="button"
+                className="python-chip python-chip--clear"
+                onClick={() => {
+                  setSelectedCategory('')
+                  setSelectedDifficulty('')
+                }}
+              >
+                Clear filter
+              </button>
+            )}
+          </div>
+          <div className="python-filter-chip-group">
+            <span className="group-label"><Filter className="h-4 w-4" /> Tingkat</span>
+            {difficultyFilters.map(option => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setSelectedDifficulty(prev => prev === option.value ? '' : option.value)}
+                className={`python-chip ${selectedDifficulty === option.value ? 'python-chip--active ' + (difficultyMeta[option.value as Task['difficulty']].accent) : ''}`}
+              >
+                <span>{option.icon}</span>
+                {option.label}
+              </button>
             ))}
           </div>
+          <div className="python-filter-chip-group">
+            <span className="group-label"><Layers className="h-4 w-4" /> Kategori</span>
+            {categoryFilters.map(option => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setSelectedCategory(prev => prev === option.value ? '' : option.value)}
+                className={`python-chip ${selectedCategory === option.value ? 'python-chip--active' : ''}`}
+              >
+                <span>{option.icon}</span>
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="python-progress-banner">
+          <div className="banner-icon">🎯</div>
+          <div className="banner-text">
+            <p>Progress: {progressSummary.completed}/{progressSummary.total} Tantangan</p>
+            <span>XP terkumpul {progressSummary.xpEarned} • Streak {progressSummary.streakDays} hari</span>
+          </div>
+          <button type="button" className="banner-btn" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            Lihat detail
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </section>
+
+        {loading ? (
+          <div className="python-loading">
+            <div className="spinner" />
+            <p>Memuat tantangan Python...</p>
+          </div>
+        ) : tasks.length === 0 ? (
+          noTasksState
+        ) : (
+          difficultyOrder.map(difficulty => {
+            const bucket = groupedTasks[difficulty] || []
+            if (bucket.length === 0) return null
+
+            const meta = difficultyMeta[difficulty]
+
+            return (
+              <section key={difficulty} className="python-group">
+                <header className="python-group__header">
+                  <div>
+                    <p className="group-title">{meta.label}</p>
+                    <span>{bucket.length} tantangan</span>
+                  </div>
+                </header>
+                <div className="python-task-grid">
+                  {bucket.map(task => {
+                    const example = formatExample(task.testCases?.find(tc => !tc.isHidden))
+                    const progressPercent = task.points ? Math.min(100, Math.round((task.studentStatus.bestScore / task.points) * 100)) : 0
+                    const categoryInfo = categoryMeta[task.category] || { label: task.category, icon: '📂' }
+
+                    return (
+                      <article key={task.id} className={`python-task-card ${meta.cardAccent}`}>
+                        <div className="python-task-card__accent" aria-hidden></div>
+                        <div className="python-task-card__head">
+                          <div className="python-labels">
+                            <span className={meta.badge}>{meta.label}</span>
+                            <span className="python-category">
+                              {categoryInfo.icon} {categoryInfo.label}
+                            </span>
+                            {renderProgressBadge(task)}
+                          </div>
+                          <button
+                            type="button"
+                            className="python-card-cta"
+                            onClick={() => router.push(`/student/coding-lab/${task.slug}`)}
+                          >
+                            Mulai
+                            <Play className="h-4 w-4" />
+                          </button>
+                        </div>
+                        <h3>{task.title}</h3>
+                        <p className="python-description">{task.description}</p>
+                        <div className="python-meta-row">
+                          <span className="python-xp-chip">
+                            <Star className="h-4 w-4" /> {task.points} XP
+                          </span>
+                          <span className="python-score-chip">
+                            Skor terbaik {task.studentStatus.bestScore}/{task.points}
+                          </span>
+                          <span className="python-attempt-chip">
+                            {task.studentStatus.attempts || 0} attempt
+                          </span>
+                        </div>
+                        {example && (
+                          <div className="python-example">
+                            <div className="python-example__header">Example</div>
+                            <div className="python-example__body">
+                              <div>
+                                <span>Input</span>
+                                <p>{example.input}</p>
+                              </div>
+                              <div>
+                                <span>Output</span>
+                                <p>{example.output}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        <div className="python-progress">
+                          <div className="python-progress__header">
+                            <span>{task.studentStatus.completed ? 'Misi selesai' : task.studentStatus.attempted ? 'Sedang dikerjakan' : 'Belum dimulai'}</span>
+                            <span>{progressPercent}%</span>
+                          </div>
+                          <div className="python-progress__track">
+                            <div
+                              className={`python-progress__fill ${task.studentStatus.completed ? 'is-done' : task.studentStatus.attempted ? 'is-active' : ''}`}
+                              style={{ width: `${progressPercent}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
+              </section>
+            )
+          })
         )}
       </div>
     </StudentLayout>
-  );
+  )
 }

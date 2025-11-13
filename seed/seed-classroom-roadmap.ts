@@ -10,345 +10,202 @@ async function seedClassroomRoadmap() {
     await prisma.classroomProjectChecklist.deleteMany({})
     console.log('🧹 Cleared existing classroom project checklists')
 
-    // 1. Dasar-dasar Web
-    await prisma.classroomProjectChecklist.create({
-      data: {
-        title: "1. Dasar-dasar Web",
-        slug: "dasar-dasar-web",
-        goal: "Mengenal bagaimana web bekerja dan membuat halaman web sederhana dengan HTML, CSS, JavaScript",
-        skills: [
-          "HTML Dasar",
-          "CSS Dasar", 
-          "JavaScript Dasar",
-          "Struktur Web",
-          "Browser & Server"
-        ],
+    const labStages = [
+      {
+        title: 'Stage 1 · HTML Playground',
+        slug: 'lp-html-playground',
+        goal: 'Mengenal struktur halaman, semantic tag dasar, dan pola layout sederhana layaknya wireframe interaktif.',
+        skills: ['Semantic HTML', 'Modular Sections', 'Accessibility Basics'],
         basicTargets: [
           {
-            title: "📚 Pelajari HTML Dasar",
-            description: "Memahami elemen dasar HTML: heading, paragraf, link, gambar, list, tabel, form",
+            title: '💡 Hero Sandbox',
+            description: 'Buat hero section dengan judul, subjudul, dan tombol call-to-action yang jelas.',
             completed: false
           },
           {
-            title: "🎨 Pelajari CSS Dasar", 
-            description: "Memahami selector, warna, font, box model, layout dasar",
+            title: '🧩 Grid Cerita',
+            description: 'Susun tiga blok konten menggunakan semantic tag sebagai “story tiles”.',
             completed: false
           },
           {
-            title: "⚡ Pelajari JavaScript Dasar",
-            description: "Memahami variabel, tipe data, operator, kondisi, loop, fungsi",
-            completed: false
-          },
-          {
-            title: "👤 Latihan: Buat Halaman Biodata",
-            description: "Buat halaman biodata sederhana menggunakan HTML + CSS",
+            title: '🎯 Navigasi Fokus',
+            description: 'Bangun struktur nav dengan anchor internal dan tambahkan skip-link untuk aksesibilitas.',
             completed: false
           }
         ],
         advancedTargets: [
           {
-            title: "🎯 Latihan: Tambah Interaksi JS",
-            description: "Tambahkan interaksi sederhana dengan JS (contoh: tombol ubah warna background)",
+            title: '📐 Layout Blueprint',
+            description: 'Gunakan CSS Grid sederhana untuk menata section menjadi 2 kolom responsif.',
             completed: false
           },
           {
-            title: "🔍 Eksplorasi Developer Tools",
-            description: "Belajar menggunakan browser developer tools untuk debugging",
+            title: '🎛️ Komponen Reusable',
+            description: 'Buat komponen kartu testimonial menggunakan semantic tag + class reusable.',
             completed: false
           }
         ],
-        reflectionPrompt: "Bagaimana perasaan Anda setelah membuat halaman web pertama? Apa tantangan terbesar yang dihadapi?",
+        reflectionPrompt: 'Bagian mana dari struktur HTML yang paling membantu saat membaca ulang kode?',
         order: 1,
         isActive: true
-      }
-    })
-
-    // 2. HTML Lanjutan
-    await prisma.classroomProjectChecklist.create({
-      data: {
-        title: "2. HTML Lanjutan",
-        slug: "html-lanjutan",
-        goal: "Membuat struktur halaman web yang rapi dengan Semantic HTML dan form kompleks",
-        skills: [
-          "Semantic HTML",
-          "Form Lanjutan",
-          "Aksesibilitas",
-          "HTML5 Elements",
-          "Web Standards"
-        ],
+      },
+      {
+        title: 'Stage 2 · CSS Interaction Studio',
+        slug: 'lp-css-interaction',
+        goal: 'Mengasah kemampuan styling modern: tokens, responsive spacing, serta micro interaction menggunakan hover/focus.',
+        skills: ['Design Tokens', 'Responsive Layout', 'Micro Interaction'],
         basicTargets: [
           {
-            title: "🏗️ Pelajari Semantic HTML",
-            description: "Memahami penggunaan header, nav, main, footer, article, section",
+            title: '🎨 Palette & Tokens',
+            description: 'Definisikan custom properties untuk warna, radius, dan shadow agar konsisten.',
             completed: false
           },
           {
-            title: "📝 Pelajari Form Kompleks",
-            description: "Menguasai berbagai input: textarea, radio, checkbox, select, button",
+            title: '📱 Responsive Stack',
+            description: 'Implementasikan layout dua kolom di desktop dan stack di mobile menggunakan Flexbox.',
             completed: false
           },
           {
-            title: "♿ Pelajari Aksesibilitas Dasar",
-            description: "Implementasi alt text, label form, dan prinsip web accessible",
+            title: '✨ Hover Feedback',
+            description: 'Tambahkan transisi halus untuk tombol utama + state focus yang kontras.',
             completed: false
           }
         ],
         advancedTargets: [
           {
-            title: "📋 Latihan: Form Pendaftaran",
-            description: "Buat form pendaftaran online sederhana dengan validasi HTML5",
+            title: '🌗 Theme Toggle Visual',
+            description: 'Buat versi light/dark dengan CSS variables dan animasi minimal saat toggle.',
             completed: false
           },
           {
-            title: "🎯 Implementasi ARIA Labels",
-            description: "Tambahkan ARIA labels untuk aksesibilitas yang lebih baik",
+            title: '🧭 Sticky Mini Navbar',
+            description: 'Tambahkan nav kecil yang menempel saat scroll untuk pengalaman lab dashboard.',
             completed: false
           }
         ],
-        reflectionPrompt: "Mengapa struktur HTML yang semantik penting untuk web development?",
+        reflectionPrompt: 'Bagaimana caramu menentukan kapan efek hover perlu ditambahkan?',
         order: 2,
         isActive: true
-      }
-    })
-
-    // 3. CSS Lanjutan
-    await prisma.classroomProjectChecklist.create({
-      data: {
-        title: "3. CSS Lanjutan",
-        slug: "css-lanjutan",
-        goal: "Membuat tampilan web yang menarik dan responsif dengan CSS modern",
-        skills: [
-          "Flexbox",
-          "CSS Grid",
-          "Responsive Design",
-          "CSS Animations",
-          "CSS Variables"
-        ],
+      },
+      {
+        title: 'Stage 3 · JavaScript Motion Lab',
+        slug: 'lp-js-motion',
+        goal: 'Belajar menghubungkan UI dengan state sederhana: toggles, modals, carousel mini.',
+        skills: ['State Management', 'DOM Updates', 'Modal/Carousel Logic'],
         basicTargets: [
           {
-            title: "📐 Kuasai Flexbox & Grid",
-            description: "Memahami dan menggunakan Flexbox dan CSS Grid untuk layout",
+            title: '▶️ Play Toggle',
+            description: 'Buat tombol play/pause yang mengganti ikon serta label secara dinamis.',
             completed: false
           },
           {
-            title: "📱 Pelajari Responsive Design",
-            description: "Implementasi media query dan mobile-first approach",
+            title: '🪟 Modal Lab',
+            description: 'Implementasikan modal dengan aksesibilitas dasar (focus trap sederhana).',
             completed: false
           },
           {
-            title: "✨ Buat Animasi CSS",
-            description: "Menguasai transitions, animations, dan transform",
-            completed: false
-          },
-          {
-            title: "🔧 Gunakan CSS Variables",
-            description: "Implementasi CSS custom properties untuk maintainability",
+            title: '🔁 Carousel Mini',
+            description: 'Bangun carousel 3 kartu dengan tombol prev/next dan indikator aktif.',
             completed: false
           }
         ],
         advancedTargets: [
           {
-            title: "📰 Latihan: Layout Blog",
-            description: "Buat layout blog dengan header, sidebar, dan konten utama",
+            title: '📡 Data Dummy',
+            description: 'Ambil data lab progress dari file JSON lokal dan render secara dinamis.',
             completed: false
           },
           {
-            title: "🎭 Latihan: Animasi Hover",
-            description: "Tambahkan animasi hover yang menarik pada tombol dan elemen",
-            completed: false
-          },
-          {
-            title: "🎨 Buat Dark/Light Theme",
-            description: "Implementasi theme switcher menggunakan CSS variables",
+            title: '⚡ Keyboard Friendly',
+            description: 'Tambahkan kontrol keyboard (Arrow / Escape) untuk carousel & modal.',
             completed: false
           }
         ],
-        reflectionPrompt: "Bagaimana CSS Grid dan Flexbox mengubah cara Anda membuat layout? Mana yang lebih mudah digunakan?",
+        reflectionPrompt: 'Bagaimana cara kamu mengecek bug saat event handler tidak jalan?',
         order: 3,
         isActive: true
-      }
-    })
-
-    // 4. JavaScript Lanjutan
-    await prisma.classroomProjectChecklist.create({
-      data: {
-        title: "4. JavaScript Lanjutan",
-        slug: "javascript-lanjutan",
-        goal: "Membuat web yang interaktif dengan DOM manipulation dan event handling",
-        skills: [
-          "DOM Manipulation",
-          "Event Handling",
-          "Array & Object",
-          "LocalStorage",
-          "Async Programming"
-        ],
+      },
+      {
+        title: 'Stage 4 · Component Systems Sprint',
+        slug: 'lp-component-sprint',
+        goal: 'Merancang sistem komponen mini (card, chip, stats) agar halaman terasa seperti lab profesional.',
+        skills: ['Component Thinking', 'Design System', 'Documentation'],
         basicTargets: [
           {
-            title: "🎯 Kuasai DOM Manipulation",
-            description: "Menguasai querySelector, innerHTML, dan createElement",
+            title: '🧱 Card Variants',
+            description: 'Buat 2 varian kartu (default & highlight) dengan opsi badge status.',
             completed: false
           },
           {
-            title: "⚡ Pelajari Event Handling",
-            description: "Implementasi event listener untuk click, input, submit, mouseover",
+            title: '🏷️ Chip Library',
+            description: 'Siapkan set chip (Level, XP, Status) dengan warna berbeda dan ikon unggulan.',
             completed: false
           },
           {
-            title: "📊 Pahami Array & Object",
-            description: "Menguasai manipulasi array dan object dalam JavaScript",
-            completed: false
-          },
-          {
-            title: "💾 Gunakan LocalStorage",
-            description: "Implementasi penyimpanan data di browser dengan localStorage",
+            title: '📊 Progress HUD',
+            description: 'Bangun komponen progress ring / bar yang bisa dikustom via CSS variables.',
             completed: false
           }
         ],
         advancedTargets: [
           {
-            title: "🧮 Latihan: Kalkulator Sederhana",
-            description: "Buat kalkulator dengan operasi dasar menggunakan JavaScript",
+            title: '📘 Mini Style Guide',
+            description: 'Dokumentasikan komponen di satu halaman dengan contoh penggunaan.',
             completed: false
           },
           {
-            title: "👋 Latihan: Simpan Nama User",
-            description: "Simpan nama pengguna di LocalStorage dan tampilkan saat buka halaman",
-            completed: false
-          },
-          {
-            title: "🎮 Buat Mini Game",
-            description: "Implementasi logika sederhana seperti tebak angka atau rock-paper-scissors",
+            title: '🧬 Animation Tokens',
+            description: 'Tambahkan kelas utilitas untuk delay/animasi agar komponen hidup.',
             completed: false
           }
         ],
-        reflectionPrompt: "Apa perbedaan yang Anda rasakan ketika membuat web statis vs web interaktif?",
+        reflectionPrompt: 'Komponen apa yang paling sering kamu pakai ulang, dan mengapa?',
         order: 4,
         isActive: true
-      }
-    })
-
-    // 5. Mini Proyek
-    await prisma.classroomProjectChecklist.create({
-      data: {
-        title: "5. Mini Proyek - Aplikasi Interaktif",
-        slug: "mini-proyek-aplikasi",
-        goal: "Mengintegrasikan HTML, CSS, dan JavaScript dalam proyek nyata yang fungsional",
-        skills: [
-          "Project Planning",
-          "Full Stack Integration",
-          "Game Development",
-          "UI/UX Design",
-          "Problem Solving"
-        ],
+      },
+      {
+        title: 'Stage 5 · Prototype Launch Mission',
+        slug: 'lp-prototype-launch',
+        goal: 'Menggabungkan semua skill menjadi dashboard “Coding Lab” versi beta sebelum dipresentasikan.',
+        skills: ['Product Thinking', 'QA Checklist', 'Storytelling'],
         basicTargets: [
           {
-            title: "🎮 Proyek 1: Game Pasangkan Emoji",
-            description: "Buat game memory dengan HTML grid, CSS animasi flip, JS logika pasangkan kartu",
+            title: '🚀 MVP Scope',
+            description: 'Susun daftar fitur wajib vs nice-to-have untuk prototipe final.',
             completed: false
           },
           {
-            title: "🤖 Proyek 2: Chatbot Sederhana",
-            description: "Buat chatbot dengan HTML kotak chat, CSS bubble, JS if/else logic",
+            title: '🧪 QA Mini Suite',
+            description: 'Buat checklist pengujian manual (responsif, aksesibilitas, interaksi).',
             completed: false
           },
           {
-            title: "📝 Proyek 3: Blog Pribadi",
-            description: "Buat blog dengan daftar artikel, layout rapi, navigasi antar halaman",
-            completed: false
-          },
-          {
-            title: "📸 Proyek 4: Gallery Foto",
-            description: "Buat gallery dengan grid gambar dan lightbox (klik gambar → tampil besar)",
+            title: '🎬 Demo Script',
+            description: 'Siapkan script demo 3 menit untuk mempresentasikan hasil prototipe.',
             completed: false
           }
         ],
         advancedTargets: [
           {
-            title: "💼 Proyek 5: Portofolio Profesional",
-            description: "Buat portofolio berisi: profil, skill, proyek, kontak (responsif)",
+            title: '🔗 Deployment Preview',
+            description: 'Upload prototipe ke Netlify/Vercel/GitHub Pages untuk feedback teman.',
             completed: false
           },
           {
-            title: "🚀 Deploy ke GitHub Pages/Netlify",
-            description: "Deploy portofolio secara gratis ke internet",
-            completed: false
-          },
-          {
-            title: "🎯 Optimasi Performance",
-            description: "Implementasi lazy loading, minifikasi, dan optimasi gambar",
+            title: '📣 Story Pitch',
+            description: 'Buat satu halaman ringkasan (pitch deck mini) yang menjelaskan problem/solusi.',
             completed: false
           }
         ],
-        reflectionPrompt: "Proyek mana yang paling menantang? Apa yang Anda pelajari dari proses debugging?",
+        reflectionPrompt: 'Apa satu hal yang paling kamu banggakan dari prototipe ini?',
         order: 5,
         isActive: true
       }
-    })
+    ]
 
-    // 6. Skill Tambahan (Advanced)
-    await prisma.classroomProjectChecklist.create({
-      data: {
-        title: "6. Skill Tambahan (Advanced)",
-        slug: "skill-tambahan-advanced",
-        goal: "Menguasai tools modern dan framework untuk development profesional",
-        skills: [
-          "Git & GitHub",
-          "CSS Framework",
-          "JavaScript Framework",
-          "Build Tools",
-          "Deployment"
-        ],
-        basicTargets: [
-          {
-            title: "📚 Pelajari Git & GitHub",
-            description: "Menguasai version control dan publish proyek ke GitHub",
-            completed: false
-          },
-          {
-            title: "🎨 Eksplorasi CSS Framework",
-            description: "Belajar Tailwind CSS atau Bootstrap untuk development yang lebih cepat",
-            completed: false
-          },
-          {
-            title: "🔧 Modern Development Tools",
-            description: "Mengenal package managers, build tools, dan workflow modern",
-            completed: false
-          }
-        ],
-        advancedTargets: [
-          {
-            title: "⚛️ Pengenalan React",
-            description: "Dasar-dasar React untuk tingkat lanjut (opsional)",
-            completed: false
-          },
-          {
-            title: "🌟 Proyek Portfolio Advanced",
-            description: "Rebuild portofolio menggunakan framework modern",
-            completed: false
-          },
-          {
-            title: "🚀 CI/CD Pipeline",
-            description: "Setup automated deployment dengan GitHub Actions",
-            completed: false
-          },
-          {
-            title: "📱 Progressive Web App (PWA)",
-            description: "Konversi salah satu proyek menjadi PWA",
-            completed: false
-          }
-        ],
-        reflectionPrompt: "Bagaimana framework dan tools modern mengubah workflow development Anda?",
-        order: 6,
-        isActive: true
-      }
-    })
-
-    console.log('✅ Classroom Roadmap berhasil di-seed!')
-    console.log(`📊 Summary:`)
-    console.log(`   - 6 Project Checklists created`)
-    console.log(`   - Roadmap: Dasar Web → HTML → CSS → JavaScript → Mini Proyek → Advanced`)
-    console.log(`   - Total 30+ learning targets dengan basic & advanced levels`)
-    
+    for (const stage of labStages) {
+      await prisma.classroomProjectChecklist.create({ data: stage })
+    }
   } catch (error) {
     console.error('❌ Error seeding classroom roadmap:', error)
     throw error

@@ -1,6 +1,7 @@
-'use client'
+"use client"
 
-import { useEffect, useState, useCallback } from 'react'
+import type { ComponentType, ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { studentAuth } from '@/lib/student-auth'
 import { WebLabAssignment, WebLabSubmission, WebLabSubmissionStatus } from '@prisma/client'
@@ -8,8 +9,188 @@ import { WEB_LAB_TEMPLATES } from '@/data/webLabTemplates'
 import StudentLayout from '@/components/student/StudentLayout'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import CodeMirrorEditor from '@/components/CodeMirrorEditor'
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  Clipboard,
+  Code2,
+  Image as ImageIcon,
+  Laptop,
+  LayoutGrid,
+  MonitorSmartphone,
+  MousePointerClick,
+  Palette,
+  Play,
+  Smartphone,
+  Sparkles,
+  SquareStack,
+  Timer,
+  Zap
+} from 'lucide-react'
 
-type TabType = 'html' | 'css' | 'js' | 'preview'
+type TabType = 'html' | 'css' | 'js'
+type PreviewDevice = 'desktop' | 'tablet' | 'mobile'
+
+type InstructionGroups = {
+  structure: string[]
+  interaction: string[]
+}
+
+type HintItem = {
+  id: string
+  text: string
+  icon: ComponentType<{ className?: string }>
+}
+
+const difficultyMeta = {
+  BEGINNER: {
+    label: 'Pemula',
+    gradient: 'from-emerald-400/25 to-teal-400/40',
+    accent: 'text-emerald-600'
+  },
+  INTERMEDIATE: {
+    label: 'Menengah',
+    gradient: 'from-amber-300/25 to-orange-400/40',
+    accent: 'text-amber-600'
+  },
+  ADVANCED: {
+    label: 'Mahir',
+    gradient: 'from-purple-400/25 to-cyan-400/40',
+    accent: 'text-purple-600'
+  }
+} as const
+
+type DifficultyKey = keyof typeof difficultyMeta
+
+const fallbackHintsByDifficulty: Record<DifficultyKey, string[]> = {
+  BEGINNER: [
+    'Gunakan struktur semantic HTML agar galeri mudah dibaca screen reader',
+    'Pastikan gambar berada dalam grid responsif menggunakan CSS modern',
+    'Tambahkan tombol close yang jelas dan bisa diakses keyboard'
+  ],
+  INTERMEDIATE: [
+    'Gunakan kombinasi CSS Grid + Flexbox untuk menyusun thumbnail',
+    'Manfaatkan transition dan transform untuk animasi buka/tutup modal',
+    'Implementasikan navigasi keyboard untuk next / prev foto'
+  ],
+  ADVANCED: [
+    'Kelola state modal menggunakan data attribute atau class agar lebih rapi',
+    'Tambahkan preloading gambar dan efek blur-up supaya transisi halus',
+    'Integrasikan focus trap di dalam modal agar aksesibilitas terjaga'
+  ]
+}
+
+const templateHintsMap: Record<string, string[]> = {
+  'html-basic': [
+    'Gunakan tag header, main, dan footer agar struktur halaman jelas',
+    'Tambahkan nav list untuk berpindah antar section',
+    'Latih penggunaan elemen button dan event handler sederhana'
+  ],
+  'portfolio-basic': [
+    'Buat hero section dengan headline kuat dan CTA',
+    'Susun bagian skills menggunakan card grid',
+    'Gunakan anchor link untuk navigasi antar section'
+  ],
+  'gallery-modal': [
+    'Pakai grid 3 kolom untuk thumbnail lalu adjust di layar kecil',
+    'Modal perlu overlay gelap dengan transition 200-300ms',
+    'Tambahkan kontrol panah untuk berpindah foto saat modal aktif'
+  ]
+}
+
+const previewDeviceConfigs: Record<PreviewDevice, { frameClass: string; iframeClass: string }> = {
+  desktop: {
+    frameClass: 'lab-preview-frame--desktop',
+    iframeClass: 'lab-preview-iframe--desktop'
+  },
+  tablet: {
+    frameClass: 'lab-preview-frame--tablet',
+    iframeClass: 'lab-preview-iframe--tablet'
+  },
+  mobile: {
+    frameClass: 'lab-preview-frame--phone',
+    iframeClass: 'lab-preview-iframe--phone'
+  }
+}
+
+const parseJsonArray = (value?: unknown): string[] => {
+  if (!value) return []
+
+  if (Array.isArray(value)) {
+    return value.map(String)
+  }
+
+  try {
+    const parsed = typeof value === 'string' ? JSON.parse(value) : value
+    if (Array.isArray(parsed)) {
+      return parsed.map(String)
+    }
+  } catch (error) {
+    console.warn('Failed to parse array field', error)
+  }
+
+  return []
+}
+
+const groupInstructions = (text: string): InstructionGroups => {
+  if (!text) {
+    return { structure: [], interaction: [] }
+  }
+
+  const lines = text
+    .split(/\n|\r/) // split by new line
+    .map(line => line.trim())
+    .filter(Boolean)
+
+  if (lines.length === 0) {
+    return { structure: [], interaction: [] }
+  }
+
+  const structureKeywords = ['layout', 'section', 'grid', 'thumbnail', 'modal', 'image', 'struktur']
+  const interactionKeywords = ['click', 'animasi', 'transition', 'keyboard', 'prev', 'next', 'interaksi']
+
+  const buckets: InstructionGroups = { structure: [], interaction: [] }
+
+  lines.forEach((line) => {
+    const lower = line.toLowerCase()
+    if (structureKeywords.some(keyword => lower.includes(keyword))) {
+      buckets.structure.push(line)
+      return
+    }
+
+    if (interactionKeywords.some(keyword => lower.includes(keyword))) {
+      buckets.interaction.push(line)
+      return
+    }
+
+    // fallback: distribute alternately for balance
+    if (buckets.structure.length <= buckets.interaction.length) {
+      buckets.structure.push(line)
+    } else {
+      buckets.interaction.push(line)
+    }
+  })
+
+  return buckets
+}
+
+const pickHintIcon = (text: string) => {
+  const lower = text.toLowerCase()
+  if (lower.includes('grid')) return LayoutGrid
+  if (lower.includes('modal') || lower.includes('overlay')) return SquareStack
+  if (lower.includes('keyboard') || lower.includes('esc') || lower.includes('arrow')) return MonitorSmartphone
+  if (lower.includes('transition') || lower.includes('animation')) return MousePointerClick
+  if (lower.includes('image') || lower.includes('foto')) return ImageIcon
+  return Sparkles
+}
+
+const formatTime = (timestamp?: string | null) => {
+  if (!timestamp) return null
+  const date = new Date(timestamp)
+  if (Number.isNaN(date.getTime())) return null
+  return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+}
 
 export default function WebLabAssignmentPage() {
   const router = useRouter()
@@ -23,24 +204,63 @@ export default function WebLabAssignmentPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
 
-  // Code states
   const [html, setHtml] = useState('')
   const [css, setCss] = useState('')
   const [js, setJs] = useState('')
   const [previewDoc, setPreviewDoc] = useState('')
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false)
 
-  // Tab states
   const [activeTab, setActiveTab] = useState<TabType>('html')
+  const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('desktop')
   const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false)
+  const [showStickyBar, setShowStickyBar] = useState(false)
+
+  const headerRef = useRef<HTMLElement | null>(null)
+
+  const difficultyKey = (assignment?.difficulty as DifficultyKey) ?? 'INTERMEDIATE'
+
+  const requirements = useMemo(() => parseJsonArray(assignment?.requirements), [assignment?.requirements])
+  const rawHints = useMemo(() => parseJsonArray(assignment?.hints), [assignment?.hints])
+  const templateHints = useMemo(() => (assignment?.template ? templateHintsMap[assignment.template] ?? [] : []), [assignment?.template])
+  const resolvedHints = rawHints.length > 0
+    ? rawHints
+    : templateHints.length > 0
+      ? templateHints
+      : fallbackHintsByDifficulty[difficultyKey]
+  const instructionGroups = useMemo(() => groupInstructions(assignment?.instructions ?? ''), [assignment?.instructions])
+  const hintItems: HintItem[] = useMemo(
+    () => resolvedHints.map((hint, index) => ({ id: `hint-${index}`, text: hint, icon: pickHintIcon(hint) })),
+    [resolvedHints]
+  )
+  const heroHighlights = useMemo(() => {
+    if (!assignment) return []
+
+    const diffKey = (assignment.difficulty as DifficultyKey) ?? 'INTERMEDIATE'
+    const difficultyLabel = difficultyMeta[diffKey]?.label ?? 'Menengah'
+
+    const highlights: Array<{ label: string; value: string; icon: ReactNode }> = [
+      { label: 'Level Tugas', value: difficultyLabel, icon: <Sparkles className="h-4 w-4" /> },
+      { label: 'Poin', value: `${assignment.points} XP`, icon: <Zap className="h-4 w-4" /> }
+    ]
+
+    if (assignment.timeLimit) {
+      highlights.push({ label: 'Durasi', value: `${assignment.timeLimit} menit`, icon: <Timer className="h-4 w-4" /> })
+    }
+
+    return highlights
+  }, [assignment])
 
   const updatePreview = useCallback(() => {
+    setIsPreviewLoading(true)
+
     const previewHtml = `
       <!DOCTYPE html>
       <html lang="en">
       <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Web Lab Preview</title>
         <style>
           ${css}
@@ -52,11 +272,12 @@ export default function WebLabAssignmentPage() {
           ${js}
         </script>
       </body>
-    </html>`
+      </html>
+    `
+
     setPreviewDoc(previewHtml)
   }, [html, css, js])
 
-  // Load assignment and submission data
   useEffect(() => {
     const fetchAssignment = async () => {
       try {
@@ -66,46 +287,46 @@ export default function WebLabAssignmentPage() {
           return
         }
 
-        // Fetch assignment details
         const assignmentResponse = await fetch(`/api/student/web-lab?studentId=${session.studentId}`)
         if (!assignmentResponse.ok) {
-          throw new Error('Failed to fetch assignments')
+          throw new Error('Gagal memuat tugas Web Lab')
         }
 
         const assignmentData = await assignmentResponse.json()
         const currentAssignment = assignmentData.data?.find((a: WebLabAssignment) => a.id === assignmentId)
 
         if (!currentAssignment) {
-          throw new Error('Assignment not found')
+          throw new Error('Tugas tidak ditemukan')
         }
 
         setAssignment(currentAssignment)
 
-        // Load template if available
         const templateData = WEB_LAB_TEMPLATES.find(t => t.id === currentAssignment.template)
-        if (templateData) {
-          setHtml(templateData.html)
-          setCss(templateData.css)
-          setJs(templateData.js)
-        }
+        let initialHtml = templateData?.html ?? ''
+        let initialCss = templateData?.css ?? ''
+        let initialJs = templateData?.js ?? ''
 
-        // Fetch submission
         const submissionResponse = await fetch(`/api/student/web-lab/submissions?studentId=${session.studentId}&assignmentId=${assignmentId}`)
         if (submissionResponse.ok) {
           const submissionData = await submissionResponse.json()
           if (submissionData.success && submissionData.data) {
             setSubmission(submissionData.data)
-            // Load saved code if exists
-            if (submissionData.data.html) setHtml(submissionData.data.html)
-            if (submissionData.data.css) setCss(submissionData.data.css)
-            if (submissionData.data.js) setJs(submissionData.data.js)
+            initialHtml = submissionData.data.html ?? initialHtml
+            initialCss = submissionData.data.css ?? initialCss
+            initialJs = submissionData.data.js ?? initialJs
+            if (submissionData.data.updatedAt) {
+              setLastSavedAt(submissionData.data.updatedAt)
+            }
           }
         }
 
-        setLoading(false)
-      } catch (error) {
-        console.error('Error fetching assignment:', error)
-        setError(error instanceof Error ? error.message : 'Failed to load assignment')
+        setHtml(initialHtml)
+        setCss(initialCss)
+        setJs(initialJs)
+      } catch (err) {
+        console.error('Error fetching assignment:', err)
+        setError(err instanceof Error ? err.message : 'Gagal memuat tugas')
+      } finally {
         setLoading(false)
       }
     }
@@ -115,12 +336,13 @@ export default function WebLabAssignmentPage() {
 
   useEffect(() => {
     updatePreview()
+    const timer = setTimeout(() => setIsPreviewLoading(false), 450)
+    return () => clearTimeout(timer)
   }, [updatePreview])
 
-  // Handle escape key for full screen preview
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isPreviewFullscreen) {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isPreviewFullscreen) {
         setIsPreviewFullscreen(false)
       }
     }
@@ -136,6 +358,22 @@ export default function WebLabAssignmentPage() {
     }
   }, [isPreviewFullscreen])
 
+  useEffect(() => {
+    const headerElement = headerRef.current
+    if (!headerElement) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowStickyBar(!entry.isIntersecting)
+      },
+      { threshold: 0.05 }
+    )
+
+    observer.observe(headerElement)
+
+    return () => observer.disconnect()
+  }, [assignment])
+
   const saveDraft = async () => {
     try {
       setSaving(true)
@@ -149,9 +387,7 @@ export default function WebLabAssignmentPage() {
 
       const response = await fetch('/api/student/web-lab/submissions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           studentId: session.studentId,
           assignmentId,
@@ -159,20 +395,21 @@ export default function WebLabAssignmentPage() {
           css,
           js,
           status: WebLabSubmissionStatus.DRAFT
-        }),
+        })
       })
 
       if (!response.ok) {
-        throw new Error('Failed to save draft')
+        throw new Error('Gagal menyimpan draft')
       }
 
       const result = await response.json()
       setSubmission(result.data)
       setMessage('Draft berhasil disimpan!')
+      setLastSavedAt(new Date().toISOString())
       setTimeout(() => setMessage(null), 3000)
-    } catch (error) {
-      console.error('Error saving draft:', error)
-      setError(error instanceof Error ? error.message : 'Failed to save draft')
+    } catch (err) {
+      console.error('Error saving draft:', err)
+      setError(err instanceof Error ? err.message : 'Gagal menyimpan draft')
     } finally {
       setSaving(false)
     }
@@ -191,9 +428,7 @@ export default function WebLabAssignmentPage() {
 
       const response = await fetch('/api/student/web-lab/submissions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           studentId: session.studentId,
           assignmentId,
@@ -201,33 +436,49 @@ export default function WebLabAssignmentPage() {
           css,
           js,
           status: WebLabSubmissionStatus.SUBMITTED
-        }),
+        })
       })
 
       if (!response.ok) {
-        throw new Error('Failed to submit assignment')
+        throw new Error('Gagal mengumpulkan tugas')
       }
 
       const result = await response.json()
       setSubmission(result.data)
       setMessage('Tugas berhasil dikumpulkan!')
       setTimeout(() => setMessage(null), 5000)
-    } catch (error) {
-      console.error('Error submitting assignment:', error)
-      setError(error instanceof Error ? error.message : 'Failed to submit assignment')
+    } catch (err) {
+      console.error('Error submitting assignment:', err)
+      setError(err instanceof Error ? err.message : 'Gagal mengumpulkan tugas')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleCopyCode = async () => {
+    const codeByTab = {
+      html,
+      css,
+      js
+    }
+
+    try {
+      await navigator.clipboard.writeText(codeByTab[activeTab])
+      setMessage(`Kode ${activeTab.toUpperCase()} disalin`)
+      setTimeout(() => setMessage(null), 2500)
+    } catch (err) {
+      console.error('Clipboard error:', err)
+      setError('Gagal menyalin kode')
+      setTimeout(() => setError(null), 2500)
     }
   }
 
   if (loading) {
     return (
       <StudentLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Memuat tugas...</p>
-          </div>
+        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
+          <div className="h-14 w-14 animate-spin rounded-full border-4 border-purple-200 border-t-purple-500"></div>
+          <p className="text-sm text-slate-500">Menyiapkan ruang Web Lab...</p>
         </div>
       </StudentLayout>
     )
@@ -236,275 +487,329 @@ export default function WebLabAssignmentPage() {
   if (!assignment) {
     return (
       <StudentLayout>
-        <div className="text-center py-12">
-          <p className="text-gray-500">Tugas tidak ditemukan.</p>
-        </div>
+        <div className="py-12 text-center text-slate-500">Tugas tidak ditemukan.</div>
       </StudentLayout>
     )
   }
 
+  const difficultyStyles = difficultyMeta[difficultyKey] ?? difficultyMeta.INTERMEDIATE
+  const formattedSavedTime = formatTime(lastSavedAt)
+
+  const editorTabs: Array<{ id: TabType; label: string; icon: ReactNode; accent: string }> = [
+    { id: 'html', label: 'HTML', icon: <Code2 className="h-4 w-4" />, accent: 'text-orange-500' },
+    { id: 'css', label: 'CSS', icon: <Palette className="h-4 w-4" />, accent: 'text-blue-500' },
+    { id: 'js', label: 'JavaScript', icon: <Zap className="h-4 w-4" />, accent: 'text-yellow-500' }
+  ]
+
+  const deviceOptions: Array<{ id: PreviewDevice; label: string; icon: ReactNode }> = [
+    { id: 'desktop', label: 'Laptop', icon: <Laptop className="h-4 w-4" /> },
+    { id: 'tablet', label: 'Tablet', icon: <MonitorSmartphone className="h-4 w-4" /> },
+    { id: 'mobile', label: 'Phone', icon: <Smartphone className="h-4 w-4" /> }
+  ]
+
+  const activePreviewConfig = previewDeviceConfigs[previewDevice] ?? previewDeviceConfigs.desktop
+
+  const submissionStatus = submission?.status === WebLabSubmissionStatus.SUBMITTED
   return (
     <StudentLayout>
-      {/* Breadcrumb */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3">
-        <Breadcrumb items={[
-          { label: 'Dashboard', href: '/student/dashboard-simple' },
-          { label: 'Web Lab', href: '/student/web-lab' },
-          { label: assignment.title }
-        ]} />
+      <div className="bg-white/80 px-4 py-3 shadow-sm sm:px-6">
+        <Breadcrumb
+          items={[
+            { label: 'Dashboard', href: '/student/dashboard-simple' },
+            { label: 'Web Lab', href: '/student/web-lab' },
+            { label: assignment.title }
+          ]}
+        />
       </div>
 
-      {/* Assignment Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
+      <div className="lab-task-page space-y-8 px-4 pb-24 pt-6 sm:px-6 lg:px-8">
+        <section ref={headerRef} className="lab-task-hero">
+          <div className="lab-task-hero__bg"></div>
+          <div className="lab-task-hero__content">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{assignment.title}</h1>
-              <p className="text-gray-600 mt-1">{assignment.description}</p>
-              <div className="flex items-center gap-4 mt-2">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {assignment.difficulty}
+              <span className="lab-task-badge">
+                <Sparkles className="h-4 w-4" /> Web Lab Mission
+              </span>
+              <h1 className="mt-4 text-3xl font-semibold text-white md:text-4xl">{assignment.title}</h1>
+              <p className="mt-3 max-w-2xl text-base text-white/80">{assignment.description}</p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <span className={`lab-difficulty-chip ${difficultyStyles.accent}`}>
+                  ⚡ {assignment.difficulty}
                 </span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  {assignment.classLevel}
+                <span className="lab-meta-chip">
+                  <Sparkles className="h-4 w-4" /> {assignment.classLevel ?? 'Semua Kelas'}
                 </span>
-                <span className="text-sm text-gray-500">
-                  {assignment.points} poin • {assignment.timeLimit} menit
+                <span className="lab-meta-chip">
+                  <Timer className="h-4 w-4" /> {assignment.timeLimit ?? 90} menit fokus
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={saveDraft}
-                disabled={saving}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? 'Menyimpan...' : 'Simpan Draft'}
-              </button>
-              <button
-                onClick={submitAssignment}
-                disabled={submitting || submission?.status === WebLabSubmissionStatus.SUBMITTED}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitting ? 'Mengumpulkan...' : submission?.status === WebLabSubmissionStatus.SUBMITTED ? 'Sudah Dikumpulkan' : 'Kumpulkan Tugas'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="flex-1 bg-gray-50">
-        <div className="max-w-7xl mx-auto p-6 space-y-6">
-          {/* Instructions and Requirements Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Instructions */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Instruksi</h3>
-              <div className="prose prose-sm max-w-none">
-                <p className="text-gray-700 whitespace-pre-line">{assignment.instructions}</p>
-              </div>
-            </div>
-
-            {/* Requirements */}
-            {assignment.requirements && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Persyaratan</h3>
-                <ul className="space-y-2">
-                  {(() => {
-                    try {
-                      const requirements = JSON.parse(assignment.requirements as string)
-                      return requirements.map((req: unknown, index: number) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span className="text-gray-700">{String(req)}</span>
-                        </li>
-                      ))
-                    } catch {
-                      return <li className="text-gray-700">Unable to parse requirements</li>
-                    }
-                  })()}
-                </ul>
-              </div>
-            )}
-
-            {/* If no requirements, show hints in the right column */}
-            {!assignment.requirements && assignment.hints && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Petunjuk</h3>
-                <div className="space-y-3">
-                  {(() => {
-                    try {
-                      const hints = JSON.parse(assignment.hints as string)
-                      return hints.map((hint: unknown, index: number) => (
-                        <div key={index} className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                          <div className="flex items-start gap-2">
-                            <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span className="text-blue-800 text-sm">{String(hint)}</span>
-                          </div>
-                        </div>
-                      ))
-                    } catch {
-                      return <div className="text-gray-700">Unable to parse hints</div>
-                    }
-                  })()}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Code Editor Row */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" style={{ height: '500px' }}>
-            {/* Tabs */}
-            <div className="border-b border-gray-200">
-              <nav className="flex">
-                {[
-                  { id: 'html' as TabType, label: 'HTML', color: 'text-orange-600' },
-                  { id: 'css' as TabType, label: 'CSS', color: 'text-blue-600' },
-                  { id: 'js' as TabType, label: 'JavaScript', color: 'text-yellow-600' }
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                      activeTab === tab.id
-                        ? `border-blue-500 ${tab.color}`
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
+            <div className="lab-hero-panel">
+              <div className="space-y-3">
+                {heroHighlights.map((highlight) => (
+                  <div key={highlight.label} className="lab-hero-stat">
+                    <div className="lab-hero-icon">{highlight.icon}</div>
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-white/70">{highlight.label}</p>
+                      <p className="text-lg font-semibold text-white">{highlight.value}</p>
+                    </div>
+                  </div>
                 ))}
-              </nav>
-            </div>
-
-            {/* Editor Content */}
-            <div className="h-full">
-              {activeTab === 'html' && (
-                <CodeMirrorEditor
-                  value={html}
-                  onChange={setHtml}
-                  language="html"
-                />
-              )}
-              {activeTab === 'css' && (
-                <CodeMirrorEditor
-                  value={css}
-                  onChange={setCss}
-                  language="css"
-                />
-              )}
-              {activeTab === 'js' && (
-                <CodeMirrorEditor
-                  value={js}
-                  onChange={setJs}
-                  language="javascript"
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Preview Row */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" style={{ height: '400px' }}>
-            <div className="border-b border-gray-200 px-4 py-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-900">Live Preview</h3>
+              </div>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button
-                  onClick={() => setIsPreviewFullscreen(true)}
-                  className="text-sm text-blue-600 hover:text-blue-800"
+                  onClick={saveDraft}
+                  disabled={saving}
+                  className="lab-hero-btn lab-hero-btn--ghost"
                 >
-                  Full Screen
+                  {saving ? 'Menyimpan...' : 'Simpan Draft'}
+                </button>
+                <button
+                  onClick={submitAssignment}
+                  disabled={submitting || submissionStatus}
+                  className="lab-hero-btn lab-hero-btn--primary"
+                >
+                  {submitting ? 'Mengumpulkan...' : submissionStatus ? 'Sudah Dikumpulkan' : 'Kumpulkan Tugas'}
+                  <Play className="h-4 w-4" />
                 </button>
               </div>
             </div>
-            <div className="h-full p-4">
-              <iframe
-                srcDoc={previewDoc}
-                className="w-full h-full border border-gray-300 rounded-md"
-                title="Web Lab Preview"
-                sandbox="allow-scripts"
-              />
+          </div>
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-2">
+          <article className="lab-info-card">
+            <header className="lab-info-card__header">
+              <div className="lab-info-icon">
+                <ImageIcon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Instruksi</p>
+                <p className="text-xs text-slate-500">Ikuti struktur lalu fokus pada interaksi</p>
+              </div>
+            </header>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="lab-info-label">Structure</p>
+                <ul className="lab-info-list">
+                  {instructionGroups.structure.length > 0 ? (
+                    instructionGroups.structure.map((item, index) => (
+                      <li key={`structure-${index}`}>
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        <span>{item}</span>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="text-sm text-slate-500">Tidak ada instruksi struktur spesifik</li>
+                  )}
+                </ul>
+              </div>
+              <div>
+                <p className="lab-info-label">Interaction</p>
+                <ul className="lab-info-list">
+                  {instructionGroups.interaction.length > 0 ? (
+                    instructionGroups.interaction.map((item, index) => (
+                      <li key={`interaction-${index}`}>
+                        <CheckCircle2 className="h-4 w-4 text-sky-500" />
+                        <span>{item}</span>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="text-sm text-slate-500">Tidak ada instruksi interaksi spesifik</li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          </article>
+
+          <article className="lab-info-card">
+            <header className="lab-info-card__header">
+              <div className="lab-info-icon">
+                <LayoutGrid className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Persyaratan</p>
+                <p className="text-xs text-slate-500">Centang semua checklist sebelum submit</p>
+              </div>
+            </header>
+            {requirements.length > 0 ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {requirements.map((req, index) => (
+                  <div key={`req-${index}`} className="lab-requirement-item">
+                    <div className="lab-requirement-icon">
+                      <CheckCircle2 className="h-4 w-4 text-white" />
+                    </div>
+                    <p>{req}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">Belum ada persyaratan khusus untuk tugas ini.</p>
+            )}
+          </article>
+        </section>
+
+        <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="lab-editor">
+            <div className="lab-editor__tabs">
+              {editorTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`lab-editor-tab ${activeTab === tab.id ? 'lab-editor-tab--active' : ''}`}
+                >
+                  <span className={`${tab.accent}`}>{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
+              <div className="lab-editor__actions">
+                <button onClick={handleCopyCode} className="lab-editor-action">
+                  <Clipboard className="h-4 w-4" /> Salin kode
+                </button>
+              </div>
+            </div>
+            <div className="lab-editor__body">
+              {activeTab === 'html' && <CodeMirrorEditor value={html} onChange={setHtml} language="html" />}
+              {activeTab === 'css' && <CodeMirrorEditor value={css} onChange={setCss} language="css" />}
+              {activeTab === 'js' && <CodeMirrorEditor value={js} onChange={setJs} language="javascript" />}
             </div>
           </div>
 
-          {/* Hints Section (if requirements exist) */}
-          {assignment.requirements && assignment.hints && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Petunjuk</h3>
-              <div className="space-y-3">
-                {(() => {
-                  try {
-                    const hints = JSON.parse(assignment.hints as string)
-                    return hints.map((hint: unknown, index: number) => (
-                      <div key={index} className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                        <div className="flex items-start gap-2">
-                          <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span className="text-blue-800 text-sm">{String(hint)}</span>
-                        </div>
-                      </div>
-                    ))
-                  } catch {
-                    return <div className="text-gray-700">Unable to parse hints</div>
-                  }
-                })()}
+          <aside className="lab-preview">
+            <header className="lab-preview__header">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Live Preview</p>
+                <p className="text-sm font-semibold text-slate-900">Sesuai viewport perangkat</p>
+              </div>
+              <button className="lab-preview-full" onClick={() => setIsPreviewFullscreen(true)}>
+                Full Screen
+              </button>
+            </header>
+            <div className="lab-preview__toolbar">
+              {deviceOptions.map((device) => (
+                <button
+                  key={device.id}
+                  onClick={() => setPreviewDevice(device.id)}
+                  className={`lab-device-btn ${previewDevice === device.id ? 'lab-device-btn--active' : ''}`}
+                >
+                  {device.icon}
+                  {device.label}
+                </button>
+              ))}
+            </div>
+            <div className="lab-preview__body">
+              {isPreviewLoading && (
+                <div className="lab-preview__loading">
+                  <div className="preview-shimmer"></div>
+                  <p>Rendering preview...</p>
+                </div>
+              )}
+              <div className={`lab-preview-frame ${activePreviewConfig.frameClass}`}>
+                <iframe
+                  key={previewDevice}
+                  srcDoc={previewDoc}
+                  className={`lab-preview-iframe ${activePreviewConfig.iframeClass}`}
+                  title="Web Lab Preview"
+                  sandbox="allow-scripts"
+                />
               </div>
             </div>
-          )}
-        </div>
+          </aside>
+        </section>
+
+        {hintItems.length > 0 && (
+          <section className="lab-accordion">
+            <div className="lab-info-card">
+              <header className="lab-info-card__header">
+                <div className="lab-info-icon">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Petunjuk Teknis</p>
+                  <p className="text-xs text-slate-500">Gunakan sebagai modul referensi</p>
+                </div>
+              </header>
+              <div className="space-y-3">
+                {hintItems.map((hint) => {
+                  const Icon = hint.icon
+                  return (
+                    <details key={hint.id} className="lab-accordion-item">
+                      <summary>
+                        <span className="lab-accordion-icon">
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <span className="flex-1 text-sm font-medium text-slate-800">{hint.text.split('.')[0]}</span>
+                        <ChevronDown className="lab-accordion-chevron h-4 w-4 text-slate-400" />
+                      </summary>
+                      <p className="text-sm text-slate-600">{hint.text}</p>
+                    </details>
+                  )
+                })}
+              </div>
+            </div>
+          </section>
+        )}
       </div>
 
-      {/* Success/Error Messages */}
       {message && (
-        <div className="fixed bottom-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded shadow-lg">
-          {message}
+        <div className="lab-toast lab-toast--success">
+          <CheckCircle2 className="h-4 w-4" />
+          <span>{message}</span>
         </div>
       )}
 
       {error && (
-        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-lg">
-          {error}
+        <div className="lab-toast lab-toast--error">
+          <AlertCircle className="h-4 w-4" />
+          <span>{error}</span>
         </div>
       )}
 
-      {/* Full Screen Preview Modal */}
+      {showStickyBar && (
+        <div className="lab-sticky-cta">
+          <div>
+            <p className="text-sm font-semibold text-slate-900">Siap submit?</p>
+            <p className="text-xs text-slate-500">
+              {formattedSavedTime ? `Draft tersimpan pukul ${formattedSavedTime}` : 'Belum ada draft tersimpan'}
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={saveDraft} disabled={saving} className="lab-sticky-btn lab-sticky-btn--ghost">
+              {saving ? 'Menyimpan...' : 'Simpan Draft'}
+            </button>
+            <button
+              onClick={submitAssignment}
+              disabled={submitting || submissionStatus}
+              className="lab-sticky-btn lab-sticky-btn--primary"
+            >
+              {submitting ? 'Mengirim...' : submissionStatus ? 'Sudah Dikumpulkan' : 'Kumpulkan Tugas'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {isPreviewFullscreen && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4">
-          <div className="relative w-full h-full max-w-7xl max-h-full bg-white rounded-lg shadow-2xl overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
-              <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                Preview Langsung - Full Screen
-              </h3>
-              <button
-                onClick={() => setIsPreviewFullscreen(false)}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-md transition-colors"
-                title="Exit Full Screen"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+        <div className="lab-preview-modal" role="dialog" aria-modal="true">
+          <div className="lab-preview-modal__content">
+            <div className="lab-preview-modal__header">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Live Preview</p>
+                <p className="text-sm font-semibold text-slate-900">Full Screen Mode</p>
+              </div>
+              <button onClick={() => setIsPreviewFullscreen(false)} className="rounded-full bg-slate-100 p-2 text-slate-500">
+                ✕
               </button>
             </div>
-
-            {/* Full Screen Preview */}
-            <div className="flex-1 p-4 h-full">
-              <iframe
-                srcDoc={previewDoc}
-                className="w-full h-full border-0 rounded-lg"
-                title="Web Lab Preview - Full Screen"
-                sandbox="allow-scripts"
-                style={{ minHeight: 'calc(100vh - 200px)' }}
-              />
+            <div className="lab-preview-modal__body">
+              <div className={`lab-preview-frame lab-preview-frame--modal ${activePreviewConfig.frameClass}`}>
+                <iframe
+                  srcDoc={previewDoc}
+                  className={`lab-preview-iframe lab-preview-iframe--modal ${activePreviewConfig.iframeClass}`}
+                  title="Web Lab Preview - Full Screen"
+                  sandbox="allow-scripts"
+                />
+              </div>
             </div>
           </div>
         </div>

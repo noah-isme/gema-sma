@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { applyPythonTaskOverrides } from '@/lib/pythonTaskOverrides';
 
 /**
  * GET /api/python-coding-lab/tasks/[slug]
@@ -62,10 +63,12 @@ export async function GET(
       return best;
     }, submissions[0]);
 
+    const normalizedTask = applyPythonTaskOverrides(task, { includeHidden: false });
+
     return NextResponse.json({
       task: {
-        ...task,
-        solutionCode: undefined, // Don't send solution code to students
+        ...normalizedTask,
+        solutionCode: undefined,
       },
       submissions,
       bestScore: bestSubmission?.score || 0,
