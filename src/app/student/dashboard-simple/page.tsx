@@ -1,17 +1,16 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect, useCallback, useMemo, useLayoutEffect, useRef } from 'react'
+import { motion, AnimatePresence, animate } from 'framer-motion'
 import Link from 'next/link'
 import { studentAuth } from '@/lib/student-auth'
 import FloatingChat from '@/components/chat/FloatingChat'
 import StudentLayout from '@/components/student/StudentLayout'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import { SkeletonCard } from '@/components/ui/Skeleton'
+import type { LucideIcon } from 'lucide-react'
 import {
   BookOpen,
-  Upload,
-  Calendar,
   Clock,
   CheckCircle,
   AlertCircle,
@@ -20,16 +19,14 @@ import {
   Sparkles,
   Trophy,
   Flame,
-  Star,
-  Heart,
-  Zap,
-  Award,
   TrendingUp,
   Activity,
-  Smile,
-  Coffee,
   Rocket,
-  Lightbulb
+  Lightbulb,
+  Code2,
+  NotebookPen,
+  Presentation,
+  Palette
 } from 'lucide-react'
 
 // Types
@@ -142,6 +139,245 @@ interface RoadmapProgressState {
   reflection: string;
 }
 
+type HeroPreviewStat = {
+  label: string
+  helper: string
+  value?: string
+  valueNumber?: number
+  suffix?: string
+}
+
+type AssignmentVisualMeta = {
+  icon: LucideIcon
+  label: string
+  accentBg: string
+  accentText: string
+}
+
+type DeadlineTone = 'positive' | 'warning' | 'danger' | 'neutral'
+
+const assignmentVisualPresets = [
+  {
+    keywords: ['code', 'coding', 'program', 'javascript', 'python'],
+    icon: Code2,
+    label: 'Coding Lab',
+    accentBg: 'bg-[#E0F2FF]',
+    accentText: 'text-[#2364AA]'
+  },
+  {
+    keywords: ['essay', 'esai', 'makalah', 'artikel', 'paper'],
+    icon: NotebookPen,
+    label: 'Esai',
+    accentBg: 'bg-[#F1E8FF]',
+    accentText: 'text-[#7C3AED]'
+  },
+  {
+    keywords: ['present', 'presentasi', 'pitch'],
+    icon: Presentation,
+    label: 'Presentasi',
+    accentBg: 'bg-[#FFE8E0]',
+    accentText: 'text-[#F97316]'
+  },
+  {
+    keywords: ['design', 'desain', 'ui', 'ux', 'ilustrasi'],
+    icon: Palette,
+    label: 'Desain',
+    accentBg: 'bg-[#E7FFF4]',
+    accentText: 'text-[#0F9D58]'
+  }
+]
+
+const getAssignmentVisualMeta = (subject?: string): AssignmentVisualMeta => {
+  if (!subject) {
+    return {
+      icon: FileText,
+      label: 'Tugas',
+      accentBg: 'bg-[#E5E7EB]',
+      accentText: 'text-[#374151]'
+    }
+  }
+
+  const normalized = subject.toLowerCase()
+  const preset = assignmentVisualPresets.find((item) =>
+    item.keywords.some((keyword) => normalized.includes(keyword))
+  )
+
+  if (preset) return preset
+
+  return {
+    icon: FileText,
+    label: 'Tugas',
+    accentBg: 'bg-[#E5E7EB]',
+    accentText: 'text-[#374151]'
+  }
+}
+
+const deadlineToneClass: Record<DeadlineTone, string> = {
+  positive: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
+  warning: 'bg-amber-50 text-amber-700 border border-amber-100',
+  danger: 'bg-rose-50 text-rose-700 border border-rose-100',
+  neutral: 'bg-slate-50 text-slate-600 border border-slate-100'
+}
+
+const getDeadlineMeta = (dueDate: string): {
+  label: string
+  tone: DeadlineTone
+  isUrgent: boolean
+} => {
+  const due = new Date(dueDate)
+
+  if (Number.isNaN(due.getTime())) {
+    return {
+      label: 'Tanggal belum tersedia',
+      tone: 'neutral',
+      isUrgent: false
+    }
+  }
+
+  const diffMs = due.getTime() - Date.now()
+  const dayInMs = 24 * 60 * 60 * 1000
+  const diffDays = Math.floor(diffMs / dayInMs)
+
+  if (diffDays < 0) {
+    return {
+      label: `Lewat ${Math.abs(diffDays)} hari`,
+      tone: 'danger',
+      isUrgent: true
+    }
+  }
+
+  if (diffDays === 0) {
+    return {
+      label: 'Jatuh tempo hari ini',
+      tone: 'warning',
+      isUrgent: true
+    }
+  }
+
+  if (diffDays <= 3) {
+    return {
+      label: `Due ${diffDays} hari lagi`,
+      tone: 'warning',
+      isUrgent: true
+    }
+  }
+
+  return {
+    label: due.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
+    tone: 'neutral',
+    isUrgent: false
+  }
+}
+
+const assignmentStatusStyle: Record<
+  string,
+  {
+    label: string
+    className: string
+    tone: 'positive' | 'warning' | 'danger' | 'neutral'
+  }
+> = {
+  completed: {
+    label: 'Selesai',
+    className: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
+    tone: 'positive'
+  },
+  in_progress: {
+    label: 'Sedang dikerjakan',
+    className: 'bg-sky-50 text-sky-700 border border-sky-100',
+    tone: 'warning'
+  },
+  pending: {
+    label: 'Belum dimulai',
+    className: 'bg-slate-50 text-slate-700 border border-slate-100',
+    tone: 'neutral'
+  },
+  overdue: {
+    label: 'Butuh perhatian',
+    className: 'bg-rose-50 text-rose-700 border border-rose-100',
+    tone: 'danger'
+  },
+  default: {
+    label: 'Status belum tersedia',
+    className: 'bg-slate-50 text-slate-600 border border-slate-100',
+    tone: 'neutral'
+  }
+}
+
+const getAssignmentStatusStyle = (status?: string) => {
+  if (!status) return assignmentStatusStyle.default
+  return assignmentStatusStyle[status] ?? assignmentStatusStyle.default
+}
+
+type HeroParticle = {
+  top?: string
+  left?: string
+  right?: string
+  bottom?: string
+  size: number
+  delay: string
+}
+
+const heroParticlePresets: HeroParticle[] = [
+  { top: '10%', left: '5%', size: 32, delay: '0s' },
+  { top: '25%', left: '40%', size: 18, delay: '0.5s' },
+  { top: '15%', right: '8%', size: 26, delay: '1s' },
+  { bottom: '15%', left: '12%', size: 20, delay: '1.5s' },
+  { bottom: '12%', right: '18%', size: 34, delay: '0.8s' }
+]
+
+interface CountUpNumberProps {
+  value: number
+  decimals?: number
+  prefix?: string
+  suffix?: string
+  duration?: number
+  reduceMotion?: boolean
+  formatter?: (value: number) => string
+}
+
+const CountUpNumber = ({
+  value,
+  decimals = 0,
+  prefix = '',
+  suffix = '',
+  duration = 0.9,
+  reduceMotion = false,
+  formatter
+}: CountUpNumberProps) => {
+  const [displayValue, setDisplayValue] = useState(value)
+  const lastValueRef = useRef(value)
+
+  useEffect(() => {
+    if (reduceMotion) {
+      setDisplayValue(value)
+      lastValueRef.current = value
+      return
+    }
+
+    const animation = animate(lastValueRef.current, value, {
+      duration,
+      ease: [0.22, 1, 0.36, 1],
+      onUpdate: (latest) => setDisplayValue(latest)
+    })
+
+    lastValueRef.current = value
+    return () => animation.stop()
+  }, [value, duration, reduceMotion])
+
+  const rawValue =
+    formatter?.(displayValue) ??
+    (decimals > 0 ? displayValue.toFixed(decimals) : Math.round(displayValue).toString())
+
+  return (
+    <span>
+      {prefix}
+      {rawValue}
+      {suffix}
+    </span>
+  )
+}
+
 export default function StudentDashboardPage() {
   const [student, setStudent] = useState<{
     id: string;
@@ -166,6 +402,7 @@ export default function StudentDashboardPage() {
   const [roadmapProgress, setRoadmapProgress] = useState<Record<string, RoadmapProgressState>>({})
   const [roadmapStudentId, setRoadmapStudentId] = useState<string>('')
   const [roadmapStudentName, setRoadmapStudentName] = useState<string>('')
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
 
   // Roadmap utility functions
   const createEmptyProgress = (stages: RoadmapStage[]): Record<string, RoadmapProgressState> => {
@@ -193,6 +430,17 @@ export default function StudentDashboardPage() {
     return progress;
   };
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return
+
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const updatePreference = () => setPrefersReducedMotion(motionQuery.matches)
+    updatePreference()
+
+    motionQuery.addEventListener('change', updatePreference)
+    return () => motionQuery.removeEventListener('change', updatePreference)
+  }, [])
+
   // Fetch dashboard statistics
   const fetchDashboardStats = useCallback(async (studentId: string) => {
     try {
@@ -219,7 +467,7 @@ export default function StudentDashboardPage() {
   }, [])
 
   // Fetch assignments
-  const fetchAssignments = useCallback(async (studentId: string) => {
+  const fetchAssignments = useCallback(async () => {
     try {
       setAssignmentsLoading(true)
 
@@ -304,7 +552,7 @@ export default function StudentDashboardPage() {
         
         // Fetch dashboard stats, assignments and roadmap
         fetchDashboardStats(studentData.studentId)
-        fetchAssignments(studentData.studentId)
+        fetchAssignments()
         fetchRoadmapStages()
         setLoading(false)
         
@@ -388,6 +636,140 @@ export default function StudentDashboardPage() {
     })
   }
 
+  const statCards = useMemo(() => {
+    if (!dashboardStats) return []
+
+    const engagementCopy =
+      dashboardStats.status.engagement === 'high'
+        ? 'Super aktif minggu ini'
+        : dashboardStats.status.engagement === 'medium'
+          ? 'Momentum stabil'
+          : 'Yuk recharge energi'
+    return [
+      {
+        id: 'streak',
+        label: 'Learning Streak',
+        valueNumber: dashboardStats.learningStreak,
+        suffix: ' hari',
+        subtext: 'Jaga ritme belajarmu 🔥',
+        icon: Flame,
+        gradient: 'from-[#FFE37F] via-[#FFD07F] to-[#FFA45B]',
+        iconClass: 'stat-icon--flame'
+      },
+      {
+        id: 'completion',
+        label: 'Progress Minggu Ini',
+        valueNumber: dashboardStats.completionPercentage,
+        suffix: '%',
+        subtext: `${dashboardStats.completedAssignments}/${dashboardStats.totalAssignments} tugas selesai`,
+        icon: Trophy,
+        gradient: 'from-[#7AF2C3] via-[#45C7FA] to-[#A492FF]',
+        iconClass: 'stat-icon--pulse',
+        progressValue: dashboardStats.completionPercentage
+      },
+      {
+        id: 'engagement',
+        label: 'Engagement Score',
+        valueNumber: dashboardStats.engagementScore,
+        suffix: '/100',
+        subtext: engagementCopy,
+        icon: Activity,
+        gradient: 'from-[#FFE37F] via-[#FFB347] to-[#FF9A9E]',
+        iconClass: 'stat-icon--sparkle'
+      },
+      {
+        id: 'weekly',
+        label: 'Weekly Wins',
+        valueNumber: Math.abs(dashboardStats.weeklyProgress),
+        prefix: dashboardStats.weeklyProgress >= 0 ? '+' : '-',
+        subtext: `${dashboardStats.recentSubmissions} aktivitas baru`,
+        icon: TrendingUp,
+        gradient: 'from-[#A492FF] via-[#C89BFF] to-[#F0B3FF]',
+        iconClass: 'stat-icon--orbit'
+      }
+    ]
+  }, [dashboardStats])
+
+  const spotlightStories = useMemo(() => {
+    if (!dashboardStats) return []
+
+    const stories: Array<{
+      id: string
+      title: string
+      description: string
+      icon: LucideIcon
+      accent: string
+    }> = [
+      {
+        id: 'progress',
+        title: `${dashboardStats.completedAssignments} tugas kelar 🎯`,
+        description:
+          dashboardStats.pendingAssignments > 0
+            ? `Tinggal ${dashboardStats.pendingAssignments} lagi untuk tuntaskan semua misi minggu ini.`
+            : 'Semua tugas minggu ini sudah tuntas. Nikmati progresnya!',
+        icon: Trophy,
+        accent: 'bg-[#F5F3FF]'
+      },
+      {
+        id: 'streak',
+        title: `${dashboardStats.learningStreak} hari streak tanpa putus`,
+        description: 'Consistency unlocks mastery — teruskan ritme belajarmu ya!',
+        icon: Flame,
+        accent: 'bg-[#FFF4E5]'
+      }
+    ]
+
+    if (dashboardStats.overdueAssignments > 0) {
+      stories.push({
+        id: 'attention',
+        title: `${dashboardStats.overdueAssignments} tugas perlu perhatian`,
+        description: 'Prioritaskan tugas yang sudah lewat deadline supaya tetap on track.',
+        icon: AlertCircle,
+        accent: 'bg-[#FFEAE6]'
+      })
+    } else {
+      stories.push({
+        id: 'momentum',
+        title: 'Momentum belajar naik 🚀',
+        description: `Ada ${dashboardStats.recentSubmissions} aktivitas baru dan engagement status ${dashboardStats.status.engagement}.`,
+        icon: Rocket,
+        accent: 'bg-[#E8FBFF]'
+      })
+    }
+
+    return stories.slice(0, 3)
+  }, [dashboardStats])
+
+  const getMotionFade = (
+    delay = 0,
+    options: { variant?: 'default' | 'card' | 'slide'; distance?: number } = {}
+  ) => {
+    if (prefersReducedMotion) return {}
+
+    const variant = options.variant ?? 'default'
+    const distance = options.distance ?? 20
+
+    const initial =
+      variant === 'card'
+        ? { opacity: 0, y: 16, scale: 0.98 }
+        : { opacity: 0, y: distance }
+
+    const animate =
+      variant === 'card'
+        ? { opacity: 1, y: 0, scale: 1 }
+        : { opacity: 1, y: 0 }
+
+    return {
+      initial,
+      animate,
+      transition: {
+        delay,
+        duration: variant === 'card' ? 0.38 : 0.6,
+        ease: variant === 'card' ? [0.16, 1, 0.3, 1] : 'easeOut'
+      }
+    }
+  }
+
   // Roadmap handlers
   const handleItemCheck = (stageId: string, groupId: string, itemId: string, checked: boolean) => {
     setRoadmapProgress(prev => ({
@@ -432,6 +814,101 @@ export default function StudentDashboardPage() {
     return stage.activityGroups?.reduce((acc, group) => acc + group.items.length, 0) ?? 0;
   };
 
+  const heroPreviewStats = useMemo<HeroPreviewStat[]>(() => {
+    if (!dashboardStats) {
+      return [
+        { label: 'Progress minggu ini', value: '—', helper: 'Assignments' },
+        { label: 'Mood belajar', value: '—', helper: 'Engagement' },
+        { label: 'Roadmap', value: '—', helper: 'Tahapan' }
+      ]
+    }
+
+    const engagementLabel =
+      dashboardStats.status.engagement === 'high'
+        ? 'Joyful Energy'
+        : dashboardStats.status.engagement === 'medium'
+          ? 'Stabil'
+          : 'Perlu semangat'
+    const roadmapCount = dashboardStats.roadmapStages || roadmapStages.length
+
+    return [
+      {
+        label: 'Progress minggu ini',
+        valueNumber: dashboardStats.completionPercentage,
+        suffix: '%',
+        helper: `${dashboardStats.completedAssignments}/${dashboardStats.totalAssignments} tugas`
+      },
+      {
+        label: 'Mood belajar',
+        value: engagementLabel,
+        helper: `Score ${dashboardStats.engagementScore}`
+      },
+      {
+        label: 'Roadmap',
+        valueNumber: roadmapCount,
+        suffix: ' tahap',
+        helper: roadmapCount > 0 ? 'Roadmap aktif' : 'Segera hadir'
+      }
+    ]
+  }, [dashboardStats, roadmapStages.length])
+
+  const tabItems = useMemo(() => {
+    const pending = dashboardStats?.pendingAssignments ?? 0
+    const roadmapCount = roadmapStages.length || dashboardStats?.roadmapStages || 0
+
+    return [
+      {
+        id: 'dashboard',
+        label: 'Spotlight',
+        helper: 'Cerita mingguan',
+        icon: Sparkles
+      },
+      {
+        id: 'assignments',
+        label: 'Assignments',
+        helper: pending > 0 ? `${pending} tugas menunggu` : 'Semua aman',
+        icon: BookOpen,
+        badge: pending
+      },
+      {
+        id: 'roadmap',
+        label: 'Roadmap',
+        helper: roadmapCount > 0 ? `${roadmapCount} tahap aktif` : 'Segera hadir',
+        icon: Target
+      }
+    ]
+  }, [dashboardStats, roadmapStages.length])
+
+  const firstName = useMemo(() => {
+    if (!student?.fullName) return 'Sahabat'
+    return student.fullName.split(' ')[0]
+  }, [student?.fullName])
+
+  const tabNavRef = useRef<HTMLDivElement>(null)
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const [tabUnderline, setTabUnderline] = useState({ width: 0, left: 0 })
+
+  const recalcUnderline = useCallback(() => {
+    if (!tabNavRef.current) return
+    const activeButton = tabRefs.current[activeTab]
+    if (!activeButton) return
+    const navRect = tabNavRef.current.getBoundingClientRect()
+    const buttonRect = activeButton.getBoundingClientRect()
+    setTabUnderline({
+      width: buttonRect.width,
+      left: buttonRect.left - navRect.left
+    })
+  }, [activeTab])
+
+  useLayoutEffect(() => {
+    recalcUnderline()
+  }, [recalcUnderline, tabItems])
+
+  useEffect(() => {
+    window.addEventListener('resize', recalcUnderline)
+    return () => window.removeEventListener('resize', recalcUnderline)
+  }, [recalcUnderline])
+
   if (loading) {
     return (
       <StudentLayout loading={true}>
@@ -445,41 +922,164 @@ export default function StudentDashboardPage() {
     )
   }
 
+
   return (
     <StudentLayout loading={statsLoading || assignmentsLoading}>
-      {/* Breadcrumb */}
       <div className="bg-white border-b border-gray-200 px-6 py-3">
         <Breadcrumb items={[{ label: 'Dashboard' }]} />
       </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
-        {/* Welcome Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white mb-8"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-3xl font-bold mb-2">Selamat Datang, {student?.fullName}! 🎉</h2>
-              <p className="text-blue-100 mb-4">
-                Kelas {student?.class} • NIS {student?.studentId}
-              </p>
-              <p className="text-blue-100">
-                Platform pembelajaran digital untuk mengembangkan kemampuan teknologi informatika Anda.
-              </p>
-            </div>
-            <div className="hidden lg:block">
-              <div className="w-32 h-32 bg-white/10 rounded-full flex items-center justify-center">
-                <Sparkles className="w-16 h-16 text-white/80" />
+      <div className="container mx-auto px-6 py-8 relative">
+        <div className="dashboard-particles pointer-events-none absolute inset-0" aria-hidden>
+          {Array.from({ length: 8 }).map((_, particleIndex) => (
+            <span
+              key={`bg-particle-${particleIndex}`}
+              className="dashboard-particle"
+              style={{
+                top: `${10 + particleIndex * 8}%`,
+                left: particleIndex % 2 === 0 ? `${5 + particleIndex * 7}%` : undefined,
+                right: particleIndex % 2 === 0 ? undefined : `${3 + particleIndex * 6}%`,
+                animationDelay: `${particleIndex * 0.8}s`
+              }}
+            />
+          ))}
+        </div>
+        <div className="space-y-10 relative z-10">
+          <motion.section {...getMotionFade(0)}>
+          <div className="hero-card relative overflow-hidden rounded-[32px] bg-gradient-to-r from-[#45C7FA] via-[#7AF2C3] to-[#A492FF] text-white shadow-brand-xl min-h-[260px] lg:min-h-[300px] px-8 py-10">
+            <div className="hero-card__glow" aria-hidden></div>
+            <div className="hero-card__veil" aria-hidden></div>
+            <div className="hero-card__shimmer" aria-hidden></div>
+            {heroParticlePresets.map((particle, index) => (
+              <span
+                key={`particle-${index}`}
+                className={`hero-particle ${prefersReducedMotion ? '' : 'particle-floating'}`}
+                style={{
+                  top: particle.top,
+                  left: particle.left,
+                  right: particle.right,
+                  bottom: particle.bottom,
+                  width: particle.size,
+                  height: particle.size,
+                  animationDelay: particle.delay
+                }}
+              />
+            ))}
+            <div className="relative z-10 grid gap-10 lg:grid-cols-2 items-start">
+              <div className="space-y-5">
+                <p className="text-xs uppercase tracking-[0.4em] text-white/80">Joyful learning space</p>
+                <h1 className="text-3xl md:text-4xl font-extrabold leading-tight">
+                  Hai {firstName}! Siap belajar hal baru hari ini? <span role="img" aria-label="rocket">🚀</span>
+                </h1>
+                <p className="text-base text-white/85 leading-relaxed">
+                  {dashboardStats
+                    ? `Perjalanan minggu ini sudah ${dashboardStats.completionPercentage}% jalan dengan streak ${dashboardStats.learningStreak} hari.`
+                    : 'Kami sedang menyiapkan semua progres terbaikmu.'}
+                </p>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {heroPreviewStats.map((item) => (
+                    <div key={item.label} className="hero-preview-pill rounded-2xl border border-white/30 bg-white/10 px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.3em] text-white/70">{item.label}</p>
+                      <p className="text-lg font-semibold text-white mt-1">
+                        {item.valueNumber !== undefined ? (
+                          <CountUpNumber
+                            value={item.valueNumber}
+                            suffix={item.suffix ?? ''}
+                            reduceMotion={prefersReducedMotion}
+                          />
+                        ) : (
+                          item.value
+                        )}
+                      </p>
+                      <p className="text-xs text-white/80">{item.helper}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="relative flex items-center justify-center">
+                <div className="hero-preview-glow" aria-hidden></div>
+                <div className="hero-preview-panel relative z-10 w-full max-w-sm rounded-[28px] border border-white/35 bg-white/15 p-6 backdrop-blur-2xl shadow-2xl">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.4em] text-white/70">
+                    <Sparkles className="w-4 h-4" />
+                    Preview Minggu Ini
+                  </div>
+                  <p className="mt-4 text-2xl font-semibold">
+                    {dashboardStats ? (
+                      <>
+                        <CountUpNumber value={dashboardStats.completedAssignments} reduceMotion={prefersReducedMotion} />
+                        <span className="text-base font-medium text-white/80"> tugas selesai</span>
+                      </>
+                    ) : (
+                      'Memuat data'
+                    )}
+                  </p>
+                  <p className="text-sm text-white/80">
+                    {dashboardStats
+                      ? `Ada ${dashboardStats.pendingAssignments} tugas lagi menunggumu.`
+                      : 'Tetap semangat ya!'}
+                  </p>
+                  <div className="mt-6 space-y-3">
+                    <div className="flex items-center justify-between text-sm text-white/80">
+                      <span>Assignments</span>
+                      <span className="font-semibold text-white">
+                        {dashboardStats ? (
+                          <>
+                            <CountUpNumber value={dashboardStats.completedAssignments} reduceMotion={prefersReducedMotion} />/
+                            <CountUpNumber value={dashboardStats.totalAssignments} reduceMotion={prefersReducedMotion} />
+                          </>
+                        ) : (
+                          '—'
+                        )}
+                      </span>
+                    </div>
+                    <div className="progress-track hero-progress-track">
+                      <div
+                        className="progress-fill progress-fill--hero"
+                        style={{ width: `${dashboardStats?.completionPercentage ?? 0}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex items-center justify-between text-sm text-white/80">
+                      <span>Streak</span>
+                      <span>
+                        {dashboardStats ? (
+                          <CountUpNumber value={dashboardStats.learningStreak} suffix=" hari" reduceMotion={prefersReducedMotion} />
+                        ) : (
+                          '—'
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm text-white/80">
+                      <span>Engagement</span>
+                      <span>
+                        {dashboardStats ? (
+                          <CountUpNumber value={dashboardStats.engagementScore} suffix="/100" reduceMotion={prefersReducedMotion} />
+                        ) : (
+                          '—'
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-6 flex items-center gap-3 text-sm text-white/90">
+                    <div
+                      className={`status-dot ${dashboardStats?.status?.engagement === 'high' ? 'status-dot--active' : ''} ${
+                        dashboardStats?.status?.engagement === 'high' && !prefersReducedMotion ? 'animate-softPulse' : ''
+                      }`}
+                    ></div>
+                    <p>
+                      {dashboardStats
+                        ? dashboardStats.status.engagement === 'high'
+                          ? 'Energi belajar lagi di puncak — pertahankan!'
+                          : 'Kami bantu kamu kembali on track dengan insight terbaru.'
+                        : 'Menyiapkan insight khusus untukmu.'}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </motion.div>
+        </motion.section>
 
-        {/* Joyful Statistics Cards */}
-        <div className="mb-8">
+        <motion.section {...getMotionFade(0.15)}>
           {(statsLoading || !dashboardStats) ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {Array.from({ length: 4 }).map((_, index) => (
@@ -487,577 +1087,186 @@ export default function StudentDashboardPage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 data-section is-ready">
-            {/* Learning Streak */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 }}
-              className="bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl p-6 text-white relative overflow-hidden"
-            >
-              <div className="absolute top-2 right-2">
-                <Flame className="interactive-icon w-6 h-6 text-orange-200" />
-              </div>
-              <div className="relative z-10">
-                <div className="text-3xl font-bold mb-1">{dashboardStats.learningStreak}</div>
-                <div className="text-sm text-orange-100">Hari Streak 🔥</div>
-              </div>
-              <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full"></div>
-            </motion.div>
-
-            {/* Completion Progress */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl p-6 text-white relative overflow-hidden"
-            >
-              <div className="absolute top-2 right-2">
-                <Trophy className="interactive-icon w-6 h-6 text-green-200" />
-              </div>
-              <div className="relative z-10">
-                <div className="text-3xl font-bold mb-1 status-badge" data-status={dashboardStats.completionPercentage === 100 ? 'completed' : undefined}>
-                  {dashboardStats.completionPercentage}%
-                </div>
-                <div className="text-sm text-green-100">Selesai ✨</div>
-              </div>
-              <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full"></div>
-            </motion.div>
-
-            {/* Engagement Score */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-              className="bg-gradient-to-br from-purple-400 to-indigo-500 rounded-2xl p-6 text-white relative overflow-hidden"
-            >
-              <div className="absolute top-2 right-2">
-                <Zap className="interactive-icon w-6 h-6 text-purple-200" />
-              </div>
-              <div className="relative z-10">
-                <div className="text-3xl font-bold mb-1">{dashboardStats.engagementScore}</div>
-                <div className="text-sm text-purple-100">
-                  {dashboardStats.status.engagement === 'high' ? 'Super Aktif! ⚡' :
-                   dashboardStats.status.engagement === 'medium' ? 'Aktif 💪' : 'Ayo Semangat! 📚'}
-                </div>
-              </div>
-              <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full"></div>
-            </motion.div>
-
-            {/* Weekly Activity */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4 }}
-              className={`rounded-2xl p-6 text-white relative overflow-hidden ${
-                dashboardStats.isActiveThisWeek
-                  ? 'bg-gradient-to-br from-blue-400 to-cyan-500'
-                  : 'bg-gradient-to-br from-gray-400 to-gray-500'
-              }`}
-            >
-              <div className="absolute top-2 right-2">
-                <Activity className="interactive-icon w-6 h-6 text-blue-200" />
-              </div>
-              <div className="relative z-10">
-                <div className="text-3xl font-bold mb-1">{dashboardStats.weeklyProgress}</div>
-                <div className="text-sm text-blue-100">
-                  {dashboardStats.isActiveThisWeek ? 'Aktif Minggu Ini! 🚀' : 'Ayo Mulai! ☕'}
-                </div>
-              </div>
-              <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/10 rounded-full"></div>
-            </motion.div>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {statCards.map((card, index) => {
+                const Icon = card.icon
+                return (
+                  <motion.div
+                    key={card.id}
+                    {...getMotionFade(0.08 * index, { variant: 'card', distance: 12 })}
+                    className={`stat-card relative overflow-hidden rounded-3xl p-6 text-white bg-gradient-to-br ${card.gradient}`}
+                    data-card={card.id}
+                  >
+                    <div className="flex items-center justify-between">
+                      <Icon className={`stat-card__icon w-6 h-6 text-white/90 ${card.iconClass ?? ''}`} />
+                      <span className="text-[10px] uppercase tracking-[0.4em] text-white/70">Joy</span>
+                    </div>
+                    <p className="mt-6 text-xs uppercase tracking-[0.3em] text-white/80">{card.label}</p>
+                    <p className="stat-card__value text-3xl font-bold mt-1">
+                      <CountUpNumber
+                        value={card.valueNumber ?? 0}
+                        prefix={card.prefix ?? ''}
+                        suffix={card.suffix ?? ''}
+                        reduceMotion={prefersReducedMotion}
+                      />
+                    </p>
+                    <p className="text-sm text-white/85 mt-2">{card.subtext}</p>
+                    {card.progressValue !== undefined && (
+                      <div className="progress-track mt-4 bg-white/30">
+                        <div
+                          className="progress-fill progress-fill--accent"
+                          style={{ width: `${card.progressValue}%` }}
+                        ></div>
+                      </div>
+                    )}
+                    <span className="stat-card-glow" aria-hidden></span>
+                  </motion.div>
+                )
+              })}
             </div>
           )}
-        </div>
-        {/* Quick Actions */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {/* Assignments Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="interactive-card bg-white rounded-xl p-6 shadow-sm transition-all cursor-pointer border border-gray-100 hover:border-blue-200 group data-section is-ready"
-            onClick={() => setActiveTab('assignments')}
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center transition-transform">
-                <BookOpen className="interactive-icon w-6 h-6 text-blue-600" />
-              </div>
+        </motion.section>
+
+        <motion.section {...getMotionFade(0.25)} className="space-y-6">
+          <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-4">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div>
-                <h3 className="font-semibold text-gray-900">Assignments</h3>
-                <p className="text-sm text-gray-600">
-                  {!statsLoading && dashboardStats ? 
-                    `${dashboardStats.completedAssignments}/${dashboardStats.totalAssignments} selesai` : 
-                    'Lihat tugas tersedia'
-                  }
+                <p className="text-sm font-semibold text-gray-900">Atur fokus dashboard</p>
+                <p className="text-xs text-gray-500">Pilih cerita yang ingin kamu lihat terlebih dahulu</p>
+              </div>
+              {!statsLoading && dashboardStats && (
+                <p className="text-xs text-gray-500">
+                  Terhubung dengan{' '}
+                  <span className="font-semibold text-gray-700">
+                    <CountUpNumber value={dashboardStats.totalStudents} reduceMotion={prefersReducedMotion} />
+                  </span>{' '}
+                  siswa aktif minggu ini ✨
                 </p>
+              )}
+            </div>
+            <div className="relative mt-4" ref={tabNavRef}>
+              {!prefersReducedMotion && (
+                <motion.span
+                  className="tab-underline"
+                  initial={false}
+                  animate={{ width: tabUnderline.width, x: tabUnderline.left }}
+                  transition={{ duration: 0.28, ease: [0.19, 1, 0.22, 1] }}
+                />
+              )}
+              <div className="flex flex-col gap-3 md:flex-row">
+                {tabItems.map((item) => {
+                  const Icon = item.icon
+                  const isActive = activeTab === item.id
+                  return (
+                    <button
+                      key={item.id}
+                      ref={(el) => {
+                        tabRefs.current[item.id] = el
+                      }}
+                      onClick={() => setActiveTab(item.id)}
+                      aria-pressed={isActive}
+                      className={`tab-pill relative w-full rounded-2xl border px-4 py-3 text-left transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#45C7FA] ${
+                        isActive
+                          ? 'bg-[#E9FBFF] border-[#45C7FA]/40 shadow-brand-sm'
+                          : 'border-transparent bg-slate-50/50 hover:border-white hover:bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 text-sm font-semibold">
+                        <Icon className={`w-4 h-4 ${isActive ? 'text-[#0F172A]' : 'text-gray-500'}`} />
+                        <span className={isActive ? 'text-[#0F172A]' : 'text-gray-600'}>{item.label}</span>
+                        {item.badge ? (
+                          <span className="text-[11px] rounded-full bg-white px-2 py-0.5 text-[#0F172A]">{item.badge}</span>
+                        ) : null}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">{item.helper}</p>
+                    </button>
+                  )
+                })}
               </div>
             </div>
-            <p className="text-sm text-gray-600">
-              Tutorial interaktif dengan feedback real-time untuk mengasah skill programming! 💻
-            </p>
-            {!statsLoading && dashboardStats && dashboardStats.hasOverdueAssignments && (
-              <div className="status-badge mt-3 px-3 py-1 bg-red-50 text-red-600 text-xs rounded-full inline-flex" data-state="error">
-                ⚠️ Ada tugas yang terlambat
-              </div>
-            )}
-          </motion.div>
-
-          {/* Coding Lab Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="interactive-card bg-white rounded-xl p-6 shadow-sm transition-all cursor-pointer border border-gray-100 hover:border-green-200 group data-section is-ready"
-            onClick={() => window.location.href = '/student/coding-lab'}
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center transition-transform">
-                <Target className="interactive-icon w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Coding Lab</h3>
-                <p className="text-sm text-gray-600">
-                  {!statsLoading && dashboardStats ? 
-                    `${dashboardStats.codingLabProgress}% progress` : 
-                    'Kelola proyek Anda'
-                  }
-                </p>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600">
-              Showcase karya terbaik dan raih pengakuan dari guru dan teman! 🎨
-            </p>
-            {!statsLoading && dashboardStats && (
-              <div className="mt-3">
-                <div className="progress-track">
-                  <div
-                    className={`progress-fill bg-gradient-to-r from-green-400 to-green-600 ${dashboardStats.codingLabProgress === 100 ? 'progress-fill--complete' : ''}`}
-                    style={{ width: `${dashboardStats.codingLabProgress}%` }}
-                  ></div>
-                </div>
-              </div>
-            )}
-          </motion.div>
-
-          {/* Learning Roadmap Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="interactive-card bg-white rounded-xl p-6 shadow-sm transition-all cursor-pointer border border-gray-100 hover:border-purple-200 group data-section is-ready"
-            onClick={() => setActiveTab('roadmap')}
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center transition-transform">
-                <Rocket className="interactive-icon w-6 h-6 text-purple-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Learning Path</h3>
-                <p className="text-sm text-gray-600">Roadmap pembelajaran</p>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600">
-              Ikuti jalur belajar terstruktur dari basic hingga advanced! 🗺️
-            </p>
-            <div className="mt-3 flex items-center gap-2">
-              <Star className="w-4 h-4 text-yellow-500" />
-              <span className="text-sm text-gray-600">
-                {roadmapStages.length} tahap pembelajaran
-              </span>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Joyful Progress Summary */}
-        {!statsLoading && dashboardStats && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="interactive-card bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-8 text-white mb-8 relative overflow-hidden data-section is-ready"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
-            
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                  <Lightbulb className="interactive-icon w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold">Progress Report</h3>
-                  <p className="text-white/80">Perjalanan belajar kamu minggu ini! ✨</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold mb-1">{dashboardStats.totalSubmissions}</div>
-                  <div className="text-sm text-white/80">Submission</div>
-                  <div className="text-xs text-white/60">📝 Total</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold mb-1">{dashboardStats.totalFeedbacks}</div>
-                  <div className="text-sm text-white/80">Feedback</div>
-                  <div className="text-xs text-white/60">💬 Diberikan</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold mb-1">{dashboardStats.recentSubmissions}</div>
-                  <div className="text-sm text-white/80">Minggu Ini</div>
-                  <div className="text-xs text-white/60">🚀 Fresh!</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold mb-1">{dashboardStats.codingLabSubmissions}</div>
-                    <div className="text-sm text-white/80">Coding Lab</div>
-                    <div className="text-xs text-white/60">🎨 Karya</div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Heart className="interactive-icon w-5 h-5 text-pink-200" />
-                  <span className="text-sm">
-                    {dashboardStats.status.engagement === 'high' ? 'Kamu luar biasa aktif!' : 
-                     dashboardStats.status.engagement === 'medium' ? 'Keep up the good work!' : 
-                     'Ayo semangat belajar lagi!'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={`w-4 h-4 ${
-                      i < Math.floor(dashboardStats.engagementScore / 20) ? 'text-yellow-300' : 'text-white/30'
-                    }`} />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Komunitas GEMA Stats */}
-        {!statsLoading && dashboardStats && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.55 }}
-            className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-8"
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                <Award className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Komunitas GEMA</h3>
-                <p className="text-sm text-gray-600">Bergabunglah dengan komunitas pembelajar teknologi</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-              <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                <div className="text-3xl font-bold text-blue-600 mb-2">{dashboardStats.totalStudents}</div>
-                <div className="text-sm font-medium text-gray-700">Siswa Terdaftar</div>
-                <div className="text-xs text-gray-500 mt-1">👥 Active learners</div>
-              </div>
-              
-              <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border border-purple-100">
-                <div className="text-3xl font-bold text-purple-600 mb-2">{dashboardStats.totalTutorialArticles}</div>
-                <div className="text-sm font-medium text-gray-700">Tutorial & Materi</div>
-                <div className="text-xs text-gray-500 mt-1">📚 Learning resources</div>
-              </div>
-              
-              <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100">
-                <div className="text-3xl font-bold text-green-600 mb-2">{dashboardStats.codingLabTasks}</div>
-                <div className="text-sm font-medium text-gray-700">Coding Lab Tasks</div>
-                <div className="text-xs text-gray-500 mt-1">💻 Practice challenges</div>
-              </div>
-            </div>
-
-            <div className="mt-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200">
-              <div className="flex items-center gap-3">
-                <Rocket className="w-8 h-8 text-amber-600" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">
-                    Kamu adalah bagian dari {dashboardStats.totalStudents} siswa yang belajar bersama! 🎉
-                  </p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Akses {dashboardStats.totalTutorialArticles} tutorial dan {dashboardStats.codingLabTasks} coding challenges untuk mengasah skill.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Motivational Status Cards */}
-        {!statsLoading && dashboardStats && (
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
-            {/* Assignment Status */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.6 }}
-              className={`rounded-xl p-6 text-center ${
-                dashboardStats.status.assignments === 'up_to_date' 
-                  ? 'bg-green-50 border border-green-200' :
-                dashboardStats.status.assignments === 'in_progress'
-                  ? 'bg-yellow-50 border border-yellow-200' :
-                  'bg-red-50 border border-red-200'
-              }`}
-            >
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white flex items-center justify-center shadow-sm">
-                {dashboardStats.status.assignments === 'up_to_date' ? (
-                  <CheckCircle className="w-8 h-8 text-green-500" />
-                ) : dashboardStats.status.assignments === 'in_progress' ? (
-                  <Clock className="w-8 h-8 text-yellow-500" />
-                ) : (
-                  <AlertCircle className="w-8 h-8 text-red-500" />
-                )}
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-2">
-                {dashboardStats.status.assignments === 'up_to_date' ? 'Semua Up to Date! 🎉' :
-                 dashboardStats.status.assignments === 'in_progress' ? 'Ada yang Pending ⏰' :
-                 'Perlu Perhatian! ⚠️'}
-              </h4>
-              <p className="text-sm text-gray-600">
-                {dashboardStats.overdueAssignments > 0 ? 
-                  `${dashboardStats.overdueAssignments} tugas terlambat` :
-                  dashboardStats.pendingAssignments > 0 ?
-                  `${dashboardStats.pendingAssignments} tugas menunggu` :
-                  'Semua tugas selesai tepat waktu!'
-                }
-              </p>
-            </motion.div>
-
-            {/* Coding Lab Status */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.7 }}
-              className={`rounded-xl p-6 text-center ${
-                dashboardStats.status.codingLab === 'complete' 
-                  ? 'bg-green-50 border border-green-200' :
-                dashboardStats.status.codingLab === 'in_progress'
-                  ? 'bg-blue-50 border border-blue-200' :
-                  'bg-purple-50 border border-purple-200'
-              }`}
-            >
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white flex items-center justify-center shadow-sm">
-                {dashboardStats.status.codingLab === 'complete' ? (
-                  <Award className="w-8 h-8 text-green-500" />
-                ) : dashboardStats.status.codingLab === 'in_progress' ? (
-                  <Upload className="w-8 h-8 text-blue-500" />
-                ) : (
-                  <Sparkles className="w-8 h-8 text-purple-500" />
-                )}
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-2">
-                {dashboardStats.status.codingLab === 'complete' ? 'Coding Lab Lengkap! 🏆' :
-                 dashboardStats.status.codingLab === 'in_progress' ? 'Sedang Dikerjakan 💪' :
-                 'Saatnya Mulai! ✨'}
-              </h4>
-              <p className="text-sm text-gray-600">
-                {dashboardStats.codingLabSubmissions}/{dashboardStats.codingLabTasks} proyek selesai
-              </p>
-            </motion.div>
-
-            {/* Learning Energy */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.8 }}
-              className={`rounded-xl p-6 text-center ${
-                dashboardStats.status.engagement === 'high' 
-                  ? 'bg-orange-50 border border-orange-200' :
-                dashboardStats.status.engagement === 'medium'
-                  ? 'bg-yellow-50 border border-yellow-200' :
-                  'bg-gray-50 border border-gray-200'
-              }`}
-            >
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white flex items-center justify-center shadow-sm">
-                {dashboardStats.status.engagement === 'high' ? (
-                  <Flame className="w-8 h-8 text-orange-500" />
-                ) : dashboardStats.status.engagement === 'medium' ? (
-                  <TrendingUp className="w-8 h-8 text-yellow-500" />
-                ) : (
-                  <Coffee className="w-8 h-8 text-gray-500" />
-                )}
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-2">
-                {dashboardStats.status.engagement === 'high' ? 'Super Energetic! 🔥' :
-                 dashboardStats.status.engagement === 'medium' ? 'Good Momentum! 📈' :
-                 'Time for Coffee! ☕'}
-              </h4>
-              <p className="text-sm text-gray-600">
-                Engagement score: {dashboardStats.engagementScore}/100
-              </p>
-            </motion.div>
-          </div>
-        )}
-
-        {/* Playful Tab Navigation */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
-            <nav className="-mb-px flex">
-              <button
-                onClick={() => setActiveTab('dashboard')}
-                className={`py-4 px-6 text-sm font-medium border-b-2 transition-all ${
-                  activeTab === 'dashboard'
-                    ? 'border-blue-500 text-blue-600 bg-white shadow-sm'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-white/50'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Smile className="w-4 h-4" />
-                  Dashboard
-                </div>
-              </button>
-              <button
-                onClick={() => setActiveTab('assignments')}
-                className={`py-4 px-6 text-sm font-medium border-b-2 transition-all ${
-                  activeTab === 'assignments'
-                    ? 'border-blue-500 text-blue-600 bg-white shadow-sm'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-white/50'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4" />
-                  Assignments
-                  {!statsLoading && dashboardStats && dashboardStats.hasOverdueAssignments && (
-                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                  )}
-                </div>
-              </button>
-              <button
-                onClick={() => setActiveTab('roadmap')}
-                className={`py-4 px-6 text-sm font-medium border-b-2 transition-all ${
-                  activeTab === 'roadmap'
-                    ? 'border-blue-500 text-blue-600 bg-white shadow-sm'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-white/50'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Target className="w-4 h-4" />
-                  Roadmap
-                </div>
-              </button>
-            </nav>
           </div>
 
-          <div className="p-6">
-            {activeTab === 'dashboard' && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="text-center py-12">
-                  <div className="w-24 h-24 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Sparkles className="w-12 h-12 text-white" />
+          <div className="rounded-[28px] border border-gray-100 bg-white p-6 shadow-lg">
+            <AnimatePresence mode="wait">
+              {activeTab === 'dashboard' && (
+                <motion.div
+                  key="tab-dashboard"
+                  initial={{ opacity: prefersReducedMotion ? 1 : 0, y: prefersReducedMotion ? 0 : 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: prefersReducedMotion ? 1 : 0, y: prefersReducedMotion ? 0 : -6 }}
+                  transition={{ duration: prefersReducedMotion ? 0 : 0.16, ease: [0.22, 1, 0.36, 1] }}
+                  className="space-y-6"
+                >
+                <div className="grid gap-4 md:grid-cols-2">
+                  {spotlightStories.map((story, index) => {
+                    const Icon = story.icon
+                    return (
+                      <motion.div
+                        key={story.id}
+                        {...getMotionFade(0.08 * index)}
+                        className={`rounded-2xl border border-gray-100 p-5 flex gap-4 items-start ${story.accent}`}
+                      >
+                        <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-md">
+                          <Icon className="w-6 h-6 text-gray-700" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">{story.title}</p>
+                          <p className="text-sm text-gray-600 mt-1">{story.description}</p>
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+                <div className="rounded-2xl bg-gradient-to-r from-[#FFF9C4] via-[#FFE0F0] to-[#E0F7FF] p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-lg font-semibold text-gray-900">“Dashboard = cerita perjalananmu.”</p>
+                    <p className="text-sm text-gray-700 mt-1">
+                      {dashboardStats
+                        ? `Kamu termasuk ${dashboardStats.totalStudents} siswa aktif minggu ini. Pertahankan vibes joyful ini!`
+                        : 'Kami akan menampilkan insight setelah data siap.'}
+                    </p>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                    Halo, {student?.fullName}! 👋
-                  </h3>
-                  <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                    Selamat datang di dashboard pembelajaran GEMA! Semua statistik dan progress belajar kamu ada di atas. 
-                    Pilih tab lain untuk melihat assignments dan roadmap belajar.
-                  </p>
-                  
-                  {!statsLoading && dashboardStats && (
-                    <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-                      {/* Quick Stats */}
-                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                            <BookOpen className="w-5 h-5 text-white" />
-                          </div>
-                          <h4 className="font-semibold text-gray-900">Learning Progress</h4>
-                        </div>
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">Completed</span>
-                            <span className="font-semibold text-blue-600">
-                              {dashboardStats.completedAssignments}/{dashboardStats.totalAssignments}
-                            </span>
-                          </div>
-                          <div className="progress-track">
-                            <div
-                              className={`progress-fill bg-gradient-to-r from-blue-400 to-blue-600 ${dashboardStats.completionPercentage === 100 ? 'progress-fill--complete' : ''}`}
-                              style={{ width: `${dashboardStats.completionPercentage}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Next Actions */}
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-                            <Target className="w-5 h-5 text-white" />
-                          </div>
-                          <h4 className="font-semibold text-gray-900">What&apos;s Next?</h4>
-                        </div>
-                        <div className="space-y-2">
-                          {dashboardStats.pendingAssignments > 0 && (
-                            <div className="text-sm text-gray-600">
-                              📝 {dashboardStats.pendingAssignments} assignments menunggu
-                            </div>
-                          )}
-                          {dashboardStats.codingLabTasks > dashboardStats.codingLabSubmissions && (
-                            <div className="text-sm text-gray-600">
-                              🎨 Coding Lab perlu diupdate
-                            </div>
-                          )}
-                          {dashboardStats.pendingAssignments === 0 && dashboardStats.codingLabProgress === 100 && (
-                            <div className="text-sm text-green-600 font-medium">
-                              🎉 Semua up to date!
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  <Link
+                    href="/student/learning-path"
+                    className="interactive-button inline-flex items-center gap-2 rounded-full bg-white/90 px-5 py-2 text-sm font-semibold text-[#0F172A]"
+                  >
+                    <Lightbulb className="w-4 h-4" />
+                    Eksplor perjalanan
+                  </Link>
                 </div>
               </motion.div>
             )}
 
-            {activeTab === 'assignments' && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                    <BookOpen className="w-5 h-5 text-blue-600" />
-                  </div>
+              {activeTab === 'assignments' && (
+                <motion.div
+                  key="tab-assignments"
+                  initial={{ opacity: prefersReducedMotion ? 1 : 0, y: prefersReducedMotion ? 0 : 8, scale: prefersReducedMotion ? 1 : 0.99 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: prefersReducedMotion ? 1 : 0, y: prefersReducedMotion ? 0 : -6, scale: 1 }}
+                  transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: [0.22, 1, 0.36, 1] }}
+                >
+                <div className="flex flex-col gap-2 mb-6 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">Learning Assignments</h3>
-                    <p className="text-sm text-gray-600">Tutorial interaktif untuk mengasah skill programming 💻</p>
+                    <h3 className="text-xl font-semibold text-gray-900">Learning Assignments</h3>
+                    <p className="text-sm text-gray-600">Tugas berbasis proyek dengan feedback real-time. Joyful namun terarah.</p>
                   </div>
+                  {!statsLoading && dashboardStats && (
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
+                        <CheckCircle className="w-4 h-4" />
+                        <CountUpNumber value={dashboardStats.completedAssignments} reduceMotion={prefersReducedMotion} /> selesai
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-amber-700">
+                        <Clock className="w-4 h-4" />
+                        <CountUpNumber value={dashboardStats.pendingAssignments} reduceMotion={prefersReducedMotion} /> pending
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-rose-700">
+                        <AlertCircle className="w-4 h-4" />
+                        <CountUpNumber value={dashboardStats.overdueAssignments} reduceMotion={prefersReducedMotion} /> terlambat
+                      </span>
+                    </div>
+                  )}
                 </div>
-
-                {/* Assignment Statistics */}
-                {!statsLoading && dashboardStats && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-green-50 rounded-xl p-4 text-center border border-green-100">
-                      <div className="text-2xl font-bold text-green-600 mb-1">{dashboardStats.completedAssignments}</div>
-                      <div className="text-xs text-green-700">Selesai ✅</div>
-                    </div>
-                    <div className="bg-yellow-50 rounded-xl p-4 text-center border border-yellow-100">
-                      <div className="text-2xl font-bold text-yellow-600 mb-1">{dashboardStats.pendingAssignments}</div>
-                      <div className="text-xs text-yellow-700">Pending ⏳</div>
-                    </div>
-                    <div className="bg-red-50 rounded-xl p-4 text-center border border-red-100">
-                      <div className="text-2xl font-bold text-red-600 mb-1">{dashboardStats.overdueAssignments}</div>
-                      <div className="text-xs text-red-700">Terlambat ⚠️</div>
-                    </div>
-                    <div className="bg-blue-50 rounded-xl p-4 text-center border border-blue-100">
-                      <div className="text-2xl font-bold text-blue-600 mb-1">{dashboardStats.completionPercentage}%</div>
-                      <div className="text-xs text-blue-700">Progress 📈</div>
-                    </div>
-                  </div>
-                )}
 
                 {assignmentsLoading ? (
                   <div className="text-center py-12">
@@ -1069,90 +1278,66 @@ export default function StudentDashboardPage() {
                 ) : assignments && assignments.length > 0 ? (
                   <div className="space-y-4">
                     {assignments.map((assignment, index) => {
-                      const dueDate = new Date(assignment.dueDate)
-                      const now = new Date()
-                      const isOverdue = dueDate < now
-                      const isUpcoming = (dueDate.getTime() - now.getTime()) < (7 * 24 * 60 * 60 * 1000) // 7 days
-                      
+                      const { icon: AssignmentIcon, label, accentBg, accentText } = getAssignmentVisualMeta(assignment.subject)
+                      const statusStyle = getAssignmentStatusStyle(assignment.status)
+                      const deadlineMeta = getDeadlineMeta(assignment.dueDate)
                       return (
                         <motion.div
                           key={assignment.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          data-state={isOverdue ? 'error' : undefined}
-                          className={`interactive-card border-2 rounded-2xl p-6 transition-all duration-300 group data-section is-ready ${
-                            assignment.status === 'completed'
-                              ? 'border-green-200 bg-green-50 hover:border-green-300' :
-                            isOverdue
-                              ? 'border-red-200 bg-red-50 hover:border-red-300' :
-                            isUpcoming
-                              ? 'border-yellow-200 bg-yellow-50 hover:border-yellow-300' :
-                              'border-gray-200 bg-white hover:border-blue-300'
-                          }`}
+                          {...getMotionFade(0.04 * index, { variant: 'card', distance: 10 })}
+                          className="assignment-card rounded-3xl border border-slate-100 bg-white p-6 shadow-[0_18px_40px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-1"
                         >
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-start gap-4 flex-1">
-                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                assignment.status === 'completed'
-                                  ? 'bg-green-500 text-white' :
-                                isOverdue
-                                  ? 'bg-red-500 text-white' :
-                                isUpcoming
-                                  ? 'bg-yellow-500 text-white' :
-                                  'bg-blue-500 text-white'
-                              }`}>
-                                {assignment.status === 'completed' ? (
-                                  <CheckCircle className="interactive-icon w-6 h-6" />
-                                ) : isOverdue ? (
-                                  <AlertCircle className="interactive-icon w-6 h-6" />
-                                ) : (
-                                  <BookOpen className="interactive-icon w-6 h-6" />
-                                )}
+                          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+                            <div className="flex flex-1 items-start gap-4">
+                              <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${accentBg}`}>
+                                <AssignmentIcon className={`w-7 h-7 ${accentText}`} />
                               </div>
-                              <div className="flex-1">
-                                <h4 className="font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
-                                  {assignment.title}
-                                </h4>
-                                <p className="text-sm text-gray-600 mb-3 line-clamp-2">{assignment.description}</p>
-                                <div className="flex items-center gap-4 text-sm">
-                                  <span className={`flex items-center gap-1 px-2 py-1 rounded-full ${
-                                    isOverdue ? 'bg-red-100 text-red-700' :
-                                    isUpcoming ? 'bg-yellow-100 text-yellow-700' :
-                                    'bg-gray-100 text-gray-700'
-                                  }`}>
-                                    <Calendar className="w-3 h-3" />
-                                    {isOverdue ? 'Terlambat!' : 
-                                     isUpcoming ? 'Segera!' :
-                                     formatDate(assignment.dueDate)}
-                                  </span>
-                                  <span className="flex items-center gap-1 text-gray-500">
-                                    <FileText className="w-3 h-3" />
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-[11px] uppercase tracking-[0.3em] text-gray-500">
                                     {assignment.subject}
                                   </span>
+                                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+                                    {label}
+                                  </span>
                                 </div>
+                                <h4 className="text-lg font-semibold text-gray-900">{assignment.title}</h4>
+                                <p className="text-sm text-gray-600">{assignment.description}</p>
+                                {assignment.instructions && assignment.instructions.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+                                    {assignment.instructions.slice(0, 2).map((instruction, idx) => (
+                                      <span key={`${assignment.id}-instruction-${idx}`} className="rounded-full bg-slate-50 px-2.5 py-0.5">
+                                        {instruction}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             </div>
-                            <div className="flex flex-col items-end gap-2">
-                              <span
-                                className={`status-badge px-3 py-1 text-xs font-semibold rounded-full ${
-                                assignment.status === 'completed'
-                                  ? 'bg-green-100 text-green-800'
-                                  : assignment.status === 'in_progress'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : 'bg-gray-100 text-gray-800'
-                                }`}
-                                data-status={assignment.status === 'completed' ? 'completed' : undefined}
-                              >
-                                {assignment.status === 'completed' ? '🎉 Selesai!' :
-                                 assignment.status === 'in_progress' ? '🚀 Berlangsung' : '⭐ Belum Mulai'}
-                              </span>
+                            <div className="w-full border-t border-dashed border-slate-200 pt-4 md:w-[240px] md:border-t-0 md:border-l md:pl-6 md:pt-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className={`text-xs font-semibold rounded-full px-3 py-1 ${statusStyle.className}`}>
+                                  {statusStyle.label}
+                                </span>
+                                <span
+                                  className={`text-xs font-semibold rounded-full px-3 py-1 ${deadlineToneClass[deadlineMeta.tone]} ${
+                                    deadlineMeta.isUrgent && !prefersReducedMotion ? 'deadline-pulse' : ''
+                                  }`}
+                                >
+                                  {deadlineMeta.label}
+                                </span>
+                              </div>
+                              <div className="mt-3 text-sm text-gray-600">
+                                Deadline: <span className="font-semibold text-gray-900">{formatDate(assignment.dueDate)}</span>
+                              </div>
+                              <div className="mt-1 text-xs text-gray-500">
+                                Submission {assignment.submissionCount}/{assignment.maxSubmissions}
+                              </div>
                               <Link
                                 href={`/student/assignments/${assignment.id}`}
-                                className="interactive-button bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                                className="interactive-button cta-gradient mt-4 inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white"
                               >
-                                {assignment.status === 'completed' ? 'Lihat' : 'Mulai'}
-                                <span className="transition-transform group-hover:translate-x-1">→</span>
+                                Ayo Mulai Belajar 🚀
                               </Link>
                             </div>
                           </div>
@@ -1161,114 +1346,113 @@ export default function StudentDashboardPage() {
                     })}
                   </div>
                 ) : (
-                  <div className="text-center py-12">
-                    <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <BookOpen className="w-12 h-12 text-blue-500" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Belum Ada Assignments</h3>
-                    <p className="text-gray-600 mb-6">
-                      Assignments yang seru akan segera tersedia! 🚀
-                    </p>
-                    <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-                      <Sparkles className="w-4 h-4" />
-                      <span>Stay tuned untuk update terbaru</span>
-                    </div>
+                  <div className="rounded-3xl border-2 border-dashed border-[#7AF2C3]/60 bg-[#F2FFFB] p-10 text-center">
+                    <p className="text-gray-700 font-semibold">Belum ada tugas hari ini — kamu bebas eksplor coding dulu!</p>
                   </div>
                 )}
-              </motion.div>
-            )}
+                </motion.div>
+              )}
 
-            {activeTab === 'roadmap' && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Learning Roadmap</h3>
+              {activeTab === 'roadmap' && (
+                <motion.div
+                  key="tab-roadmap"
+                  initial={{ opacity: prefersReducedMotion ? 1 : 0, y: prefersReducedMotion ? 0 : 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: prefersReducedMotion ? 1 : 0, y: prefersReducedMotion ? 0 : -6 }}
+                  transition={{ duration: prefersReducedMotion ? 0 : 0.18, ease: [0.22, 1, 0.36, 1] }}
+                >
                 {roadmapStages && roadmapStages.length > 0 ? (
                   <div className="space-y-6">
-                    {roadmapStages.map((stage, index) => (
-                      <motion.div
-                        key={stage.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="border border-gray-200 rounded-lg p-6"
-                      >
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                              index === 0 ? 'bg-blue-500 text-white' :
-                              index === 1 ? 'bg-green-500 text-white' :
-                              index === 2 ? 'bg-yellow-500 text-white' :
-                              'bg-gray-300 text-gray-600'
-                            }`}>
-                              {index + 1}
-                            </div>
-                            <div>
-                              <h4 className="font-semibold text-gray-900">{stage.title}</h4>
-                              <p className="text-sm text-gray-600">{stage.description}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm font-medium text-gray-900">
-                              {getStageStats(stage.id).completed}/{getTotalItems(stage)}
-                            </div>
-                            <div className="text-xs text-gray-500">Items</div>
-                          </div>
-                        </div>
-
-                        {stage.activityGroups && stage.activityGroups.length > 0 && (
-                          <div className="space-y-4">
-                            {stage.activityGroups.map((group) => (
-                              <div key={group.id} className="bg-gray-50 rounded-lg p-4">
-                                <h5 className="font-medium text-gray-800 mb-3">{group.title}</h5>
-                                <div className="space-y-2">
-                                  {group.items.map((item) => {
-                                    const isCompleted = roadmapProgress[stage.id]?.groups?.[group.id]?.[item.id] || false;
-                                    return (
-                                      <div key={item.id} className="flex items-center gap-3">
-                                        <button
-                                          onClick={() => handleItemCheck(stage.id, group.id, item.id, !isCompleted)}
-                                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                            isCompleted 
-                                              ? 'bg-green-500 border-green-500 text-white' 
-                                              : 'border-gray-300 hover:border-green-400'
-                                          }`}
-                                        >
-                                          {isCompleted && <CheckCircle className="w-3 h-3" />}
-                                        </button>
-                                        <span className={`text-sm ${
-                                          isCompleted ? 'text-gray-600 line-through' : 'text-gray-800'
-                                        }`}>
-                                          {item.text || item.label}
-                                        </span>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
+                    {roadmapStages.map((stage, index) => {
+                      const stats = getStageStats(stage.id)
+                      return (
+                        <motion.div
+                          key={stage.id}
+                          {...getMotionFade(0.05 * index)}
+                          className="rounded-3xl border border-[#E4E7FB] bg-gradient-to-br from-white to-[#F8FBFF] p-6 shadow-sm"
+                        >
+                          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                            <div className="flex items-start gap-4">
+                              <div className="w-12 h-12 rounded-2xl bg-[#A492FF]/15 text-[#7C3AED] flex items-center justify-center">
+                                <Target className="w-6 h-6" />
                               </div>
-                            ))}
+                              <div>
+                                <p className="text-[11px] uppercase tracking-[0.3em] text-[#7C3AED]">Tahap {index + 1}</p>
+                                <h4 className="text-lg font-semibold text-gray-900">{stage.title}</h4>
+                                <p className="text-sm text-gray-600">{stage.description}</p>
+                              </div>
+                            </div>
+                            <div className="md:text-right space-y-2">
+                              <div className="text-sm font-semibold text-gray-900">
+                                {stats.completed}/{stats.total} checklist
+                              </div>
+                              <div className="progress-track bg-white/60">
+                                <div
+                                  className="progress-fill progress-fill--accent"
+                                  style={{ width: `${stats.percentage}%` }}
+                                ></div>
+                              </div>
+                              <p className="text-xs text-gray-500">{stats.percentage}% selesai</p>
+                            </div>
                           </div>
-                        )}
-                      </motion.div>
-                    ))}
+
+                          {stage.activityGroups && stage.activityGroups.length > 0 && (
+                            <div className="mt-5 grid gap-4 md:grid-cols-2">
+                              {stage.activityGroups.map((group) => (
+                                <div key={group.id} className="rounded-2xl border border-white/70 bg-white/80 p-4">
+                                  <p className="font-semibold text-gray-900 mb-3">{group.title}</p>
+                                  <div className="space-y-2">
+                                    {group.items.map((item) => {
+                                      const isCompleted = roadmapProgress[stage.id]?.groups?.[group.id]?.[item.id] || false
+                                      return (
+                                        <label key={item.id} className="flex items-center gap-3 text-sm">
+                                          <input
+                                            type="checkbox"
+                                            checked={isCompleted}
+                                            onChange={() => handleItemCheck(stage.id, group.id, item.id, !isCompleted)}
+                                            className="h-4 w-4 rounded-full border-2 border-[#A492FF] text-[#7AF2C3] focus:ring-[#7AF2C3]"
+                                          />
+                                          <span className={isCompleted ? 'text-gray-500 line-through' : 'text-gray-800'}>
+                                            {item.text || item.label}
+                                          </span>
+                                        </label>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </motion.div>
+                      )
+                    })}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Target className="w-8 h-8 text-gray-400" />
+                  <div className="relative rounded-3xl border-2 border-dashed border-[#A492FF]/40 bg-[#F8F7FF] p-10 text-center overflow-hidden empty-state-float">
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#45C7FA]/10 via-transparent to-[#A492FF]/10" aria-hidden></div>
+                    <div className="relative z-10 space-y-4">
+                      <div className="w-16 h-16 rounded-2xl bg-white shadow-lg mx-auto flex items-center justify-center">
+                        <Target className="w-8 h-8 text-[#A492FF]" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900">Roadmap sedang disiapkan untuk perjalanan belajarmu! 🎯</h3>
+                      <p className="text-gray-600 max-w-2xl mx-auto">
+                        Kami sedang merangkai milestone personal supaya kamu selalu tahu langkah berikutnya. Sementara itu, lanjutkan eksplorasi materi favoritmu.
+                      </p>
+                      <div className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2 font-semibold text-[#7C3AED] shadow-brand-sm">
+                        <Sparkles className="w-4 h-4" /> Kami kabari begitu siap
+                      </div>
                     </div>
-                    <p className="text-gray-600">Roadmap pembelajaran akan tersedia segera</p>
                   </div>
                 )}
-              </motion.div>
-            )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
+        </motion.section>
         </div>
       </div>
 
-      {/* Floating Chat with Admin */}
       <FloatingChat />
     </StudentLayout>
-  )}
+  )
+}
