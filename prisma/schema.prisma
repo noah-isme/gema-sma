@@ -591,6 +591,7 @@ model Student {
   address      String?
   parentName   String? // Nama orang tua/wali
   parentPhone  String? // Telepon orang tua/wali
+  extracurricularInterests Json?
   status       String    @default("active") // active, inactive, suspended
   isVerified   Boolean   @default(false) // Email verification
   profileImage String? // URL foto profil

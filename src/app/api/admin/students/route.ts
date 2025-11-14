@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
         address: true,
         parentName: true,
         parentPhone: true,
+        extracurricularInterests: true,
         status: true,
         isVerified: true,
         joinedAt: true,

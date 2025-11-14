@@ -24,6 +24,7 @@ interface Student {
   address?: string | null
   parentName?: string | null
   parentPhone?: string | null
+  extracurricularInterests?: string[] | null
   status: string
   isVerified: boolean
   joinedAt: string
@@ -244,6 +245,13 @@ export default function AdminStudentsPage() {
     })
   }
 
+  const normalizeInterests = (value: Student['extracurricularInterests']) => {
+    if (Array.isArray(value)) {
+      return value.filter((interest): interest is string => typeof interest === 'string' && interest.trim().length > 0)
+    }
+    return []
+  }
+
   const filteredStudents = students.filter(student => {
     const matchesSearch =
       student.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -386,6 +394,7 @@ export default function AdminStudentsPage() {
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">NIS</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Email</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Kelas</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Ekstrakurikuler</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Verifikasi</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Login Terakhir</th>
@@ -395,19 +404,21 @@ export default function AdminStudentsPage() {
               <tbody className="divide-y divide-gray-200 bg-white">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
+                    <td colSpan={9} className="px-6 py-8 text-center text-sm text-gray-500">
                       Memuat data siswa...
                     </td>
                   </tr>
                 ) : filteredStudents.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center text-sm text-gray-500">
+                    <td colSpan={9} className="px-6 py-12 text-center text-sm text-gray-500">
                       Tidak ada siswa yang sesuai dengan filter.
                     </td>
                   </tr>
                 ) : (
-                  filteredStudents.map(student => (
-                    <tr key={student.id}>
+                  filteredStudents.map(student => {
+                    const interestList = normalizeInterests(student.extracurricularInterests)
+                    return (
+                      <tr key={student.id}>
                       <td className="whitespace-nowrap px-6 py-4">
                         <div className="font-medium text-gray-900">{student.fullName}</div>
                         <div className="text-sm text-gray-500">{student.phone || '-'}</div>
@@ -416,6 +427,22 @@ export default function AdminStudentsPage() {
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{student.studentId}</td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{student.email}</td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{student.class || '-'}</td>
+                      <td className="px-6 py-4">
+                        {interestList.length ? (
+                          <div className="flex flex-wrap gap-2">
+                            {interestList.map(interest => (
+                              <span
+                                key={`${student.id}-${interest}`}
+                                className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700"
+                              >
+                                {interest}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">Belum dipilih</span>
+                        )}
+                      </td>
                       <td className="whitespace-nowrap px-6 py-4">
                         <span
                           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -461,8 +488,9 @@ export default function AdminStudentsPage() {
                           </button>
                         </div>
                       </td>
-                    </tr>
-                  ))
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>

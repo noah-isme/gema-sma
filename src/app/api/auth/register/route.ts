@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
       address,
       parentName,
       parentPhone,
+      extracurricularInterests,
       userType
     } = body
 
@@ -73,6 +74,11 @@ export async function POST(request: NextRequest) {
         address,
         parentName,
         parentPhone,
+        extracurricularInterests: Array.isArray(extracurricularInterests) && extracurricularInterests.length
+          ? extracurricularInterests
+          : Array.isArray(extracurricularInterests)
+            ? []
+            : undefined,
         status: 'active',
         isVerified: true // For now, auto-verify. Later can add email verification
       }

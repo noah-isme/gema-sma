@@ -4,6 +4,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --auth-gradient-angle: 128deg;
+  --auth-gradient-shift: 50%;
   
   /* Brand Colors - Bright & Modern (Duolingo/Replit inspired) */
   --brand-primary: #4F46E5;        /* Indigo - Main brand color */
@@ -56,6 +58,92 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.auth-gradient-bg {
+  position: relative;
+  background-image: linear-gradient(var(--auth-gradient-angle), rgba(99, 102, 241, 0.35), rgba(79, 70, 229, 0.3), rgba(59, 130, 246, 0.35));
+  background-size: 300% 300%;
+  background-position: calc(var(--auth-gradient-shift)) 50%;
+}
+
+.auth-background-blobs {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.auth-blob {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(80px);
+  opacity: 0.55;
+  mix-blend-mode: soft-light;
+  will-change: transform;
+}
+
+.auth-blob.blob-1 {
+  width: 420px;
+  height: 420px;
+  top: -120px;
+  right: -80px;
+  background: rgba(99, 102, 241, 0.7);
+  animation: blobFloat1 18s ease-in-out infinite;
+}
+
+.auth-blob.blob-2 {
+  width: 520px;
+  height: 520px;
+  bottom: -200px;
+  left: -120px;
+  background: rgba(14, 165, 233, 0.55);
+  animation: blobFloat2 20s ease-in-out infinite;
+}
+
+.auth-blob.blob-3 {
+  width: 360px;
+  height: 360px;
+  top: 30%;
+  right: 10%;
+  background: rgba(56, 189, 248, 0.45);
+  animation: blobFloat3 22s ease-in-out infinite;
+}
+
+@keyframes blobFloat1 {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-40px, 30px) scale(1.15);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes blobFloat2 {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(60px, -40px) scale(1.1);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes blobFloat3 {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-30px, 40px) scale(1.2);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
 }
 
 :root {
@@ -5412,5 +5500,11 @@ a:focus-visible {
     transition: none !important;
     transform: none !important;
     opacity: 1 !important;
+  }
+  .auth-gradient-bg {
+    background-position: 50% 50% !important;
+  }
+  .auth-blob {
+    animation: none !important;
   }
 }
