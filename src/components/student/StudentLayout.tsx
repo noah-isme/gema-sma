@@ -44,6 +44,7 @@ interface NavigationItem {
   teacherOnly?: boolean
   iconColor: string
   iconBg: string
+  tourId: string
 }
 
 export default function StudentLayout({ children, loading = false }: StudentLayoutProps) {
@@ -73,11 +74,11 @@ export default function StudentLayout({ children, loading = false }: StudentLayo
   }, [])
 
   const navigation: NavigationItem[] = [
-    { name: 'Dashboard', href: '/student/dashboard-simple', icon: Home, active: false, iconColor: 'text-[#45C7FA]', iconBg: 'bg-[#E7F7FF]' },
-    { name: 'Assignments', href: '/student/assignments', icon: BookOpen, active: false, iconColor: 'text-[#A492FF]', iconBg: 'bg-[#F1E9FF]' },
-    { name: 'Web Lab', href: '/student/web-lab', icon: Code, active: false, iconColor: 'text-[#7AF2C3]', iconBg: 'bg-[#E7FFF5]' },
-    { name: 'Coding Lab', href: '/student/coding-lab', icon: Code2, active: false, iconColor: 'text-[#FFB347]', iconBg: 'bg-[#FFF3E6]' },
-    { name: 'Learning Path', href: '/student/learning-path', icon: Target, active: false, iconColor: 'text-[#F78FB3]', iconBg: 'bg-[#FFE9F1]' },
+    { name: 'Dashboard', href: '/student/dashboard-simple', icon: Home, active: false, iconColor: 'text-[#45C7FA]', iconBg: 'bg-[#E7F7FF]', tourId: 'nav-dashboard' },
+    { name: 'Assignments', href: '/student/assignments', icon: BookOpen, active: false, iconColor: 'text-[#A492FF]', iconBg: 'bg-[#F1E9FF]', tourId: 'nav-assignments' },
+    { name: 'Web Lab', href: '/student/web-lab', icon: Code, active: false, iconColor: 'text-[#7AF2C3]', iconBg: 'bg-[#E7FFF5]', tourId: 'nav-weblab' },
+    { name: 'Coding Lab', href: '/student/coding-lab', icon: Code2, active: false, iconColor: 'text-[#FFB347]', iconBg: 'bg-[#FFF3E6]', tourId: 'nav-codinglab' },
+    { name: 'Learning Path', href: '/student/learning-path', icon: Target, active: false, iconColor: 'text-[#F78FB3]', iconBg: 'bg-[#FFE9F1]', tourId: 'nav-learningpath' }
   ]
 
   // Mark active menu item
@@ -160,6 +161,7 @@ export default function StudentLayout({ children, loading = false }: StudentLayo
             <Link
               key={item.name}
               href={item.href}
+              data-tour-id={item.tourId}
               className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg transition-all duration-200 ${
                 item.active
                   ? 'bg-blue-50 text-blue-600'
@@ -224,6 +226,7 @@ export default function StudentLayout({ children, loading = false }: StudentLayo
                   <Link
                     key={item.name}
                     href={item.href}
+                    data-tour-id={item.tourId}
                     className={`interactive-card group flex items-center px-3 py-3 text-base font-medium rounded-lg transition-all duration-200 ${
                       item.active
                         ? 'bg-blue-50 border-r-4 border-blue-500 text-blue-700 shadow-sm'
@@ -312,6 +315,7 @@ export default function StudentLayout({ children, loading = false }: StudentLayo
                   <Link
                     key={item.name}
                     href={item.href}
+                    data-tour-id={item.tourId}
                     aria-current={item.active ? 'page' : undefined}
                     className={`group sidebar-nav-link relative flex items-center px-3 py-3 text-sm font-medium rounded-2xl transition-all duration-200 ${
                       item.active
@@ -438,6 +442,7 @@ export default function StudentLayout({ children, loading = false }: StudentLayo
               <div className="relative" ref={profileMenuRef}>
                 <button
                   onClick={toggleProfileMenu}
+                  id="student-profile-button"
                   className="avatar-button"
                   aria-expanded={profileMenuOpen}
                   aria-haspopup="true"

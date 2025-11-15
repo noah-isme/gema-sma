@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { studentAuth } from '@/lib/student-auth'
 import StudentLayout from '@/components/student/StudentLayout'
 import Breadcrumb from '@/components/ui/Breadcrumb'
+import PlayfulTourGuide, { TourStep } from '@/components/student/PlayfulTourGuide'
 import {
   AlertTriangle,
   BookOpen,
@@ -494,23 +495,67 @@ export default function StudentWebLabPage() {
     }
   ]
 
-  const heroBadges = [
-    {
-      label: `${summaryStats.totalAssignments} misi aktif`,
-      icon: BookOpen
-    },
-    {
-      label: `${xpStats.xp} total XP`,
-      icon: Sparkles
-    }
-  ]
+const heroBadges = [
+  {
+    label: `${summaryStats.totalAssignments} misi aktif`,
+    icon: BookOpen
+  },
+  {
+    label: `${xpStats.xp} total XP`,
+    icon: Sparkles
+  }
+]
+
+const webLabTourSteps: TourStep[] = [
+  {
+    selector: '#weblab-hero',
+    emoji: '💻',
+    title: 'Ruang Web Lab kamu',
+    subtitle: 'Mission control versi playful',
+    text: 'Panel hero ini jelasin XP, level, dan badge terbaru supaya kamu tau progress coding kamu tiap kali masuk.'
+  },
+  {
+    selector: '#weblab-stats',
+    emoji: '📈',
+    title: 'Stat detail tiap misi',
+    subtitle: 'Pantau status tugas',
+    text: 'Kartu angka ini ngebagi tugas jadi selesai, pending, dan terlambat biar kamu bisa atur energi.'
+  },
+  {
+    selector: '#weblab-challenges',
+    emoji: '🧪',
+    title: 'Grid tantangan seru',
+    subtitle: 'Checklist + XP langsung',
+    text: 'Scroll bagian ini buat lihat progress HTML · CSS · JS, XP, checklist requirements, dan tombol lanjut ke editor.'
+  },
+  {
+    selector: '#student-profile-button',
+    emoji: '🎧',
+    title: 'Avatar = portal pribadi',
+    subtitle: 'Ganti preferensi kapan aja',
+    text: 'Klik avatar kanan atas buat update data diri atau re-login. Biar ruang lab-nya tetap kerasa “punyamu”.'
+  }
+]
 
   return (
     <StudentLayout>
       <div className="space-y-8 px-4 py-8 sm:px-6 lg:px-8">
         <Breadcrumb items={breadcrumbItems} />
+        <div className="flex justify-end">
+          <PlayfulTourGuide
+            tourId="student-weblab"
+            steps={webLabTourSteps}
+            autoStartDelay={1200}
+            renderTrigger={({ startTour, hasSeenTutorial, storageReady }) => (
+              <button type="button" className="tour-trigger-chip" onClick={startTour}>
+                {storageReady && hasSeenTutorial ? 'Replay tur Web Lab' : 'Butuh guide?'}
+                <span aria-hidden>💬</span>
+              </button>
+            )}
+          />
+        </div>
 
-        <section className="lab-hero animate-lab-hero rounded-3xl border border-white/30 p-8 text-white shadow-brand-lg">
+        <section id="weblab-hero" className="lab-hero animate-lab-hero rounded-3xl border border-white/30 p-8 text-white shadow-brand-lg">
           <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
             <div className="space-y-6">
               <div className="flex flex-wrap items-center gap-3 text-sm uppercase tracking-wide text-white/80">
@@ -612,7 +657,7 @@ export default function StudentWebLabPage() {
           </div>
         </section>
 
-        <section className="lab-stats-panel rounded-3xl border border-cyan-100/60 bg-gradient-to-r from-cyan-50 via-white to-purple-50 p-6">
+        <section id="weblab-stats" className="lab-stats-panel rounded-3xl border border-cyan-100/60 bg-gradient-to-r from-cyan-50 via-white to-purple-50 p-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {statsCardData.map((card, idx) => {
               const Icon = card.icon
@@ -648,7 +693,7 @@ export default function StudentWebLabPage() {
         </section>
 
         {assignments.length > 0 ? (
-          <section className="space-y-10">
+          <section id="weblab-challenges" className="space-y-10">
             {statusOrder.map((statusKey) => {
               const group = groupedAssignments[statusKey]
               const meta = statusGroupMeta[statusKey]

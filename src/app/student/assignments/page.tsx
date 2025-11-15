@@ -20,6 +20,7 @@ import {
 import { studentAuth } from '@/lib/student-auth'
 import StudentLayout from '@/components/student/StudentLayout'
 import Breadcrumb from '@/components/ui/Breadcrumb'
+import PlayfulTourGuide, { TourStep } from '@/components/student/PlayfulTourGuide'
 
 interface Assignment {
   id: string
@@ -48,6 +49,37 @@ type ProcessedAssignment = Assignment & {
     isInProgress: boolean
   }
 }
+
+const assignmentTourSteps: TourStep[] = [
+  {
+    selector: '#assignments-hero',
+    emoji: '🎯',
+    title: 'Semua misi direkap di sini',
+    subtitle: 'Prioritas yang nggak bikin pusing',
+    text: 'Hero ini ngasih sapaan plus jumlah tugas pending, in progress, sampai selesai biar kamu langsung tau mana yang urgent.'
+  },
+  {
+    selector: '#assignments-filters',
+    emoji: '🎛️',
+    title: 'Filter sesuai mood',
+    subtitle: 'Atur fokus belajarmu',
+    text: 'Pencetan ini bantu kamu switch antara tugas urgent, overdue, atau yang santai supaya kerjaan nggak numpuk.'
+  },
+  {
+    selector: '#assignments-groups',
+    emoji: '🪄',
+    title: 'Kartu tugas detail',
+    subtitle: 'Deadline + CTA siap klik',
+    text: 'Di bagian ini tiap tugas ada status, tenggat, checklist, sampai tombol “mulai”. Tinggal scroll dan sikat satu-satu.'
+  },
+  {
+    selector: '#student-profile-button',
+    emoji: '🎧',
+    title: 'Zona profil kamu',
+    subtitle: 'Semua preferensi ada di sini',
+    text: 'Kalau mau ganti nama, cek kelas, atau logout, klik avatar pojok kanan. Dashboard-nya jadi makin “kamu banget”.'
+  }
+]
 
 export default function AssignmentsIndexPage() {
   const router = useRouter()
@@ -421,8 +453,22 @@ export default function AssignmentsIndexPage() {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <Breadcrumb items={[{ label: 'Daftar Tugas' }]} />
         </div>
+        <div className="flex justify-end">
+          <PlayfulTourGuide
+            tourId="student-assignments"
+            steps={assignmentTourSteps}
+            autoStartDelay={1100}
+            renderTrigger={({ startTour, hasSeenTutorial, storageReady }) => (
+              <button type="button" className="tour-trigger-chip" onClick={startTour}>
+                {storageReady && hasSeenTutorial ? 'Lihat tur lagi' : 'Butuh tur?'}
+                <span aria-hidden>📚</span>
+              </button>
+            )}
+          />
+        </div>
 
         <motion.section
+          id="assignments-hero"
           initial={prefersReducedMotion ? undefined : { opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
@@ -459,7 +505,7 @@ export default function AssignmentsIndexPage() {
           <div className="mb-4 p-4 bg-red-50 text-red-800 rounded-lg">{error}</div>
         )}
 
-        <section>
+        <section id="assignments-filters">
           <div className="task-filter-bar">
             <div className="flex flex-wrap gap-2 items-center">
               {filters.map((filter) => (
@@ -477,20 +523,22 @@ export default function AssignmentsIndexPage() {
           </div>
         </section>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeFilter}
-            initial={prefersReducedMotion ? undefined : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: prefersReducedMotion ? 0 : 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="space-y-8"
-          >
-            {filteredAssignments.length === 0
-              ? renderEmptyState()
-              : renderGroupedContent()}
-          </motion.div>
-        </AnimatePresence>
+        <div id="assignments-groups">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeFilter}
+              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="space-y-8"
+            >
+              {filteredAssignments.length === 0
+                ? renderEmptyState()
+                : renderGroupedContent()}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </StudentLayout>
   )

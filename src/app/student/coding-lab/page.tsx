@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import StudentLayout from '@/components/student/StudentLayout'
 import Breadcrumb from '@/components/ui/Breadcrumb'
+import PlayfulTourGuide, { TourStep } from '@/components/student/PlayfulTourGuide'
 import { studentAuth } from '@/lib/student-auth'
 import {
   AlertTriangle,
@@ -88,6 +89,37 @@ const categoryFilters = [
   { label: 'String', value: 'string', icon: '🔡' },
   { label: 'Math', value: 'math', icon: '📐' },
   { label: 'Data Structure', value: 'data-structure', icon: '🧩' }
+]
+
+const codingLabTourSteps: TourStep[] = [
+  {
+    selector: '#codinglab-hero',
+    emoji: '🐍',
+    title: 'Python Lab vibes',
+    subtitle: 'Level + streak langsung kelihatan',
+    text: 'Hero ini nunjukin XP, streak, dan badge supaya kamu tau sejauh apa progress solving di minggu ini.'
+  },
+  {
+    selector: '#codinglab-filters',
+    emoji: '🎚️',
+    title: 'Filter tantangan',
+    subtitle: 'Cari soal sesuai energi',
+    text: 'Pilih tingkat atau kategori favorit supaya list tantangannya sesuai fokusmu hari ini.'
+  },
+  {
+    selector: '#codinglab-progress',
+    emoji: '🎯',
+    title: 'Progress banner',
+    subtitle: 'Liat target mingguan',
+    text: 'Banner ini nge-track berapa banyak tantangan selesai, XP yang lagi dikumpulin, dan streak codingmu.'
+  },
+  {
+    selector: '#codinglab-tasks',
+    emoji: '🧠',
+    title: 'Grid tantangan Python',
+    subtitle: 'Task card = detail lengkap',
+    text: 'Setiap kartu punya XP, contoh input/output, badge difficulty, sampai tombol “Mulai”. Tinggal pilih dan langsung ngoding.'
+  }
 ]
 
 type HeroStat = { label: string; value: string | number; icon: JSX.Element }
@@ -241,6 +273,19 @@ export default function PythonCodingLabPage() {
     <StudentLayout loading={loading}>
       <div className="python-lab-page space-y-6">
         <Breadcrumb items={breadcrumbItems} />
+        <div className="flex justify-end">
+          <PlayfulTourGuide
+            tourId="student-codinglab"
+            steps={codingLabTourSteps}
+            autoStartDelay={1300}
+            renderTrigger={({ startTour, hasSeenTutorial, storageReady }) => (
+              <button type="button" className="tour-trigger-chip" onClick={startTour}>
+                {storageReady && hasSeenTutorial ? 'Replay tur Coding Lab' : 'Kenalin fitur'}
+                <span aria-hidden>🐍</span>
+              </button>
+            )}
+          />
+        </div>
 
         {error && (
           <div className="python-alert">
@@ -253,7 +298,7 @@ export default function PythonCodingLabPage() {
           </div>
         )}
 
-        <section className="python-hero">
+        <section id="codinglab-hero" className="python-hero">
           <div className="python-hero__grid">
             <div className="python-hero__main">
               <div className="python-hero__badge">
@@ -293,7 +338,7 @@ export default function PythonCodingLabPage() {
           </div>
         </section>
 
-        <section className="python-filter-card">
+        <section id="codinglab-filters" className="python-filter-card">
           <div className="python-filter-card__header">
             <div>
               <p className="python-filter-card__title">Filter Tantangan</p>
@@ -342,7 +387,7 @@ export default function PythonCodingLabPage() {
           </div>
         </section>
 
-        <section className="python-progress-banner">
+        <section id="codinglab-progress" className="python-progress-banner">
           <div className="banner-icon">🎯</div>
           <div className="banner-text">
             <p>Progress: {progressSummary.completed}/{progressSummary.total} Tantangan</p>
@@ -362,13 +407,14 @@ export default function PythonCodingLabPage() {
         ) : tasks.length === 0 ? (
           noTasksState
         ) : (
-          difficultyOrder.map(difficulty => {
-            const bucket = groupedTasks[difficulty] || []
-            if (bucket.length === 0) return null
+          <div id="codinglab-tasks" className="space-y-6">
+            {difficultyOrder.map(difficulty => {
+              const bucket = groupedTasks[difficulty] || []
+              if (bucket.length === 0) return null
 
-            const meta = difficultyMeta[difficulty]
+              const meta = difficultyMeta[difficulty]
 
-            return (
+              return (
               <section key={difficulty} className="python-group">
                 <header className="python-group__header">
                   <div>
@@ -448,7 +494,8 @@ export default function PythonCodingLabPage() {
                 </div>
               </section>
             )
-          })
+          })}
+          </div>
         )}
       </div>
     </StudentLayout>

@@ -7,6 +7,7 @@ import { studentAuth } from '@/lib/student-auth'
 import FloatingChat from '@/components/chat/FloatingChat'
 import StudentLayout from '@/components/student/StudentLayout'
 import Breadcrumb from '@/components/ui/Breadcrumb'
+import PlayfulTourGuide, { TourStep } from '@/components/student/PlayfulTourGuide'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -324,6 +325,37 @@ const heroParticlePresets: HeroParticle[] = [
   { top: '15%', right: '8%', size: 26, delay: '1s' },
   { bottom: '15%', left: '12%', size: 20, delay: '1.5s' },
   { bottom: '12%', right: '18%', size: 34, delay: '0.8s' }
+]
+
+const dashboardTourSteps: TourStep[] = [
+  {
+    selector: '#student-dashboard-hero',
+    emoji: '🚀',
+    title: 'Basecamp belajar kamu',
+    subtitle: 'Salam + vibe check',
+    text: 'Bagian hero ini ngasih sapaan personal, streak, dan target mingguan supaya kamu tau posisi start hari ini.'
+  },
+  {
+    selector: '#student-dashboard-stats',
+    emoji: '📊',
+    title: 'Stat mini buat ngecek mood',
+    subtitle: 'Angka penting sekali lirik',
+    text: 'Card warna-warni ini nyebutin tugas kelar, engagement score, sampai weekly wins biar kamu bisa flex progres.'
+  },
+  {
+    selector: '#student-dashboard-tabs',
+    emoji: '🧭',
+    title: 'Pilih cerita dashboardmu',
+    subtitle: 'Spotlight vs tugas vs roadmap',
+    text: 'Tombol ini kayak mode pilihan: mau lihat highlight, langsung sikat tugas, atau fokus roadmap tinggal tap aja.'
+  },
+  {
+    selector: '#student-dashboard-spotlight',
+    emoji: '🌈',
+    title: 'Story mingguan kamu',
+    subtitle: 'Motivasi + aksi cepat',
+    text: 'Area ini nyeritain progress terbaru lengkap dengan CTA kecil buat lanjut ke learning path atau challenge baru.'
+  }
 ]
 
 interface CountUpNumberProps {
@@ -928,6 +960,19 @@ export default function StudentDashboardPage() {
       <div className="bg-white border-b border-gray-200 px-6 py-3">
         <Breadcrumb items={[{ label: 'Dashboard' }]} />
       </div>
+      <div className="flex justify-end px-6 pt-4">
+        <PlayfulTourGuide
+          tourId="student-dashboard"
+          steps={dashboardTourSteps}
+          autoStartDelay={900}
+          renderTrigger={({ startTour, hasSeenTutorial, storageReady }) => (
+            <button type="button" className="tour-trigger-chip" onClick={startTour}>
+              {storageReady && hasSeenTutorial ? 'Lihat tur lagi' : 'Butuh tur cepat?'}
+              <span aria-hidden>🎧</span>
+            </button>
+          )}
+        />
+      </div>
 
       <div className="container mx-auto px-6 py-8 relative">
         <div className="dashboard-particles pointer-events-none absolute inset-0" aria-hidden>
@@ -945,7 +990,7 @@ export default function StudentDashboardPage() {
           ))}
         </div>
         <div className="space-y-10 relative z-10">
-          <motion.section {...getMotionFade(0)}>
+          <motion.section id="student-dashboard-hero" {...getMotionFade(0)}>
           <div className="hero-card relative overflow-hidden rounded-[32px] bg-gradient-to-r from-[#45C7FA] via-[#7AF2C3] to-[#A492FF] text-white shadow-brand-xl min-h-[260px] lg:min-h-[300px] px-8 py-10">
             <div className="hero-card__glow" aria-hidden></div>
             <div className="hero-card__veil" aria-hidden></div>
@@ -1079,7 +1124,7 @@ export default function StudentDashboardPage() {
           </div>
         </motion.section>
 
-        <motion.section {...getMotionFade(0.15)}>
+        <motion.section id="student-dashboard-stats" {...getMotionFade(0.15)}>
           {(statsLoading || !dashboardStats) ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {Array.from({ length: 4 }).map((_, index) => (
@@ -1128,7 +1173,7 @@ export default function StudentDashboardPage() {
         </motion.section>
 
         <motion.section {...getMotionFade(0.25)} className="space-y-6">
-          <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-4">
+          <div id="student-dashboard-tabs" className="rounded-3xl bg-white border border-gray-100 shadow-sm p-4">
             <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-sm font-semibold text-gray-900">Atur fokus dashboard</p>
@@ -1190,6 +1235,7 @@ export default function StudentDashboardPage() {
             <AnimatePresence mode="wait">
               {activeTab === 'dashboard' && (
                 <motion.div
+                  id="student-dashboard-spotlight"
                   key="tab-dashboard"
                   initial={{ opacity: prefersReducedMotion ? 1 : 0, y: prefersReducedMotion ? 0 : 8 }}
                   animate={{ opacity: 1, y: 0 }}

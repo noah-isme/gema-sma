@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import StudentLayout from '@/components/student/StudentLayout';
+import PlayfulTourGuide, { TourStep } from '@/components/student/PlayfulTourGuide';
 import {
   Target,
   Lock,
@@ -111,6 +112,37 @@ const statusBorderClass: Record<StageStatus, string> = {
   available: 'border-indigo-100 hover:border-indigo-200',
   locked: 'border-slate-100'
 }
+
+const learningPathTourSteps: TourStep[] = [
+  {
+    selector: '#learningpath-hero',
+    emoji: '🗺️',
+    title: 'Hero Learning Path',
+    subtitle: 'Quest utama kamu',
+    text: 'Panel ini nyeritain level coding, streak, dan XP supaya perjalanan belajar terasa kayak main game.'
+  },
+  {
+    selector: '#learningpath-stage-list',
+    emoji: '📚',
+    title: 'List stage',
+    subtitle: 'Pilih bab perjalananmu',
+    text: 'Stage di kiri berurutan kayak quest line. Pilih salah satu buat lihat target detailnya.'
+  },
+  {
+    selector: '#learningpath-stage-detail',
+    emoji: '🎯',
+    title: 'Detail stage aktif',
+    subtitle: 'Basic + advanced targets',
+    text: 'Bagian kanan ini nunjukkin checklist dasar, bonus challenge, dan refleksi setiap stage.'
+  },
+  {
+    selector: '#student-profile-button',
+    emoji: '🎧',
+    title: 'Avatar = control center',
+    subtitle: 'Ubah preferensi kapanpun',
+    text: 'Kalau mau ganti profil atau lanjut ke menu lain, klik avatar kanan atas. Semuanya terpusat di situ.'
+  }
+]
 
 const renderStatusIcon = (status: StageStatus) => {
   switch (status) {
@@ -346,7 +378,22 @@ export default function LearningPathPage() {
             </div>
           )}
 
+          <div className="flex justify-end">
+            <PlayfulTourGuide
+              tourId="student-learningpath"
+              steps={learningPathTourSteps}
+              autoStartDelay={1500}
+              renderTrigger={({ startTour, hasSeenTutorial, storageReady }) => (
+                <button type="button" className="tour-trigger-chip" onClick={startTour}>
+                  {storageReady && hasSeenTutorial ? 'Putar tur lagi' : 'Butuh tur?'}
+                  <span aria-hidden>🗺️</span>
+                </button>
+              )}
+            />
+          </div>
+
           <section
+            id="learningpath-hero"
             className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-500 p-8 text-white shadow-xl"
             data-lp-animate="fade-down"
           >
@@ -463,6 +510,7 @@ export default function LearningPathPage() {
 
           <section className="grid gap-8 lg:grid-cols-[280px,minmax(0,1fr)] xl:grid-cols-[340px,minmax(0,1fr)]">
             <aside
+              id="learningpath-stage-list"
               className="rounded-3xl border border-slate-100 bg-white/90 p-5 shadow-lg sm:p-6"
               data-lp-animate="fade-right"
             >
@@ -544,7 +592,11 @@ export default function LearningPathPage() {
               </div>
             </aside>
 
-            <div className="rounded-3xl border border-slate-100 bg-white shadow-2xl" data-lp-animate="fade-left">
+            <div
+              id="learningpath-stage-detail"
+              className="rounded-3xl border border-slate-100 bg-white shadow-2xl"
+              data-lp-animate="fade-left"
+            >
               {selectedStage ? (
                 <>
                   <div
