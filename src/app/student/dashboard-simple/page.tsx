@@ -330,31 +330,59 @@ const heroParticlePresets: HeroParticle[] = [
 const dashboardTourSteps: TourStep[] = [
   {
     selector: '#student-dashboard-hero',
-    emoji: '🚀',
-    title: 'Basecamp belajar kamu',
-    subtitle: 'Salam + vibe check',
-    text: 'Bagian hero ini ngasih sapaan personal, streak, dan target mingguan supaya kamu tau posisi start hari ini.'
+    emoji: '🏠',
+    title: 'Selamat datang di Dashboard!',
+    subtitle: 'Markas belajar coding kamu',
+    text: 'Ini halaman utama kamu! Di sini bisa liat sapaan, streak harian, target minggu ini, dan semua progres belajar dalam satu tempat.'
   },
   {
     selector: '#student-dashboard-stats',
     emoji: '📊',
-    title: 'Stat mini buat ngecek mood',
-    subtitle: 'Angka penting sekali lirik',
-    text: 'Card warna-warni ini nyebutin tugas kelar, engagement score, sampai weekly wins biar kamu bisa flex progres.'
+    title: 'Kartu statistik kamu',
+    subtitle: 'Angka-angka penting',
+    text: 'Kartu warna-warni ini nunjukin tugas yang udah selesai, yang masih dikerjain, engagement score, sama pencapaian mingguan. Cek sekilas aja!'
+  },
+  {
+    selector: '[data-tour-id="nav-assignments"]',
+    emoji: '📚',
+    title: 'Menu Assignments',
+    subtitle: 'Kerjain tugas di sini',
+    text: 'Klik menu Assignments buat liat semua tugas yang harus dikerjain. Ada deadline, status, sama instruksi lengkap buat setiap tugas.'
+  },
+  {
+    selector: '[data-tour-id="nav-weblab"]',
+    emoji: '🌐',
+    title: 'Menu Web Lab',
+    subtitle: 'Belajar HTML, CSS, JavaScript',
+    text: 'Di Web Lab, kamu bisa latihan bikin website langsung di browser. Ada editor built-in buat nulis kode dan langsung liat hasilnya!'
+  },
+  {
+    selector: '[data-tour-id="nav-codinglab"]',
+    emoji: '🐍',
+    title: 'Menu Coding Lab',
+    subtitle: 'Latihan Python coding',
+    text: 'Coding Lab isinya tantangan-tantangan Python dari yang mudah sampai susah. Setiap soal ada XP-nya, jadi makin seru!'
+  },
+  {
+    selector: '[data-tour-id="nav-learningpath"]',
+    emoji: '🗺️',
+    title: 'Menu Learning Path',
+    subtitle: 'Roadmap belajar bertahap',
+    text: 'Learning Path kayak peta perjalanan belajar kamu. Ada tahapan-tahapan materi yang tersusun rapi dari dasar sampai mahir.'
   },
   {
     selector: '#student-dashboard-tabs',
-    emoji: '🧭',
-    title: 'Pilih cerita dashboardmu',
-    subtitle: 'Spotlight vs tugas vs roadmap',
-    text: 'Tombol ini kayak mode pilihan: mau lihat highlight, langsung sikat tugas, atau fokus roadmap tinggal tap aja.'
+    emoji: '🎨',
+    title: 'Tab konten dashboard',
+    subtitle: 'Pilih tampilan',
+    text: 'Tab ini buat ganti tampilan dashboard: Spotlight (highlight), Assignments (tugas), atau Roadmap (peta belajar). Tinggal klik salah satu!'
   },
   {
-    selector: '#student-dashboard-spotlight',
-    emoji: '🌈',
-    title: 'Story mingguan kamu',
-    subtitle: 'Motivasi + aksi cepat',
-    text: 'Area ini nyeritain progress terbaru lengkap dengan CTA kecil buat lanjut ke learning path atau challenge baru.'
+    selector: '#student-profile-button',
+    emoji: '👤',
+    title: 'Foto profil kamu',
+    subtitle: 'Pengaturan akun',
+    text: 'Klik foto profil di kanan atas buat lihat data diri, ubah pengaturan, atau keluar dari akun. Semua kontrol ada di sini.'
   }
 ]
 
@@ -967,7 +995,7 @@ export default function StudentDashboardPage() {
           autoStartDelay={900}
           renderTrigger={({ startTour, hasSeenTutorial, storageReady }) => (
             <button type="button" className="tour-trigger-chip" onClick={startTour}>
-              {storageReady && hasSeenTutorial ? 'Lihat tur lagi' : 'Butuh tur cepat?'}
+              {storageReady && hasSeenTutorial ? 'Ulang panduan' : 'Butuh panduan?'}
               <span aria-hidden>🎧</span>
             </button>
           )}

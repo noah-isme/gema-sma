@@ -95,30 +95,30 @@ const codingLabTourSteps: TourStep[] = [
   {
     selector: '#codinglab-hero',
     emoji: '🐍',
-    title: 'Python Lab vibes',
-    subtitle: 'Level + streak langsung kelihatan',
-    text: 'Hero ini nunjukin XP, streak, dan badge supaya kamu tau sejauh apa progress solving di minggu ini.'
+    title: 'Lab Python kamu',
+    subtitle: 'Level + streak keliatan',
+    text: 'Di sini kamu bisa liat XP, streak harian, sama badge yang udah dikumpulin. Jadi tau seberapa jauh progress ngoding minggu ini.'
   },
   {
     selector: '#codinglab-filters',
     emoji: '🎚️',
-    title: 'Filter tantangan',
-    subtitle: 'Cari soal sesuai energi',
-    text: 'Pilih tingkat atau kategori favorit supaya list tantangannya sesuai fokusmu hari ini.'
+    title: 'Filter soal',
+    subtitle: 'Cari yang pas sama mood',
+    text: 'Pilih tingkat kesulitan atau kategori favorit biar daftar tantangannya sesuai sama yang pengen kamu kerjain hari ini.'
   },
   {
     selector: '#codinglab-progress',
     emoji: '🎯',
-    title: 'Progress banner',
-    subtitle: 'Liat target mingguan',
-    text: 'Banner ini nge-track berapa banyak tantangan selesai, XP yang lagi dikumpulin, dan streak codingmu.'
+    title: 'Banner progres',
+    subtitle: 'Target mingguan kamu',
+    text: 'Banner ini nunjukin berapa banyak tantangan yang udah selesai, XP yang lagi dikumpulin, sama streak coding-mu.'
   },
   {
     selector: '#codinglab-tasks',
     emoji: '🧠',
-    title: 'Grid tantangan Python',
-    subtitle: 'Task card = detail lengkap',
-    text: 'Setiap kartu punya XP, contoh input/output, badge difficulty, sampai tombol “Mulai”. Tinggal pilih dan langsung ngoding.'
+    title: 'Daftar tantangan Python',
+    subtitle: 'Detail lengkap tiap soal',
+    text: 'Setiap kartu ada XP-nya, contoh input/output, tingkat kesulitan, sama tombol buat mulai. Tinggal pilih dan langsung coding deh.'
   }
 ]
 
@@ -280,7 +280,7 @@ export default function PythonCodingLabPage() {
             autoStartDelay={1300}
             renderTrigger={({ startTour, hasSeenTutorial, storageReady }) => (
               <button type="button" className="tour-trigger-chip" onClick={startTour}>
-                {storageReady && hasSeenTutorial ? 'Replay tur Coding Lab' : 'Kenalin fitur'}
+                {storageReady && hasSeenTutorial ? 'Ulang panduan' : 'Butuh panduan?'}
                 <span aria-hidden>🐍</span>
               </button>
             )}

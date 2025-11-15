@@ -117,30 +117,30 @@ const learningPathTourSteps: TourStep[] = [
   {
     selector: '#learningpath-hero',
     emoji: '🗺️',
-    title: 'Hero Learning Path',
-    subtitle: 'Quest utama kamu',
-    text: 'Panel ini nyeritain level coding, streak, dan XP supaya perjalanan belajar terasa kayak main game.'
+    title: 'Peta Belajar Kamu',
+    subtitle: 'Misi utama belajar coding',
+    text: 'Di sini kamu bisa liat level coding-mu, streak harian, sama XP yang udah dikumpulin. Serasa main game kan?'
   },
   {
     selector: '#learningpath-stage-list',
     emoji: '📚',
-    title: 'List stage',
-    subtitle: 'Pilih bab perjalananmu',
-    text: 'Stage di kiri berurutan kayak quest line. Pilih salah satu buat lihat target detailnya.'
+    title: 'Daftar tahapan',
+    subtitle: 'Pilih bab yang mau dipelajari',
+    text: 'Tahapan di sebelah kiri urutannya kayak level game. Klik salah satu buat lihat detail apa yang harus dikerjain.'
   },
   {
     selector: '#learningpath-stage-detail',
     emoji: '🎯',
-    title: 'Detail stage aktif',
-    subtitle: 'Basic + advanced targets',
-    text: 'Bagian kanan ini nunjukkin checklist dasar, bonus challenge, dan refleksi setiap stage.'
+    title: 'Detail tahap yang dipilih',
+    subtitle: 'Target dasar + bonus tantangan',
+    text: 'Bagian kanan ini nunjukin checklist yang harus dikerjain, tantangan bonus, sama refleksi dari setiap tahap belajar.'
   },
   {
-    selector: '#student-profile-button',
-    emoji: '🎧',
-    title: 'Avatar = control center',
-    subtitle: 'Ubah preferensi kapanpun',
-    text: 'Kalau mau ganti profil atau lanjut ke menu lain, klik avatar kanan atas. Semuanya terpusat di situ.'
+    selector: '#learningpath-stage-detail',
+    emoji: '⭐',
+    title: 'Tracking progres belajar',
+    subtitle: 'Pantau setiap pencapaian',
+    text: 'Setiap tahap punya persentase progress, skill yang dipelajari, sama checklist target. Kamu bisa liat seberapa jauh sudah menguasai materi.'
   }
 ]
 
@@ -385,7 +385,7 @@ export default function LearningPathPage() {
               autoStartDelay={1500}
               renderTrigger={({ startTour, hasSeenTutorial, storageReady }) => (
                 <button type="button" className="tour-trigger-chip" onClick={startTour}>
-                  {storageReady && hasSeenTutorial ? 'Putar tur lagi' : 'Butuh tur?'}
+                  {storageReady && hasSeenTutorial ? 'Ulang panduan' : 'Butuh panduan?'}
                   <span aria-hidden>🗺️</span>
                 </button>
               )}

@@ -54,30 +54,30 @@ const assignmentTourSteps: TourStep[] = [
   {
     selector: '#assignments-hero',
     emoji: '🎯',
-    title: 'Semua misi direkap di sini',
-    subtitle: 'Prioritas yang nggak bikin pusing',
-    text: 'Hero ini ngasih sapaan plus jumlah tugas pending, in progress, sampai selesai biar kamu langsung tau mana yang urgent.'
+    title: 'Daftar semua tugas kamu',
+    subtitle: 'Liat yang penting dulu',
+    text: 'Di sini kamu bisa liat sapaan sama jumlah tugas: yang lagi dikerjain, yang belum dimulai, sama yang udah selesai. Jadi tau mana yang harus didahuluin.'
   },
   {
     selector: '#assignments-filters',
     emoji: '🎛️',
-    title: 'Filter sesuai mood',
-    subtitle: 'Atur fokus belajarmu',
-    text: 'Pencetan ini bantu kamu switch antara tugas urgent, overdue, atau yang santai supaya kerjaan nggak numpuk.'
+    title: 'Filter tugas',
+    subtitle: 'Atur sesuai kebutuhan',
+    text: 'Tombol ini buat milih tugas mana yang mau kamu kerjain: yang urgent, yang udah telat, atau yang masih santai. Biar nggak kewalahan.'
   },
   {
     selector: '#assignments-groups',
     emoji: '🪄',
-    title: 'Kartu tugas detail',
-    subtitle: 'Deadline + CTA siap klik',
-    text: 'Di bagian ini tiap tugas ada status, tenggat, checklist, sampai tombol “mulai”. Tinggal scroll dan sikat satu-satu.'
+    title: 'Detail tiap tugas',
+    subtitle: 'Deadline + tombol mulai',
+    text: 'Di bagian ini setiap tugas punya keterangan lengkap: status, deadline, checklist, sama tombol buat mulai. Tinggal scroll dan kerjain satu per satu.'
   },
   {
-    selector: '#student-profile-button',
-    emoji: '🎧',
-    title: 'Zona profil kamu',
-    subtitle: 'Semua preferensi ada di sini',
-    text: 'Kalau mau ganti nama, cek kelas, atau logout, klik avatar pojok kanan. Dashboard-nya jadi makin “kamu banget”.'
+    selector: '#assignments-groups',
+    emoji: '📌',
+    title: 'Status tugas real-time',
+    subtitle: 'Update otomatis',
+    text: 'Status tugas berubah otomatis: dari pending jadi in progress waktu kamu mulai, terus jadi completed pas selesai. Jadi selalu update!'
   }
 ]
 
@@ -460,7 +460,7 @@ export default function AssignmentsIndexPage() {
             autoStartDelay={1100}
             renderTrigger={({ startTour, hasSeenTutorial, storageReady }) => (
               <button type="button" className="tour-trigger-chip" onClick={startTour}>
-                {storageReady && hasSeenTutorial ? 'Lihat tur lagi' : 'Butuh tur?'}
+                {storageReady && hasSeenTutorial ? 'Ulang panduan' : 'Butuh panduan?'}
                 <span aria-hidden>📚</span>
               </button>
             )}

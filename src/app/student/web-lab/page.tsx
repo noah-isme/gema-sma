@@ -511,29 +511,29 @@ const webLabTourSteps: TourStep[] = [
     selector: '#weblab-hero',
     emoji: '💻',
     title: 'Ruang Web Lab kamu',
-    subtitle: 'Mission control versi playful',
-    text: 'Panel hero ini jelasin XP, level, dan badge terbaru supaya kamu tau progress coding kamu tiap kali masuk.'
+    subtitle: 'Markas coding web',
+    text: 'Panel ini nunjukin XP, level, sama badge terbaru supaya kamu tau progress coding-mu tiap kali masuk.'
   },
   {
     selector: '#weblab-stats',
     emoji: '📈',
-    title: 'Stat detail tiap misi',
-    subtitle: 'Pantau status tugas',
-    text: 'Kartu angka ini ngebagi tugas jadi selesai, pending, dan terlambat biar kamu bisa atur energi.'
+    title: 'Detail status tugas',
+    subtitle: 'Pantau semua tugas',
+    text: 'Kartu ini ngebagi tugas jadi yang udah selesai, yang masih pending, sama yang telat. Jadi bisa atur prioritas.'
   },
   {
     selector: '#weblab-challenges',
     emoji: '🧪',
-    title: 'Grid tantangan seru',
-    subtitle: 'Checklist + XP langsung',
-    text: 'Scroll bagian ini buat lihat progress HTML · CSS · JS, XP, checklist requirements, dan tombol lanjut ke editor.'
+    title: 'Daftar tantangan web',
+    subtitle: 'Checklist + XP',
+    text: 'Scroll bagian ini buat lihat progress HTML, CSS, JS, XP yang bisa didapat, checklist yang harus dikerjain, sama tombol buat lanjut ke editor.'
   },
   {
-    selector: '#student-profile-button',
-    emoji: '🎧',
-    title: 'Avatar = portal pribadi',
-    subtitle: 'Ganti preferensi kapan aja',
-    text: 'Klik avatar kanan atas buat update data diri atau re-login. Biar ruang lab-nya tetap kerasa “punyamu”.'
+    selector: '#weblab-challenges',
+    emoji: '🎨',
+    title: 'Live preview editor',
+    subtitle: 'Coding langsung jadi',
+    text: 'Setiap tantangan punya editor built-in. Kamu bisa nulis kode HTML, CSS, JS dan langsung liat hasilnya tanpa keluar halaman. Praktis!'
   }
 ]
 
@@ -548,7 +548,7 @@ const webLabTourSteps: TourStep[] = [
             autoStartDelay={1200}
             renderTrigger={({ startTour, hasSeenTutorial, storageReady }) => (
               <button type="button" className="tour-trigger-chip" onClick={startTour}>
-                {storageReady && hasSeenTutorial ? 'Replay tur Web Lab' : 'Butuh guide?'}
+                {storageReady && hasSeenTutorial ? 'Ulang panduan' : 'Butuh panduan?'}
                 <span aria-hidden>💬</span>
               </button>
             )}

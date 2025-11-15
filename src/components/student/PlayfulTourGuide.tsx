@@ -62,10 +62,12 @@ export default function PlayfulTourGuide({
   const [showCompletion, setShowCompletion] = useState(false)
   const [targetRect, setTargetRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
   const [tooltipBounds, setTooltipBounds] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
+  const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; delay: number }>>([])
 
   const highlightRef = useRef<HTMLElement | null>(null)
   const tooltipRef = useRef<HTMLDivElement | null>(null)
   const tooltipTimeoutRef = useRef<number | null>(null)
+  const particleIntervalRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -80,10 +82,40 @@ export default function PlayfulTourGuide({
     setStorageReady(true)
   }, [tourId])
 
+  const generateParticles = useCallback(() => {
+    if (!targetRect) return
+    const newParticles = Array.from({ length: 8 }, (_, i) => ({
+      id: Date.now() + i,
+      x: targetRect.left + targetRect.width * Math.random(),
+      y: targetRect.top + targetRect.height * Math.random(),
+      delay: Math.random() * 0.5
+    }))
+    setParticles(newParticles)
+    
+    if (particleIntervalRef.current) {
+      window.clearInterval(particleIntervalRef.current)
+    }
+    
+    particleIntervalRef.current = window.setInterval(() => {
+      const refreshedParticles = Array.from({ length: 8 }, (_, i) => ({
+        id: Date.now() + i,
+        x: (targetRect?.left ?? 0) + (targetRect?.width ?? 0) * Math.random(),
+        y: (targetRect?.top ?? 0) + (targetRect?.height ?? 0) * Math.random(),
+        delay: Math.random() * 0.5
+      }))
+      setParticles(refreshedParticles)
+    }, 3000)
+  }, [targetRect])
+
   const clearHighlight = useCallback(() => {
     if (highlightRef.current) {
       highlightRef.current.classList.remove('tour-highlight', 'tour-highlight-active')
       highlightRef.current = null
+    }
+    setParticles([])
+    if (particleIntervalRef.current) {
+      window.clearInterval(particleIntervalRef.current)
+      particleIntervalRef.current = null
     }
   }, [])
 
@@ -193,20 +225,30 @@ export default function PlayfulTourGuide({
   const stopTour = useCallback(
     (options?: { showCompletion?: boolean }) => {
       markTourSeen()
-      clearHighlight()
       setIsRunning(false)
       setTooltipActive(false)
       hideWithDelay(setTooltipVisible, tooltipTimeoutRef)
       setShowCompletion(Boolean(options?.showCompletion))
-      setTargetRect(null)
-      setTooltipBounds(null)
+      
+      // Clear highlight immediately
+      clearHighlight()
+      
+      // Also clear after a short delay to ensure cleanup
+      requestAnimationFrame(() => {
+        clearHighlight()
+        setTargetRect(null)
+        setTooltipBounds(null)
+      })
     },
     [clearHighlight, hideWithDelay, markTourSeen]
   )
 
   const closeCompletion = useCallback(() => {
     setShowCompletion(false)
-  }, [])
+    clearHighlight()
+    setTargetRect(null)
+    setTooltipBounds(null)
+  }, [clearHighlight])
 
   const endTour = useCallback(() => {
     stopTour()
@@ -248,7 +290,10 @@ export default function PlayfulTourGuide({
       clearHighlight()
       highlightRef.current = target
       target.classList.add('tour-highlight')
-      requestAnimationFrame(() => target.classList.add('tour-highlight-active'))
+      requestAnimationFrame(() => {
+        target.classList.add('tour-highlight-active')
+        generateParticles()
+      })
       target.scrollIntoView({
         behavior: 'smooth',
         block: 'center',
@@ -259,7 +304,7 @@ export default function PlayfulTourGuide({
         requestAnimationFrame(() => updateTooltipPosition(target))
       })
     },
-    [clearHighlight, stopTour, steps, updateTooltipPosition]
+    [clearHighlight, stopTour, steps, updateTooltipPosition, generateParticles]
   )
 
   useEffect(() => {
@@ -312,14 +357,24 @@ export default function PlayfulTourGuide({
   }, [autoStart, autoStartDelay, hasSeenTutorial, startTour, steps.length, storageReady])
 
   useEffect(() => {
+    if (showCompletion) {
+      // Clear highlight when completion modal shows
+      clearHighlight()
+      setTargetRect(null)
+      setTooltipBounds(null)
+    }
+  }, [showCompletion, clearHighlight])
+
+  useEffect(() => {
     return () => {
       clearHighlight()
       if (tooltipTimeoutRef.current) window.clearTimeout(tooltipTimeoutRef.current)
+      if (particleIntervalRef.current) window.clearInterval(particleIntervalRef.current)
     }
   }, [clearHighlight])
 
   const currentStepData = useMemo(() => steps[currentStep] ?? null, [currentStep, steps])
-  const stepIndicator = `Step ${Math.min(currentStep + 1, steps.length)} dari ${steps.length}`
+  const stepIndicator = `Langkah ${Math.min(currentStep + 1, steps.length)} dari ${steps.length}`
 
   const resetTour = useCallback(() => {
     if (typeof window === 'undefined') return
@@ -375,6 +430,48 @@ export default function PlayfulTourGuide({
     portalTarget && steps.length > 0
       ? createPortal(
           <>
+            {isRunning && targetRect && (
+              <>
+                <div className="tour-backdrop">
+                  <svg className="tour-spotlight" style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+                    <defs>
+                      <mask id={`tour-mask-${tourId}`}>
+                        <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                        <rect
+                          x={targetRect.left - 8}
+                          y={targetRect.top - 8}
+                          width={targetRect.width + 16}
+                          height={targetRect.height + 16}
+                          rx="16"
+                          fill="black"
+                        />
+                      </mask>
+                    </defs>
+                    <rect
+                      x="0"
+                      y="0"
+                      width="100%"
+                      height="100%"
+                      fill="rgba(0, 0, 0, 0.75)"
+                      mask={`url(#tour-mask-${tourId})`}
+                    />
+                  </svg>
+                </div>
+                <div className="tour-particles-container">
+                  {particles.map((particle) => (
+                    <div
+                      key={particle.id}
+                      className="tour-particle"
+                      style={{
+                        left: particle.x,
+                        top: particle.y,
+                        animationDelay: `${particle.delay}s`
+                      }}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
             {arrowElement}
             <div
               ref={tooltipRef}
@@ -445,11 +542,11 @@ export default function PlayfulTourGuide({
             {showCompletion && (
               <div className={`tour-complete-modal ${showCompletion ? 'active' : ''}`}>
                 <div className="tour-complete-icon">🎉</div>
-                <p className="tour-complete-title">Tour selesai!</p>
-                <p className="tour-complete-text">Sekarang kamu siap menjelajah GEMA Student tanpa kebingungan.</p>
+                <p className="tour-complete-title">Yey, udah paham!</p>
+                <p className="tour-complete-text">Sekarang kamu udah siap jelajahi GEMA tanpa bingung lagi.</p>
                 <div className="tour-complete-actions">
                   <button type="button" className="tour-btn-primary" onClick={closeCompletion}>
-                    Mulai belajar
+                    Gas belajar
                   </button>
                   <button
                     type="button"
@@ -461,7 +558,7 @@ export default function PlayfulTourGuide({
                       }
                     }}
                   >
-                    Putar ulang tur
+                    Ulang lagi deh
                   </button>
                 </div>
               </div>
