@@ -26,6 +26,8 @@
     "db:seed-tutorials": "npx tsx seed/seed-tutorial-articles.ts",
     "db:seed-classroom": "npx tsx seed/seed-classroom.ts",
     "db:seed-python-lab": "npx tsx seed/seed-python-coding-lab.ts",
+    "db:seed-announcements": "npx tsx scripts/seed-announcements.ts",
+    "seed-student-progress": "npx tsx scripts/seed-simple-progress.ts",
     "db:update-first-tutorial": "npx tsx prisma/update-first-tutorial.ts",
     "db:migrate": "bash migrate-to-postgres.sh",
     "vercel:force-deploy": "vercel --prod --force",

@@ -11,10 +11,15 @@ import type { Announcement, AnnouncementFormData, AnnouncementType, Announcement
 
 const DEFAULT_FORM: AnnouncementFormData = {
   title: '',
+  excerpt: '',
   content: '',
+  category: 'SISTEM',
   type: 'info',
+  isImportant: false,
   isActive: true,
   showOnHomepage: false,
+  deadline: null,
+  link: null,
 }
 
 const TYPE_OPTIONS: AnnouncementTypeOption[] = [
@@ -124,10 +129,15 @@ export function AnnouncementManager() {
     setEditingAnnouncement(announcement)
     setFormData({
       title: announcement.title,
+      excerpt: announcement.excerpt || '',
       content: announcement.content,
+      category: announcement.category,
       type: announcement.type,
+      isImportant: announcement.isImportant,
       isActive: announcement.isActive,
       showOnHomepage: announcement.showOnHomepage,
+      deadline: announcement.deadline ? announcement.deadline.replace('Z', '').slice(0, 16) : null,
+      link: announcement.link || null,
     })
     setIsFormVisible(true)
   }, [])

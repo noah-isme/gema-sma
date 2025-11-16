@@ -270,17 +270,35 @@ model Registration {
   @@map("registrations")
 }
 
-model Announcement {
-  id             String   @id @default(cuid())
-  title          String
-  content        String
-  type           String   @default("info") // info, warning, success, error
-  isActive       Boolean  @default(true)
-  showOnHomepage Boolean  @default(false)
-  publishDate    DateTime @default(now())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+enum AnnouncementCategory {
+  KELAS
+  EVENT
+  TUGAS
+  NILAI
+  SISTEM
+}
 
+model Announcement {
+  id             String                @id @default(cuid())
+  title          String
+  excerpt        String?               // Short description for card
+  content        String                // Full content
+  category       AnnouncementCategory  @default(SISTEM)
+  type           String                @default("info") // info, warning, success, error (for backward compatibility)
+  isImportant    Boolean               @default(false)
+  isActive       Boolean               @default(true)
+  showOnHomepage Boolean               @default(false)
+  deadline       DateTime?             // For tasks/events
+  link           String?               // External link
+  views          Int                   @default(0)
+  publishDate    DateTime              @default(now())
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([category])
+  @@index([isImportant])
+  @@index([isActive])
+  @@index([publishDate])
   @@map("announcements")
 }
 

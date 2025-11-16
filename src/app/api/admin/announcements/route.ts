@@ -46,7 +46,21 @@ export async function POST(request: NextRequest) {
 
     await ensureAnnouncementHomepageColumn();
 
-    const { title, content, type, isActive, showOnHomepage } = await request.json();
+    const body = await request.json();
+    const { 
+      title, 
+      excerpt,
+      content, 
+      category,
+      type, 
+      isImportant,
+      isActive, 
+      showOnHomepage,
+      deadline,
+      link
+    } = body;
+
+    console.log('POST /api/admin/announcements - Received data:', JSON.stringify(body, null, 2));
 
     if (!title || !content) {
       return NextResponse.json(
@@ -55,13 +69,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate category
+    const validCategories = ['KELAS', 'EVENT', 'TUGAS', 'NILAI', 'SISTEM'];
+    const finalCategory = category && validCategories.includes(category) ? category : 'SISTEM';
+
     const announcement = await prisma.announcement.create({
       data: {
         title,
+        excerpt: excerpt || null,
         content,
+        category: finalCategory,
         type: type || 'info',
+        isImportant: isImportant || false,
         isActive: isActive !== undefined ? isActive : true,
-        showOnHomepage: showOnHomepage === true
+        showOnHomepage: showOnHomepage === true,
+        deadline: deadline ? new Date(deadline) : null,
+        link: link || null,
       }
     });
 
@@ -69,7 +92,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating announcement:', error);
     return NextResponse.json(
-      { error: 'Failed to create announcement' },
+      { error: 'Failed to create announcement', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
@@ -85,7 +108,10 @@ export async function PATCH(request: NextRequest) {
 
     await ensureAnnouncementHomepageColumn();
 
-    const { id, ...updateData } = await request.json();
+    const body = await request.json();
+    const { id, ...updateData } = body;
+
+    console.log('PATCH /api/admin/announcements - Received data:', JSON.stringify(body, null, 2));
 
     if (!id) {
       return NextResponse.json(
@@ -94,9 +120,27 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // Process updateData
     if (updateData.showOnHomepage !== undefined) {
-      updateData.showOnHomepage = Boolean(updateData.showOnHomepage)
+      updateData.showOnHomepage = Boolean(updateData.showOnHomepage);
     }
+
+    // Validate category if present
+    if (updateData.category) {
+      const validCategories = ['KELAS', 'EVENT', 'TUGAS', 'NILAI', 'SISTEM'];
+      if (!validCategories.includes(updateData.category)) {
+        updateData.category = 'SISTEM';
+      }
+    }
+
+    // Convert deadline to Date if present
+    if (updateData.deadline) {
+      updateData.deadline = new Date(updateData.deadline);
+    }
+
+    // Ensure null for optional fields
+    if (updateData.excerpt === '') updateData.excerpt = null;
+    if (updateData.link === '') updateData.link = null;
 
     const updatedAnnouncement = await prisma.announcement.update({
       where: { id: id },
@@ -107,7 +151,7 @@ export async function PATCH(request: NextRequest) {
   } catch (error) {
     console.error('Error updating announcement:', error);
     return NextResponse.json(
-      { error: 'Failed to update announcement' },
+      { error: 'Failed to update announcement', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

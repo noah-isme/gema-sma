@@ -6105,3 +6105,49 @@ a:focus-visible {
     animation: none !important;
   }
 }
+
+/* Smooth scrolling optimizations */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Optimize parallax elements */
+[data-parallax] {
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
+}
+
+/* Lottie Animation - Enlarge canvas 2x */
+dotlottie-wc {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Target canvas inside dotlottie-wc shadow DOM */
+dotlottie-wc::part(animation) {
+  transform: scale(2) !important;
+  transform-origin: center !important;
+}
+
+/* Hero section lottie - specific sizing */
+.hero-lottie dotlottie-wc {
+  min-width: 600px !important;
+  min-height: 600px !important;
+}
+
+@media (max-width: 768px) {
+  .hero-lottie dotlottie-wc {
+    min-width: 300px !important;
+    min-height: 300px !important;
+  }
+  
+  /* Prevent overflow on mobile */
+  .hero-lottie {
+    max-width: 100%;
+    overflow: hidden;
+  }
+}

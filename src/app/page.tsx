@@ -622,19 +622,34 @@ export default function HomePage() {
       return;
     }
 
+    let rafId: number | null = null;
+    let lastScrollY = window.scrollY;
+
     const handleScroll = () => {
-      const scrolled = window.scrollY;
-      const parallaxElements = document.querySelectorAll('[data-parallax]');
+      lastScrollY = window.scrollY;
       
-      parallaxElements.forEach((element) => {
-        const speed = parseFloat(element.getAttribute('data-parallax') || '0');
-        const yPos = -(scrolled * speed);
-        (element as HTMLElement).style.transform = `translate3d(0, ${yPos}px, 0)`;
-      });
+      // Use RAF to throttle updates to 60fps
+      if (rafId === null) {
+        rafId = requestAnimationFrame(() => {
+          const parallaxElements = document.querySelectorAll('[data-parallax]');
+          
+          parallaxElements.forEach((element) => {
+            const speed = parseFloat(element.getAttribute('data-parallax') || '0');
+            const yPos = -(lastScrollY * speed);
+            (element as HTMLElement).style.transform = `translate3d(0, ${yPos}px, 0)`;
+          });
+          rafId = null;
+        });
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
   }, [prefersReducedMotion]);
 
   // Feature cards animation now handled by useScrollReveal hook + CSS
@@ -981,9 +996,10 @@ export default function HomePage() {
         <section
           id="hero"
           ref={heroRef}
-          className="relative overflow-hidden"
+          className="relative overflow-hidden will-change-transform"
           aria-labelledby="hero-heading"
           data-parallax-root
+          style={{ transform: 'translateZ(0)' }}
         >
           <div className="absolute inset-0">
             {shouldRenderVanta ? (
@@ -1194,33 +1210,33 @@ export default function HomePage() {
                 <div className="absolute -right-12 bottom-16 h-52 w-52 bg-[#22D3EE]/25 blur-3xl blob-shape-2 animate-breathe" data-parallax="0.28" style={{ animationDelay: '1s' }} />
                 <div className="absolute top-40 right-20 h-40 w-40 bg-[#FBBF24]/20 blur-2xl blob-shape-3 animate-breathe" data-parallax="0.32" style={{ animationDelay: '2s' }} />
                 
-                {/* Lottie Animation Container with tilt effect */}
-                <div className="relative z-10 transform transition-transform duration-700 hover:scale-105 tilt-hover cursor-pointer">
+                {/* Lottie Animation Container - Scaled 2x desktop, 1.2x mobile */}
+                <div className="hero-lottie relative z-10 scale-[1.2] md:scale-[2]" style={{ transformOrigin: 'center' }}>
                   <dotlottie-wc 
                     src="https://lottie.host/3d2f4808-10b3-440a-bed8-687a32569b66/kxkNTFuOxU.lottie"
-                    style={{ width: '100%', maxWidth: '500px', height: 'auto', minHeight: '400px' } as CSSProperties}
+                    style={{ width: '500px', height: '500px' } as CSSProperties}
                     autoplay 
                     loop
                   />
                 </div>
 
-                {/* Floating badges with micro-interactions */}
+                {/* Floating badges - Hidden on mobile to avoid collision */}
                 <div 
-                  className="floating-card absolute -left-8 top-24 animate-float p-4 shadow-brand-lg hover-lift cursor-pointer group" 
+                  className="floating-card absolute -left-8 top-24 animate-float p-4 shadow-brand-lg hover-lift cursor-pointer group hidden md:block" 
                   style={{ animationDelay: '0s' }}
                   title="Coding Lab Interactive"
                 >
                   <Code2 className="h-8 w-8 text-[#4F46E5] transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12" />
                 </div>
                 <div 
-                  className="floating-card absolute -right-4 top-40 animate-float p-4 shadow-cyan-md hover-lift cursor-pointer group" 
+                  className="floating-card absolute -right-4 top-40 animate-float p-4 shadow-cyan-md hover-lift cursor-pointer group hidden md:block" 
                   style={{ animationDelay: '1s' }}
                   title="Sparkles & Magic"
                 >
                   <Sparkles className="h-8 w-8 text-[#22D3EE] transition-transform duration-300 group-hover:scale-125 group-hover:rotate-180" />
                 </div>
                 <div 
-                  className="floating-card absolute bottom-32 left-12 animate-float p-4 shadow-warm-md hover-lift cursor-pointer group" 
+                  className="floating-card absolute bottom-32 left-12 animate-float p-4 shadow-warm-md hover-lift cursor-pointer group hidden md:block" 
                   style={{ animationDelay: '2s' }}
                   title="Achievement Unlocked"
                 >
@@ -1314,108 +1330,114 @@ export default function HomePage() {
                   <span className="text-[#F43F5E]">🔥 Promo Akhir Tahun:</span> Daftar sekarang dapat akses penuh gratis!
                 </p>
               </div>
+            </div>
 
-            {/* Additional Hero Content - Right Side */}
-            <div className="relative flex-1 space-y-6">
-              <div className="relative rounded-3xl border border-white/20 bg-white/95 p-6 backdrop-blur-lg transition-colors duration-500 dark:border-white/10 dark:bg-white/5">
-                <div className="absolute inset-0 rounded-3xl border border-white/10" aria-hidden="true" />
-                <div className="mb-4 flex items-center justify-between text-sm font-semibold uppercase tracking-[0.35em] text-[#5EEAD4]/80">
-                  <span>Harmoni Digital</span>
-                  <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-200/70">
-                    <Sparkles className="h-4 w-4" aria-hidden="true" />
-                    Live
-                  </span>
+            {/* Additional Hero Content - Video & Agenda Side by Side */}
+            <div className="relative flex-1">
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Left: Video Animation */}
+                <div className="relative rounded-3xl border border-white/20 bg-white/95 p-6 backdrop-blur-lg transition-colors duration-500 dark:border-white/10 dark:bg-white/5">
+                  <div className="absolute inset-0 rounded-3xl border border-white/10" aria-hidden="true" />
+                  <div className="mb-4 flex items-center justify-between text-sm font-semibold uppercase tracking-[0.35em] text-[#5EEAD4]/80">
+                    <span>Harmoni Digital</span>
+                    <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-200/70">
+                      <Sparkles className="h-4 w-4" aria-hidden="true" />
+                      Live
+                    </span>
+                  </div>
+                  <VideoLogo
+                    src="/videos/gema-animation.mp4"
+                    width={560}
+                    height={320}
+                    className="overflow-hidden rounded-2xl"
+                    fallbackImage="/gema.svg"
+                  />
+                  <p className="mt-4 text-sm text-slate-600 dark:text-slate-200/75">
+                    Visualisasi modul pembelajaran dan kolaborasi coding yang digunakan dalam sesi kelas
+                    interaktif GEMA.
+                  </p>
                 </div>
-                <VideoLogo
-                  src="/videos/gema-animation.mp4"
-                  width={560}
-                  height={320}
-                  className="overflow-hidden rounded-2xl"
-                  fallbackImage="/gema.svg"
-                />
-                <p className="mt-4 text-sm text-slate-600 dark:text-slate-200/75">
-                  Visualisasi modul pembelajaran dan kolaborasi coding yang digunakan dalam sesi kelas
-                  interaktif GEMA.
-                </p>
+
+                {/* Right: Agenda Pekan Ini */}
+                <div className="flex flex-col gap-5 rounded-3xl border border-white/20 bg-white/95 p-6 backdrop-blur-lg transition-colors duration-500 dark:border-white/10 dark:bg-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6C63FF]/90 to-[#5EEAD4]/60 text-[#050513]">
+                      <Calendar className="h-5 w-5" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">Agenda Pekan Ini</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-200/70">
+                        {stats.upcomingEventsThisWeek} kegiatan siap diikuti
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    ref={lottieContainerRef}
+                    className="relative h-40 w-full overflow-hidden rounded-2xl bg-gradient-to-br from-[#6C63FF]/20 via-transparent to-[#5EEAD4]/10 lottie-shell"
+                    role="presentation"
+                    aria-hidden="true"
+                  >
+                    <div
+                      className={`absolute inset-0 flex flex-col items-center justify-center gap-2 text-xs font-semibold text-slate-600 transition-opacity duration-300 dark:text-slate-200/70 ${
+                        isLottieLoaded && !prefersReducedMotion ? "opacity-0" : "opacity-100"
+                      }`}
+                    >
+                      <div className="lottie-placeholder-grid">
+                        <span className="lottie-placeholder-dot" />
+                        <span className="lottie-placeholder-dot" />
+                        <span className="lottie-placeholder-dot" />
+                      </div>
+                      <span>Visual animatif akan tampil di sini</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex flex-col gap-5 rounded-3xl border border-white/20 bg-white/95 p-6 backdrop-blur-lg transition-colors duration-500 dark:border-white/10 dark:bg-white/5">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6C63FF]/90 to-[#5EEAD4]/60 text-[#050513]">
-                    <Calendar className="h-5 w-5" aria-hidden="true" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">Agenda Pekan Ini</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-200/70">
-                      {stats.upcomingEventsThisWeek} kegiatan siap diikuti
-                    </p>
-                  </div>
-                </div>
-                <div
-                  ref={lottieContainerRef}
-                  className="relative h-40 w-full overflow-hidden rounded-2xl bg-gradient-to-br from-[#6C63FF]/20 via-transparent to-[#5EEAD4]/10 lottie-shell"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <div
-                    className={`absolute inset-0 flex flex-col items-center justify-center gap-2 text-xs font-semibold text-slate-600 transition-opacity duration-300 dark:text-slate-200/70 ${
-                      isLottieLoaded && !prefersReducedMotion ? "opacity-0" : "opacity-100"
-                    }`}
-                  >
-                    <div className="lottie-placeholder-grid">
-                      <span className="lottie-placeholder-dot" />
-                      <span className="lottie-placeholder-dot" />
-                      <span className="lottie-placeholder-dot" />
+              {/* Tentang GEMA - Full Width Below Grid */}
+              <div className="mt-6 rounded-2xl border border-white/20 bg-white/90 p-6 backdrop-blur transition-colors duration-500 dark:border-white/10 dark:bg-white/5">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                  Tentang GEMA
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-200/80">
+                  GEMA (Generasi Muda Informatika) adalah platform Learning Management System yang dirancang khusus untuk pembelajaran Informatika tingkat SMA.
+                </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#6C63FF]/10 text-[#6C63FF]">
+                      <Code2 className="h-4 w-4" />
                     </div>
-                    <span>Visual animatif akan tampil di sini</span>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">Interactive Coding Lab</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-200/70">
+                        Editor code dengan auto-grading
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="rounded-2xl border border-white/20 bg-white/90 p-6 backdrop-blur transition-colors duration-500 dark:border-white/10 dark:bg-white/5">
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                    Tentang GEMA
-                  </h3>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-200/80">
-                    GEMA (Generasi Muda Informatika) adalah platform Learning Management System yang dirancang khusus untuk pembelajaran Informatika tingkat SMA.
-                  </p>
-                  <div className="mt-4 space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#6C63FF]/10 text-[#6C63FF]">
-                        <Code2 className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">Interactive Coding Lab</p>
-                        <p className="text-xs text-slate-600 dark:text-slate-200/70">
-                          Editor code dengan auto-grading dan instant feedback
-                        </p>
-                      </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#5EEAD4]/10 text-[#5EEAD4]">
+                      <BookOpenCheck className="h-4 w-4" />
                     </div>
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#5EEAD4]/10 text-[#5EEAD4]">
-                        <BookOpenCheck className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">Structured Learning Path</p>
-                        <p className="text-xs text-slate-600 dark:text-slate-200/70">
-                          Tutorial, artikel, dan quiz terstruktur sesuai kurikulum
-                        </p>
-                      </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">Structured Learning Path</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-200/70">
+                        Tutorial terstruktur sesuai kurikulum
+                      </p>
                     </div>
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#FF99CC]/10 text-[#FF99CC]">
-                        <BarChart3 className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">Real-Time Analytics</p>
-                        <p className="text-xs text-slate-600 dark:text-slate-200/70">
-                          Dashboard komprehensif untuk tracking progress siswa
-                        </p>
-                      </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#FF99CC]/10 text-[#FF99CC]">
+                      <BarChart3 className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">Real-Time Analytics</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-200/70">
+                        Dashboard tracking progress siswa
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
         </section>
 
         <section

@@ -62,6 +62,18 @@ export function AnnouncementForm({
           </div>
 
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Ringkasan (Excerpt)</label>
+            <textarea
+              name="excerpt"
+              value={formData.excerpt}
+              onChange={onChange}
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              placeholder="Ringkasan singkat untuk preview (opsional)"
+            />
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Konten</label>
             <textarea
               name="content"
@@ -69,12 +81,29 @@ export function AnnouncementForm({
               onChange={onChange}
               rows={4}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-              placeholder="Isi pengumuman"
+              placeholder="Isi pengumuman lengkap"
               required
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={onChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="KELAS">📚 Kelas</option>
+                <option value="EVENT">📅 Event</option>
+                <option value="TUGAS">✏️ Tugas</option>
+                <option value="NILAI">📊 Nilai</option>
+                <option value="SISTEM">⚙️ Sistem</option>
+              </select>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Jenis Pengumuman</label>
               <select
@@ -89,6 +118,31 @@ export function AnnouncementForm({
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Deadline (Opsional)</label>
+              <input
+                type="datetime-local"
+                name="deadline"
+                value={formData.deadline || ''}
+                onChange={onChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Link Eksternal (Opsional)</label>
+              <input
+                type="url"
+                name="link"
+                value={formData.link || ''}
+                onChange={onChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                placeholder="https://..."
+              />
             </div>
 
             <div className="flex items-center gap-3 pt-6">
@@ -106,18 +160,34 @@ export function AnnouncementForm({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <input
-              id="announcement-homepage"
-              type="checkbox"
-              name="showOnHomepage"
-              checked={formData.showOnHomepage}
-              onChange={onChange}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="announcement-homepage" className="text-sm text-gray-700">
-              Tampilkan pengumuman ini di landing page
-            </label>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <input
+                id="announcement-important"
+                type="checkbox"
+                name="isImportant"
+                checked={formData.isImportant}
+                onChange={onChange}
+                className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+              />
+              <label htmlFor="announcement-important" className="text-sm text-gray-700">
+                ⭐ Tandai sebagai pengumuman penting (akan ditampilkan di banner)
+              </label>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <input
+                id="announcement-homepage"
+                type="checkbox"
+                name="showOnHomepage"
+                checked={formData.showOnHomepage}
+                onChange={onChange}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="announcement-homepage" className="text-sm text-gray-700">
+                🏠 Tampilkan pengumuman ini di landing page
+              </label>
+            </div>
           </div>
 
           <div className="flex justify-end gap-3">
