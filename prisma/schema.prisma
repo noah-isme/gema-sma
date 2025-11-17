@@ -627,6 +627,8 @@ model Student {
   pythonSubmissions   PythonSubmission[]    @relation("PythonSubmissions")
   quizParticipations  QuizParticipant[]
   grades              Grade[]
+  bookmarks           ArticleBookmark[]     @relation("StudentBookmarks")
+  readingProgress     ReadingProgress[]     @relation("StudentReadingProgress")
 
   @@index([studentId])
   @@index([status])
@@ -888,6 +890,107 @@ model ArticleFeedback {
   @@index([rating])
   @@index([timestamp])
   @@map("article_feedback")
+}
+
+model ArticleBookmark {
+  id        String   @id @default(cuid())
+  studentId String
+  articleId String
+  createdAt DateTime @default(now())
+
+  // Relations
+  student Student @relation("StudentBookmarks", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, articleId])
+  @@index([studentId])
+  @@index([articleId])
+  @@map("article_bookmarks")
+}
+
+model ReadingProgress {
+  id              String   @id @default(cuid())
+  studentId       String
+  articleId       String
+  progress        Float    @default(0) // 0-100 percentage
+  lastPosition    Int      @default(0) // Last scroll position
+  completed       Boolean  @default(false)
+  timeSpent       Int      @default(0) // Time spent in seconds
+  lastReadAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  student Student @relation("StudentReadingProgress", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, articleId])
+  @@index([studentId])
+  @@index([articleId])
+  @@index([completed])
+  @@map("reading_progress")
+}
+
+// ===== PROMPT MODELS =====
+
+model Prompt {
+  id                  String   @id @default(cuid())
+  schemaId            String   // webPortfolioSma, etc
+  title               String   // Bagian 1 • Mendeteksi Keunikan Diri
+  titleShort          String   // Pemetaan Persona
+  slug                String   @unique
+  
+  // Meta Information
+  level               String   // Menengah, Pemula, Lanjut
+  durasiMenit         Int      // Duration in minutes
+  prasyarat           Json     // Array of prerequisites
+  tujuanPembelajaran  Json     // Array of learning objectives
+  tags                Json     // Array of tags
+  
+  // Assets
+  starterZip          String?  // URL to starter files
+  gambarContoh        String?  // URL to example image
+  
+  // Content Sections
+  roleDeskripsi       String   // Role description
+  roleFokus           String   // Role focus
+  
+  taskTujuan          Json     // Array of task objectives
+  taskInstruksi       String   // Task instructions
+  
+  contextSituasi      Json     // Array of context situations
+  
+  reasoningPrinsip    String   // Reasoning principle
+  reasoningStruktur   Json     // Reasoning structure (observasi, analisis, keputusan)
+  reasoningStrategi   Json     // Array of strategies
+  
+  outputBentuk        Json     // Array of output formats
+  outputTugasSiswa    String   // Student task description
+  
+  stopKriteria        Json     // Array of stop criteria
+  
+  tipsAksesibilitas   Json     // Array of accessibility tips
+  tipsKesalahanUmum   Json     // Array of common mistakes
+  tipsTantangan       Json     // Array of challenges
+  
+  // Admin fields
+  author              String   // Admin name
+  authorId            String   // Admin ID
+  status              String   @default("draft") // draft, published, archived
+  featured            Boolean  @default(false)
+  views               Int      @default(0)
+  
+  // Versioning
+  versi               String   @default("1.0.0")
+  
+  // Timestamps
+  publishedAt         DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  @@index([schemaId])
+  @@index([status])
+  @@index([featured])
+  @@index([slug])
+  @@map("prompts")
 }
 
 // ===== WEB LAB MODELS =====

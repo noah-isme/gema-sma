@@ -1,19 +1,28 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
-import { BookOpen, Code, FileText, ArrowRight, Clock, User, Newspaper, Lightbulb, MessageSquare, HelpCircle, LayoutDashboard } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { studentAuth, type StudentSession } from "@/lib/student-auth";
-
-const PromptWorkspace = dynamic(() => import("@/components/tutorial/PromptWorkspace"), {
-  ssr: false,
-  loading: () => (
-    <div className="rounded-2xl border border-blue-100 bg-white/80 p-8 text-center text-slate-500 shadow-sm">
-      Memuat prompt interaktif...
-    </div>
-  ),
-});
+import { motion } from "framer-motion";
+import {
+  BookOpen,
+  FileText,
+  ArrowRight,
+  Clock,
+  User,
+  Newspaper,
+  Lightbulb,
+  MessageSquare,
+  HelpCircle,
+  Star,
+  TrendingUp,
+  Sparkles,
+  Tag,
+  Bookmark,
+  ChevronRight,
+  Eye,
+  ArrowLeft,
+} from "lucide-react";
+import { studentAuth } from "@/lib/student-auth";
 
 interface Article {
   id: string;
@@ -24,273 +33,733 @@ interface Article {
   author?: string;
   publishedAt?: string;
   readTime?: number;
+  views?: number;
+  featured?: boolean; // From API
+  isFeatured?: boolean; // Processed
+  isTrending?: boolean; // Processed
+  tags?: string[];
+  imageUrl?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-type TabType = 'berita' | 'artikel' | 'prompt' | 'kuis' | 'diskusi';
+interface PromptFromDB {
+  id: string;
+  title: string;
+  slug: string;
+  roleDeskripsi: string;
+  taskInstruksi: string;
+  tags: string[] | Record<string, unknown>;
+  author: string;
+  status: string;
+  featured: boolean;
+  durasiMenit: number;
+  views: number;
+  publishedAt: string;
+  createdAt: string;
+}
+
+type TabType = "berita" | "artikel" | "prompt" | "kuis" | "diskusi";
+
+const categories = [
+  { id: "berita", label: "Berita", icon: Newspaper, color: "#6366F1", emoji: "📰" },
+  { id: "artikel", label: "Artikel", icon: FileText, color: "#06B6D4", emoji: "📄" },
+  { id: "prompt", label: "Prompt", icon: Lightbulb, color: "#FBBF24", emoji: "💡" },
+  { id: "kuis", label: "Kuis", icon: HelpCircle, color: "#EC4899", emoji: "❓" },
+  { id: "diskusi", label: "Diskusi", icon: MessageSquare, color: "#10B981", emoji: "💬" },
+];
+
+// Category aliases for flexible matching
+const categoryAliases: Record<string, string[]> = {
+  'artikel': ['artikel', 'article', 'tutorial', 'guide', 'programming', 'technology'],
+  'berita': ['berita', 'news', 'announcement'],
+  'prompt': ['prompt', 'ai', 'chatgpt', 'gpt'],
+  'kuis': ['kuis', 'quiz', 'test'],
+  'diskusi': ['diskusi', 'discussion', 'forum'],
+};
+
+const quickTags = [
+  { id: "html", label: "HTML", color: "#E34C26" },
+  { id: "css", label: "CSS", color: "#264DE4" },
+  { id: "javascript", label: "JavaScript", color: "#F7DF1E" },
+  { id: "web-dev", label: "Web Development", color: "#06B6D4" },
+  { id: "tools", label: "Tools", color: "#10B981" },
+  { id: "ai", label: "AI", color: "#EC4899" },
+  { id: "backend", label: "Backend", color: "#6366F1" },
+  { id: "tips", label: "Tips Singkat", color: "#FBBF24" },
+];
+
+const floatingParticles = [
+  { x: "10%", y: "20%", size: 8, delay: 0 },
+  { x: "85%", y: "15%", size: 6, delay: 1 },
+  { x: "20%", y: "70%", size: 10, delay: 2 },
+  { x: "90%", y: "60%", size: 7, delay: 1.5 },
+  { x: "50%", y: "30%", size: 5, delay: 0.5 },
+];
 
 export default function TutorialPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('artikel');
+  const [activeTab, setActiveTab] = useState<TabType>("artikel");
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
-  const [studentSession, setStudentSession] = useState<StudentSession | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [showSidebar, setShowSidebar] = useState(false);
 
   useEffect(() => {
     fetchArticles();
-    const session = studentAuth.getSession();
-    setStudentSession(session);
+    
+    // Check student session for personalization (future use)
+    studentAuth.getSession();
+
+    // Show sidebar on desktop
+    if (window.innerWidth >= 1024) {
+      setShowSidebar(true);
+    }
   }, []);
+
+  // Refetch when category changes (optional - for server-side filtering)
+  useEffect(() => {
+    // You can fetch filtered data from API here
+    // For now, we use client-side filtering
+  }, [activeTab]);
 
   const fetchArticles = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/tutorial/articles');
+      
+      // Fetch articles from database
+      const res = await fetch("/api/tutorial/articles?status=all");
       if (res.ok) {
         const data = await res.json();
-        setArticles(Array.isArray(data.data) ? data.data : []);
+        const articlesData = Array.isArray(data.data) ? data.data : [];
+        
+        // Fetch prompts from database (new API)
+        const promptRes = await fetch("/api/tutorial/prompts?status=all");
+        let promptArticles: Article[] = [];
+        
+        if (promptRes.ok) {
+          const promptData = await promptRes.json();
+          if (promptData.data && Array.isArray(promptData.data)) {
+            // Convert prompts to article format for unified display
+            promptArticles = promptData.data.map((prompt: PromptFromDB) => ({
+              id: prompt.id,
+              title: prompt.title,
+              slug: prompt.slug,
+              excerpt: prompt.roleDeskripsi || prompt.taskInstruksi || '',
+              category: 'prompt',
+              tags: Array.isArray(prompt.tags) ? prompt.tags : [],
+              author: prompt.author || 'Admin GEMA',
+              status: prompt.status,
+              featured: prompt.featured,
+              readTime: prompt.durasiMenit || 0,
+              views: prompt.views || 0,
+              publishedAt: prompt.publishedAt || prompt.createdAt,
+              isFeatured: prompt.featured || false,
+              isTrending: (prompt.views || 0) > 50,
+            }));
+          }
+        }
+        
+        // Merge database articles with prompt articles
+        const allArticles = [...articlesData, ...promptArticles];
+        
+        // Process articles: add isTrending based on views and recency
+        const processedArticles = allArticles.map((article: Article) => {
+          const publishedDate = article.publishedAt ? new Date(article.publishedAt) : new Date();
+          const daysSincePublished = (Date.now() - publishedDate.getTime()) / (1000 * 60 * 60 * 24);
+          
+          // Mark as trending if: published within 7 days AND has views > 50
+          // OR has views > 100 regardless of date
+          const isTrending = 
+            (daysSincePublished <= 7 && (article.views || 0) > 50) ||
+            (article.views || 0) > 100;
+          
+          // Normalize tags to array
+          let tags: string[] = [];
+          if (Array.isArray(article.tags)) {
+            tags = article.tags;
+          } else if (typeof article.tags === 'string' && article.tags) {
+            try {
+              tags = JSON.parse(article.tags);
+            } catch {
+              tags = article.tags.split(',').map(t => t.trim()).filter(t => t);
+            }
+          }
+          
+          return {
+            ...article,
+            tags,
+            isFeatured: article.featured || false,
+            isTrending,
+          };
+        });
+        
+        setArticles(processedArticles);
       }
     } catch (error) {
-      console.error('Error fetching articles:', error);
+      console.error("Error fetching articles:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const tabs = [
-    { id: 'berita' as TabType, label: 'Berita', icon: Newspaper, description: 'Update terkini seputar teknologi' },
-    { id: 'artikel' as TabType, label: 'Artikel', icon: FileText, description: 'Tutorial dan panduan lengkap' },
-    { id: 'prompt' as TabType, label: 'Prompt', icon: Lightbulb, description: 'Ide project dan tantangan coding' },
-    { id: 'kuis' as TabType, label: 'Kuis', icon: HelpCircle, description: 'Uji kemampuan programming' },
-    { id: 'diskusi' as TabType, label: 'Diskusi', icon: MessageSquare, description: 'Forum tanya jawab' },
-  ];
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat konten...</p>
-        </div>
-      </div>
+  const toggleTag = (tagId: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tagId) ? prev.filter((t) => t !== tagId) : [...prev, tagId]
     );
-  }
+  };
+
+  // Filter articles
+  const filteredArticles = useMemo(() => {
+    let filtered = articles;
+    
+    // Only filter by category if not on "artikel" tab or if category matches
+    // This makes "artikel" tab show all article types as fallback
+    if (activeTab !== 'artikel') {
+      filtered = articles.filter((article) => {
+        const articleCategory = article.category?.toLowerCase() || '';
+        const aliases = categoryAliases[activeTab] || [activeTab];
+        return aliases.includes(articleCategory);
+      });
+    }
+
+    // If filtered is empty and we're not on artikel tab, fallback to show all
+    if (filtered.length === 0 && activeTab === 'artikel') {
+      filtered = articles;
+    }
+
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter((article) => {
+        // Handle tags as string or array
+        let articleTags: string[] = [];
+        
+        if (Array.isArray(article.tags)) {
+          articleTags = article.tags;
+        } else if (typeof article.tags === 'string') {
+          try {
+            // Try parse as JSON if it's a JSON string
+            articleTags = JSON.parse(article.tags);
+          } catch {
+            // If not JSON, split by comma
+            articleTags = article.tags.split(',').map(t => t.trim());
+          }
+        }
+        
+        return articleTags.some((tag) => selectedTags.includes(tag.toLowerCase()));
+      });
+    }
+
+    return filtered;
+  }, [articles, activeTab, selectedTags]);
+
+  // Get featured article
+  const featuredArticle = useMemo(
+    () => filteredArticles.find((a) => a.isFeatured) || filteredArticles[0],
+    [filteredArticles]
+  );
+
+  // Get recommended articles (simulated)
+  const recommendedArticles = useMemo(
+    () => filteredArticles.slice(0, 3),
+    [filteredArticles]
+  );
+
+  // Get trending articles
+  const trendingArticles = useMemo(
+    () => filteredArticles.filter((a) => a.isTrending).slice(0, 4),
+    [filteredArticles]
+  );
+
+  // Get remaining articles for grid
+  const gridArticles = useMemo(
+    () =>
+      filteredArticles.filter(
+        (a) => a.id !== featuredArticle?.id && !recommendedArticles.includes(a) && !trendingArticles.includes(a)
+      ),
+    [filteredArticles, featuredArticle, recommendedArticles, trendingArticles]
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors">
-              <ArrowRight className="w-5 h-5 rotate-180" />
-              <span>Kembali ke Beranda</span>
-            </Link>
-            {studentSession ? (
-              <div className="flex items-center gap-3">
-                <div className="hidden sm:flex flex-col text-right">
-                  <span className="text-sm font-semibold text-gray-800">{studentSession.fullName}</span>
-                  <span className="text-xs text-gray-500">{studentSession.studentId} • {studentSession.class}</span>
-                </div>
-                <Link
-                  href="/student/dashboard-simple"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  Dashboard
-                </Link>
-              </div>
-            ) : (
-              <Link
-                href="/student/login"
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
-              >
-                Login Siswa
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-700 text-white py-12">
-        <div className="container mx-auto px-6">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-2 mb-4">
-              <BookOpen className="w-8 h-8" />
-              <h1 className="text-4xl font-bold">Tutorial & Sumber Belajar</h1>
-            </div>
-            <p className="text-xl text-blue-100">
-              Akses berita, artikel, prompt project, kuis, dan diskusi untuk mengembangkan kemampuan programming Anda
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Tab Navigation */}
-      <div className="bg-white border-b border-gray-200 sticky top-[73px] z-30">
-        <div className="container mx-auto px-6">
-          <nav className="flex gap-2 overflow-x-auto" role="tablist">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-6 py-4 border-b-2 transition-colors whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? 'border-blue-600 text-blue-600 font-semibold'
-                      : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-gray-300'
-                  }`}
-                  role="tab"
-                  aria-selected={activeTab === tab.id}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-[#F0F9FF] via-white to-[#F8FAFC] dark:from-[#050513] dark:via-[#06081C] dark:to-[#0a0c1d]">
+      {/* Back to Home Button */}
+      <div className="fixed top-6 left-6 z-50">
+        <Link href="/">
+          <motion.button
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-300"
+            whileHover={{ scale: 1.05, x: -2 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Beranda</span>
+          </motion.button>
+        </Link>
       </div>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-6 py-12">
-        {/* Tab Description */}
-        <div className="mb-8">
-          {tabs.map((tab) => (
-            activeTab === tab.id && (
-              <div key={tab.id} className="flex items-center gap-2 text-gray-600">
-                <tab.icon className="w-5 h-5" />
-                <p className="text-lg">{tab.description}</p>
-              </div>
-            )
+      {/* Smart Header - Compact & Living */}
+      <section className="relative overflow-hidden pt-24 pb-12 px-6">
+        {/* Floating Particles Background */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {floatingParticles.map((particle, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full bg-gradient-to-br from-[#06B6D4]/20 to-[#10B981]/20"
+              style={{
+                left: particle.x,
+                top: particle.y,
+                width: particle.size,
+                height: particle.size,
+              }}
+              animate={{
+                y: [0, -20, 0],
+                x: [0, 10, 0],
+                opacity: [0.3, 0.6, 0.3],
+              }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                delay: particle.delay,
+                ease: "easeInOut",
+              }}
+            />
           ))}
         </div>
 
-        {/* Tab Content */}
-        {activeTab === 'berita' && (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <div className="col-span-full bg-white rounded-xl border border-gray-200 shadow-sm p-8 text-center">
-              <Newspaper className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Berita Segera Hadir</h2>
-              <p className="text-gray-600">
-                Kami sedang mempersiapkan konten berita teknologi terkini untuk Anda.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'artikel' && (
-          <>
-            {articles.length === 0 ? (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
-                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h2 className="text-2xl font-semibold text-gray-900 mb-2">Artikel Segera Hadir</h2>
-                <p className="text-gray-600 mb-6">
-                  Kami sedang mempersiapkan konten tutorial dan artikel berkualitas untuk Anda.
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {articles.map((article) => (
-                  <Link
-                    key={article.id}
-                    href={`/tutorial/articles/${article.slug}`}
-                    className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all p-6 group"
-                  >
-                    <div className="flex items-start gap-3 mb-4">
-                      <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
-                        <Code className="w-5 h-5 text-blue-600" />
-                      </div>
-                      {article.category && (
-                        <span className="text-xs font-medium px-2 py-1 bg-blue-50 text-blue-600 rounded">
-                          {article.category}
-                        </span>
-                      )}
-                    </div>
-                    
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
-                      {article.title}
-                    </h3>
-                    
-                    {article.excerpt && (
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                        {article.excerpt}
-                      </p>
-                    )}
-                    
-                    <div className="flex items-center gap-4 text-sm text-gray-500 mt-auto">
-                      {article.author && (
-                        <div className="flex items-center gap-1">
-                          <User className="w-4 h-4" />
-                          <span>{article.author}</span>
-                        </div>
-                      )}
-                      {article.readTime && (
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          <span>{article.readTime} menit</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-blue-600 font-medium mt-4 group-hover:gap-3 transition-all">
-                      Baca Selengkapnya
-                      <ArrowRight className="w-4 h-4" />
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {activeTab === 'prompt' && (
-          <div className="space-y-6">
-            <PromptWorkspace />
-          </div>
-        )}
-
-        {activeTab === 'kuis' && (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <div className="col-span-full bg-white rounded-xl border border-gray-200 shadow-sm p-8 text-center">
-              <HelpCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Kuis Segera Hadir</h2>
-              <p className="text-gray-600">
-                Uji kemampuan programming Anda dengan kuis interaktif yang akan segera tersedia.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'diskusi' && (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <div className="col-span-full bg-white rounded-xl border border-gray-200 shadow-sm p-8 text-center">
-              <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Forum Diskusi Segera Hadir</h2>
-              <p className="text-gray-600">
-                Forum untuk bertanya, berbagi, dan berdiskusi dengan sesama pembelajar akan segera dibuka.
-              </p>
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* CTA Section */}
-      <section className="bg-blue-600 text-white py-12 mt-12">
-        <div className="container mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold mb-4">Siap Memulai Perjalanan Belajar?</h2>
-          <p className="text-xl text-blue-100 mb-8">
-            Login sebagai siswa untuk mengakses fitur pembelajaran interaktif lengkap
-          </p>
-          <Link
-            href="/student/login"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-600 font-bold rounded-full hover:bg-blue-50 transition-colors"
+        <div className="relative z-10 max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="flex items-center gap-3 mb-4"
           >
-            Login Siswa
-            <ArrowRight className="w-5 h-5" />
-          </Link>
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-[#06B6D4]/10 to-[#10B981]/10 border border-[#06B6D4]/20">
+              <BookOpen className="w-6 h-6 text-[#06B6D4]" />
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white">
+              Tutorial & Sumber Belajar
+            </h1>
+          </motion.div>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-lg text-slate-600 dark:text-slate-300 max-w-3xl"
+          >
+            Artikel, Prompt, Kuis, dan Diskusi — terus berkembang tiap minggu ✨
+          </motion.p>
         </div>
       </section>
+
+      {/* Adaptive Category Tabs */}
+      <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+            {categories.map((cat, index) => {
+              const Icon = cat.icon;
+              const isActive = activeTab === cat.id;
+              return (
+                <motion.button
+                  key={cat.id}
+                  onClick={() => setActiveTab(cat.id as TabType)}
+                  className={`
+                    relative flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm whitespace-nowrap transition-all duration-300
+                    ${
+                      isActive
+                        ? "text-white shadow-lg scale-105"
+                        : "text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700"
+                    }
+                  `}
+                  style={
+                    isActive
+                      ? {
+                          background: `linear-gradient(135deg, ${cat.color}, ${cat.color}CC)`,
+                        }
+                      : undefined
+                  }
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <span className="text-base">{cat.emoji}</span>
+                  <Icon className="w-4 h-4" />
+                  {cat.label}
+
+                  {/* Glowing indicator for active */}
+                  {isActive && (
+                    <motion.div
+                      className="absolute inset-0 rounded-full"
+                      style={{ background: `${cat.color}40` }}
+                      animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.2, 0.5] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    />
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Filters (Tags) */}
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Tag className="w-4 h-4 text-slate-500" />
+          <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+            Filter Cepat:
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {quickTags.map((tag, index) => {
+            const isSelected = selectedTags.includes(tag.id);
+            return (
+              <motion.button
+                key={tag.id}
+                onClick={() => toggleTag(tag.id)}
+                className={`
+                  relative px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300
+                  ${
+                    isSelected
+                      ? "text-white shadow-md scale-105"
+                      : "text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                  }
+                `}
+                style={
+                  isSelected
+                    ? { backgroundColor: tag.color, borderColor: tag.color }
+                    : undefined
+                }
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.2, delay: index * 0.03 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {tag.label}
+                {isSelected && (
+                  <motion.div
+                    className="absolute inset-0 rounded-full"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
+                    transition={{ duration: 0.4 }}
+                  />
+                )}
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto px-6 pb-20">
+        <div className={`grid gap-8 ${showSidebar ? "lg:grid-cols-[1fr_300px]" : ""}`}>
+          {/* Main Content */}
+          <div className="space-y-12">
+            {/* Loading State */}
+            {loading && (
+              <div className="flex flex-col items-center justify-center py-20">
+                <motion.div
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                >
+                  <BookOpen className="w-16 h-16 text-[#06B6D4]" />
+                </motion.div>
+                <p className="mt-4 text-slate-600 dark:text-slate-400">
+                  Memuat konten pembelajaran...
+                </p>
+              </div>
+            )}
+
+            {!loading && filteredArticles.length === 0 && (
+              <motion.div
+                className="text-center py-20"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <div className="text-7xl mb-6">📚</div>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                  Belum ada konten {activeTab}
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400 mb-4">
+                  Konten kategori &quot;{activeTab}&quot; akan segera tersedia
+                </p>
+                {articles.length > 0 && (
+                  <p className="text-sm text-slate-500 dark:text-slate-500">
+                    💡 Tip: Coba tab lain atau cek console browser untuk debug
+                  </p>
+                )}
+              </motion.div>
+            )}
+
+            {!loading && filteredArticles.length > 0 && (
+              <>
+                {/* Featured Article (Hero Card) */}
+                {featuredArticle && (
+                  <motion.section
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    <Link href={`/tutorial/articles/${featuredArticle.slug}`}>
+                      <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#06B6D4]/10 to-[#10B981]/10 border border-[#06B6D4]/20 p-8 md:p-12 cursor-pointer transition-all duration-500 hover:shadow-2xl">
+                        {/* Background gradient shift on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#06B6D4]/5 to-[#10B981]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                        {/* Shine effect */}
+                        <div className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+                        <div className="relative z-10">
+                          {/* Featured Badge */}
+                          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#FBBF24] to-[#F59E0B] text-white text-xs font-bold mb-6 shadow-lg">
+                            <Star className="w-3 h-3 fill-white" />
+                            FEATURED
+                          </div>
+
+                          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4 leading-tight group-hover:translate-x-1 transition-transform duration-300">
+                            {featuredArticle.title}
+                          </h2>
+
+                          {featuredArticle.excerpt && (
+                            <p className="text-lg text-slate-600 dark:text-slate-300 mb-6 max-w-3xl line-clamp-2">
+                              {featuredArticle.excerpt}
+                            </p>
+                          )}
+
+                          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-slate-400 mb-6">
+                            {featuredArticle.author && (
+                              <div className="flex items-center gap-2">
+                                <User className="w-4 h-4" />
+                                {featuredArticle.author}
+                              </div>
+                            )}
+                            {featuredArticle.readTime && (
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4" />
+                                {featuredArticle.readTime} menit
+                              </div>
+                            )}
+                            {featuredArticle.views && (
+                              <div className="flex items-center gap-2">
+                                <Eye className="w-4 h-4" />
+                                {featuredArticle.views} views
+                              </div>
+                            )}
+                          </div>
+
+                          <motion.button
+                            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#06B6D4] to-[#10B981] text-white font-semibold shadow-lg group-hover:shadow-xl transition-all duration-300"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            Baca Sekarang
+                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                          </motion.button>
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.section>
+                )}
+
+                {/* Recommended Section */}
+                {recommendedArticles.length > 0 && (
+                  <section>
+                    <div className="flex items-center gap-3 mb-6">
+                      <Sparkles className="w-5 h-5 text-[#EC4899]" />
+                      <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                        Rekomendasi untuk Kamu
+                      </h3>
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-6">
+                      {recommendedArticles.map((article, index) => (
+                        <ArticleCard
+                          key={article.id}
+                          article={article}
+                          index={index}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* Trending Section */}
+                {trendingArticles.length > 0 && (
+                  <section>
+                    <div className="flex items-center gap-3 mb-6">
+                      <TrendingUp className="w-5 h-5 text-[#F59E0B]" />
+                      <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                        Trending Minggu Ini
+                      </h3>
+                    </div>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                      {trendingArticles.map((article, index) => (
+                        <ArticleCard
+                          key={article.id}
+                          article={article}
+                          index={index}
+                          compact
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* Tutorial Grid */}
+                {gridArticles.length > 0 && (
+                  <section>
+                    <div className="flex items-center gap-3 mb-6">
+                      <BookOpen className="w-5 h-5 text-[#6366F1]" />
+                      <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                        Semua Tutorial
+                      </h3>
+                    </div>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {gridArticles.map((article, index) => (
+                        <ArticleCard
+                          key={article.id}
+                          article={article}
+                          index={index}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Sidebar (Optional but Powerful) */}
+          {showSidebar && (
+            <motion.aside
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="hidden lg:block space-y-6"
+            >
+              {/* Progress Card */}
+              <div className="sticky top-24 space-y-6">
+                <div className="p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+                  <h4 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                    <Star className="w-4 h-4 text-[#FBBF24]" />
+                    Progress Belajar
+                  </h4>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between text-sm mb-2">
+                        <span className="text-slate-600 dark:text-slate-400">
+                          Artikel Dibaca
+                        </span>
+                        <span className="font-semibold text-slate-900 dark:text-white">
+                          5/20
+                        </span>
+                      </div>
+                      <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-[#06B6D4] to-[#10B981] rounded-full transition-all duration-500"
+                          style={{ width: "25%" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Saved Articles */}
+                <div className="p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+                  <h4 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                    <Bookmark className="w-4 h-4 text-[#EC4899]" />
+                    Artikel Tersimpan
+                  </h4>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Belum ada artikel yang disimpan
+                  </p>
+                </div>
+
+                {/* Next Up */}
+                <div className="p-6 rounded-2xl bg-gradient-to-br from-[#6366F1]/10 to-[#EC4899]/10 border border-[#6366F1]/20">
+                  <h4 className="font-semibold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#6366F1]" />
+                    Artikel Selanjutnya
+                  </h4>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">
+                    Lanjutkan belajar dengan topik yang relevan
+                  </p>
+                </div>
+              </div>
+            </motion.aside>
+          )}
+        </div>
+      </div>
     </div>
+  );
+}
+
+// Article Card Component
+interface ArticleCardProps {
+  article: Article;
+  index: number;
+  compact?: boolean;
+}
+
+function ArticleCard({ article, index, compact = false }: ArticleCardProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: index * 0.05 }}
+    >
+      <Link href={`/tutorial/articles/${article.slug}`}>
+        <div className="group h-full p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
+          {/* Category & Status Badges */}
+          <div className="flex items-center gap-2 mb-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gradient-to-r from-[#06B6D4]/10 to-[#10B981]/10 text-[#06B6D4] text-xs font-semibold">
+              {article.category}
+            </div>
+            {article.status === 'draft' && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-semibold">
+                Draft
+              </div>
+            )}
+          </div>
+
+          {/* Title */}
+          <h4
+            className={`font-bold text-slate-900 dark:text-white mb-2 line-clamp-2 group-hover:text-[#06B6D4] transition-colors duration-300 ${
+              compact ? "text-base" : "text-lg"
+            }`}
+          >
+            {article.title}
+          </h4>
+
+          {/* Excerpt */}
+          {!compact && article.excerpt && (
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4 line-clamp-2">
+              {article.excerpt}
+            </p>
+          )}
+
+          {/* Meta Info */}
+          <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+            {article.readTime && (
+              <div className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {article.readTime} min
+              </div>
+            )}
+            {article.views && (
+              <div className="flex items-center gap-1">
+                <Eye className="w-3 h-3" />
+                {article.views}
+              </div>
+            )}
+          </div>
+
+          {/* CTA Arrow */}
+          <div className="mt-4 flex items-center gap-2 text-sm font-semibold text-[#06B6D4] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <span>Baca artikel</span>
+            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+          </div>
+        </div>
+      </Link>
+    </motion.div>
   );
 }

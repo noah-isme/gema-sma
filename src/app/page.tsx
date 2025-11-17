@@ -19,6 +19,7 @@ import {
   BarChart3,
   BookOpenCheck,
   Calendar,
+  Camera,
   ChevronRight,
   Code2,
   GraduationCap,
@@ -1116,19 +1117,19 @@ export default function HomePage() {
                   <Link
                     href="/tutorial"
                     className="group inline-flex items-center gap-3 rounded-full border-2 border-[#4338CA]/30 bg-white/90 px-6 py-3 font-inter text-base font-semibold text-[#4338CA] backdrop-blur-sm transition-all duration-300 hover:border-[#4F46E5] hover:bg-[#4F46E5]/10 hover:shadow-brand-md dark:border-[#0891B2]/30 dark:bg-slate-700/90 dark:text-[#0891B2] dark:hover:border-[#22D3EE] dark:hover:bg-[#22D3EE]/10 focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#4F46E5]"
-                    aria-label="Lihat kurikulum pembelajaran coding lengkap"
+                    aria-label="Lihat tutorial pembelajaran coding lengkap"
                     role="button"
                   >
                     <BookOpenCheck className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" aria-hidden="true" />
-                    Lihat Kurikulum
+                    Lihat Tutorial
                   </Link>
                   <Link
-                    href="/demo"
-                    className="group inline-flex items-center gap-2 font-inter text-sm font-medium text-slate-700 transition-all duration-300 hover:text-[#4F46E5] dark:text-slate-300 dark:hover:text-[#22D3EE] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#4F46E5]"
-                    aria-label="Coba demo gratis tanpa registrasi"
+                    href="/gallery"
+                    className="group inline-flex items-center gap-2 font-inter text-sm font-medium text-slate-700 transition-all duration-300 hover:text-[#EC4899] dark:text-slate-300 dark:hover:text-[#F472B6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#EC4899]"
+                    aria-label="Lihat galeri kegiatan GEMA"
                   >
-                    <MonitorPlay className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" aria-hidden="true" />
-                    Coba Demo Gratis
+                    <Camera className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" aria-hidden="true" />
+                    Lihat Galeri
                     <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
                   </Link>
                 </div>
@@ -1176,7 +1177,7 @@ export default function HomePage() {
                     ))}
                   </div>
                   <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                    <span className="font-bold text-[#4F46E5] dark:text-[#22D3EE]">500+</span> siswa aktif
+                    <span className="font-bold text-[#4F46E5] dark:text-[#22D3EE]">{stats.totalStudents}+</span> siswa aktif
                   </p>
                 </div>
                 <span className="text-slate-400">•</span>
@@ -1186,11 +1187,13 @@ export default function HomePage() {
               {/* Feature Indicators with Progressive Disclosure */}
               <div className="mt-8 flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-400" data-scroll-reveal data-parallax="0.26">
                 <span className="inline-flex items-center gap-2 font-inter font-medium transition-all duration-300 hover:text-[#4F46E5] hover:scale-110 cursor-pointer">
-                  <Code2 className="h-4 w-4 text-[#4F46E5] icon-bounce" /> Coding Lab
+                  <Code2 className="h-4 w-4 text-[#4F46E5] icon-bounce" /> 
+                  <span className="font-semibold text-[#4F46E5] dark:text-[#818CF8]">{stats.totalCodingLabs}</span> Coding Lab
                 </span>
                 <span className="text-slate-400 animate-pulse">•</span>
                 <span className="inline-flex items-center gap-2 font-inter font-medium transition-all duration-300 hover:text-[#22D3EE] hover:scale-110 cursor-pointer">
-                  <BookOpenCheck className="h-4 w-4 text-[#22D3EE] icon-bounce" /> Tutorial
+                  <BookOpenCheck className="h-4 w-4 text-[#22D3EE] icon-bounce" /> 
+                  <span className="font-semibold text-[#22D3EE] dark:text-[#5EEAD4]">{stats.totalTutorials}</span> Tutorial
                 </span>
                 <span className="text-slate-400 animate-pulse">•</span>
                 <span className="inline-flex items-center gap-2 font-inter font-medium transition-all duration-300 hover:text-[#FBBF24] hover:scale-110 cursor-pointer">
@@ -1256,44 +1259,48 @@ export default function HomePage() {
             </div>
             
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2">
-              <div 
-                className="floating-card group p-6 shadow-brand-md hover:shadow-brand-lg card-pop cursor-pointer" 
-                data-scroll-reveal
-                style={{ animationDelay: '0.1s' }}
-              >
-                <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6366F1]/20 to-[#22D3EE]/20 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
-                  <BookOpenCheck className="h-6 w-6 text-[#4F46E5] transition-transform duration-300 group-hover:scale-125" />
+              <Link href="/tutorial">
+                <div 
+                  className="floating-card group p-6 shadow-brand-md hover:shadow-brand-lg card-pop cursor-pointer" 
+                  data-scroll-reveal
+                  style={{ animationDelay: '0.1s' }}
+                >
+                  <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6366F1]/20 to-[#22D3EE]/20 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+                    <BookOpenCheck className="h-6 w-6 text-[#4F46E5] transition-transform duration-300 group-hover:scale-125" />
+                  </div>
+                  <h3 className="font-outfit text-lg font-bold text-slate-900 transition-colors duration-500 dark:text-white">
+                    Fitur Lengkap & Terpadu
+                  </h3>
+                  <p className="type-body mt-2 text-slate-600 dark:text-slate-300">
+                    Coding lab, tutorial articles, quiz system, dan assignment management dalam satu platform.
+                  </p>
+                  <div className="mt-4 flex items-center gap-2 text-sm font-medium text-[#4F46E5] dark:text-[#22D3EE]">
+                    <span>Lihat Tutorial</span>
+                    <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </div>
                 </div>
-                <h3 className="font-outfit text-lg font-bold text-slate-900 transition-colors duration-500 dark:text-white">
-                  Fitur Lengkap & Terpadu
-                </h3>
-                <p className="type-body mt-2 text-slate-600 dark:text-slate-300">
-                  Coding lab, tutorial articles, quiz system, dan assignment management dalam satu platform.
-                </p>
-                <div className="mt-4 flex items-center gap-2 text-sm font-medium text-[#4F46E5] dark:text-[#22D3EE]">
-                  <span>Lihat Fitur</span>
-                  <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+              </Link>
+              <Link href="/student/register">
+                <div 
+                  className="floating-card group p-6 shadow-cyan-md hover:shadow-brand-lg card-pop cursor-pointer" 
+                  data-scroll-reveal
+                  style={{ animationDelay: '0.2s' }}
+                >
+                  <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#22D3EE]/20 to-[#10B981]/20 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-3">
+                    <Users className="h-6 w-6 text-[#22D3EE] transition-transform duration-300 group-hover:scale-125" />
+                  </div>
+                  <h3 className="font-outfit text-lg font-bold text-slate-900 transition-colors duration-500 dark:text-white">
+                    Portal Guru & Siswa
+                  </h3>
+                  <p className="type-body mt-2 text-slate-600 dark:text-slate-300">
+                    Dashboard terpisah untuk guru dan siswa dengan role management yang fleksibel.
+                  </p>
+                  <div className="mt-4 flex items-center gap-2 text-sm font-medium text-[#22D3EE]">
+                    <span>Daftar Sekarang</span>
+                    <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </div>
                 </div>
-              </div>
-              <div 
-                className="floating-card group p-6 shadow-cyan-md hover:shadow-brand-lg card-pop cursor-pointer" 
-                data-scroll-reveal
-                style={{ animationDelay: '0.2s' }}
-              >
-                <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#22D3EE]/20 to-[#10B981]/20 transition-all duration-300 group-hover:scale-110 group-hover:-rotate-3">
-                  <Users className="h-6 w-6 text-[#22D3EE] transition-transform duration-300 group-hover:scale-125" />
-                </div>
-                <h3 className="font-outfit text-lg font-bold text-slate-900 transition-colors duration-500 dark:text-white">
-                  Portal Guru & Siswa
-                </h3>
-                <p className="type-body mt-2 text-slate-600 dark:text-slate-300">
-                  Dashboard terpisah untuk guru dan siswa dengan role management yang fleksibel.
-                </p>
-                <div className="mt-4 flex items-center gap-2 text-sm font-medium text-[#22D3EE]">
-                  <span>Pelajari Lebih Lanjut</span>
-                  <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                </div>
-              </div>
+              </Link>
             </div>
 
             {/* Trust Signals & Quick Stats - Progressive Disclosure */}
@@ -1332,10 +1339,10 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Additional Hero Content - Video & Agenda Side by Side */}
+            {/* Additional Hero Content - Video Animation Centered */}
             <div className="relative flex-1">
-              <div className="grid gap-6 md:grid-cols-2">
-                {/* Left: Video Animation */}
+              <div className="max-w-3xl mx-auto">
+                {/* Video Animation */}
                 <div className="relative rounded-3xl border border-white/20 bg-white/95 p-6 backdrop-blur-lg transition-colors duration-500 dark:border-white/10 dark:bg-white/5">
                   <div className="absolute inset-0 rounded-3xl border border-white/10" aria-hidden="true" />
                   <div className="mb-4 flex items-center justify-between text-sm font-semibold uppercase tracking-[0.35em] text-[#5EEAD4]/80">
@@ -1357,82 +1364,50 @@ export default function HomePage() {
                     interaktif GEMA.
                   </p>
                 </div>
-
-                {/* Right: Agenda Pekan Ini */}
-                <div className="flex flex-col gap-5 rounded-3xl border border-white/20 bg-white/95 p-6 backdrop-blur-lg transition-colors duration-500 dark:border-white/10 dark:bg-white/5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6C63FF]/90 to-[#5EEAD4]/60 text-[#050513]">
-                      <Calendar className="h-5 w-5" aria-hidden="true" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white">Agenda Pekan Ini</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-200/70">
-                        {stats.upcomingEventsThisWeek} kegiatan siap diikuti
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    ref={lottieContainerRef}
-                    className="relative h-40 w-full overflow-hidden rounded-2xl bg-gradient-to-br from-[#6C63FF]/20 via-transparent to-[#5EEAD4]/10 lottie-shell"
-                    role="presentation"
-                    aria-hidden="true"
-                  >
-                    <div
-                      className={`absolute inset-0 flex flex-col items-center justify-center gap-2 text-xs font-semibold text-slate-600 transition-opacity duration-300 dark:text-slate-200/70 ${
-                        isLottieLoaded && !prefersReducedMotion ? "opacity-0" : "opacity-100"
-                      }`}
-                    >
-                      <div className="lottie-placeholder-grid">
-                        <span className="lottie-placeholder-dot" />
-                        <span className="lottie-placeholder-dot" />
-                        <span className="lottie-placeholder-dot" />
-                      </div>
-                      <span>Visual animatif akan tampil di sini</span>
-                    </div>
-                  </div>
-                </div>
               </div>
 
-              {/* Tentang GEMA - Full Width Below Grid */}
-              <div className="mt-6 rounded-2xl border border-white/20 bg-white/90 p-6 backdrop-blur transition-colors duration-500 dark:border-white/10 dark:bg-white/5">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                  Tentang GEMA
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-200/80">
-                  GEMA (Generasi Muda Informatika) adalah platform Learning Management System yang dirancang khusus untuk pembelajaran Informatika tingkat SMA.
-                </p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#6C63FF]/10 text-[#6C63FF]">
-                      <Code2 className="h-4 w-4" />
+              {/* Tentang GEMA - Optimized for 3-col grid */}
+              <div className="max-w-4xl mx-auto mt-6">
+                <div className="rounded-2xl border border-white/20 bg-white/90 p-6 sm:p-8 backdrop-blur transition-colors duration-500 dark:border-white/10 dark:bg-white/5">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    Tentang GEMA
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-200/80">
+                    GEMA (Generasi Muda Informatika) adalah platform Learning Management System yang dirancang khusus untuk pembelajaran Informatika tingkat SMA.
+                  </p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#6C63FF]/10 text-[#6C63FF]">
+                        <Code2 className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">Interactive Coding Lab</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-200/70">
+                          Editor code dengan auto-grading
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">Interactive Coding Lab</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-200/70">
-                        Editor code dengan auto-grading
-                      </p>
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#5EEAD4]/10 text-[#5EEAD4]">
+                        <BookOpenCheck className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">Structured Learning Path</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-200/70">
+                          Tutorial terstruktur sesuai kurikulum
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#5EEAD4]/10 text-[#5EEAD4]">
-                      <BookOpenCheck className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">Structured Learning Path</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-200/70">
-                        Tutorial terstruktur sesuai kurikulum
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#FF99CC]/10 text-[#FF99CC]">
-                      <BarChart3 className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">Real-Time Analytics</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-200/70">
-                        Dashboard tracking progress siswa
-                      </p>
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#FF99CC]/10 text-[#FF99CC]">
+                        <BarChart3 className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">Real-Time Analytics</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-200/70">
+                          Dashboard tracking progress siswa
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>

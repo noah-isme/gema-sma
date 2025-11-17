@@ -2,7 +2,6 @@
 
 import { useRef, useEffect, useState } from 'react'
 import Image from 'next/image'
-import { Play, Pause, RotateCcw } from 'lucide-react'
 
 interface VideoLogoProps {
   src: string
@@ -28,7 +27,6 @@ export default function VideoLogo({
   fallbackImage = "/gema.svg"
 }: VideoLogoProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [isPlaying, setIsPlaying] = useState(autoplay)
   const [hasError, setHasError] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -38,8 +36,6 @@ export default function VideoLogo({
 
     const handleLoadStart = () => setIsLoading(true)
     const handleCanPlay = () => setIsLoading(false)
-    const handlePlay = () => setIsPlaying(true)
-    const handlePause = () => setIsPlaying(false)
     const handleError = () => {
       setHasError(true)
       setIsLoading(false)
@@ -47,47 +43,21 @@ export default function VideoLogo({
 
     video.addEventListener('loadstart', handleLoadStart)
     video.addEventListener('canplay', handleCanPlay)
-    video.addEventListener('play', handlePlay)
-    video.addEventListener('pause', handlePause)
     video.addEventListener('error', handleError)
 
     // Auto play if enabled
     if (autoplay && !hasError) {
       video.play().catch(() => {
         // Autoplay failed, probably due to browser policy
-        setIsPlaying(false)
       })
     }
 
     return () => {
       video.removeEventListener('loadstart', handleLoadStart)
       video.removeEventListener('canplay', handleCanPlay)
-      video.removeEventListener('play', handlePlay)
-      video.removeEventListener('pause', handlePause)
       video.removeEventListener('error', handleError)
     }
   }, [autoplay, hasError])
-
-  const togglePlay = () => {
-    const video = videoRef.current
-    if (!video) return
-
-    if (isPlaying) {
-      video.pause()
-    } else {
-      video.play()
-    }
-  }
-
-  const restart = () => {
-    const video = videoRef.current
-    if (!video) return
-
-    video.currentTime = 0
-    if (!isPlaying) {
-      video.play()
-    }
-  }
 
   if (hasError) {
     return (
@@ -104,7 +74,7 @@ export default function VideoLogo({
   }
 
   return (
-    <div className={`relative group bg-white rounded-lg overflow-hidden shadow-lg ${className}`}>
+    <div className={`relative bg-white rounded-lg overflow-hidden shadow-lg ${className}`}>
       {/* Loading Spinner */}
       {isLoading && (
         <div 
@@ -125,44 +95,16 @@ export default function VideoLogo({
         muted={muted}
         controls={controls}
         playsInline
-        className="w-full h-auto"
+        disablePictureInPicture
+        controlsList="nodownload nofullscreen noremoteplayback"
+        className="w-full h-auto pointer-events-none"
         poster={fallbackImage}
+        style={{ pointerEvents: 'none' }}
       >
         <source src={src} type="video/mp4" />
         <source src={src.replace('.mp4', '.webm')} type="video/webm" />
         <p>Your browser does not support the video tag.</p>
       </video>
-
-      {/* Custom Controls Overlay */}
-      {!controls && (
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="flex gap-2">
-            <button
-              onClick={togglePlay}
-              className="bg-white bg-opacity-80 hover:bg-opacity-100 text-gray-800 p-3 rounded-full transition-all duration-200 hover:scale-110"
-              title={isPlaying ? 'Pause' : 'Play'}
-            >
-              {isPlaying ? (
-                <Pause className="w-6 h-6" />
-              ) : (
-                <Play className="w-6 h-6 ml-1" />
-              )}
-            </button>
-            <button
-              onClick={restart}
-              className="bg-white bg-opacity-80 hover:bg-opacity-100 text-gray-800 p-3 rounded-full transition-all duration-200 hover:scale-110"
-              title="Restart"
-            >
-              <RotateCcw className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Status Indicator */}
-      <div className="absolute top-2 right-2">
-        <div className={`w-3 h-3 rounded-full ${isPlaying ? 'bg-green-500' : 'bg-red-500'}`}></div>
-      </div>
     </div>
   )
 }

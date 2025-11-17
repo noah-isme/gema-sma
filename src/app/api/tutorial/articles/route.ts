@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
 import { prisma } from '@/lib/prisma'
 
-// GET /api/tutorial/articles - Get all articles or filter by category
+// GET /api/tutorial/articles - Get all articles with advanced filtering
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -12,17 +12,16 @@ export async function GET(request: NextRequest) {
     const featured = searchParams.get('featured');
     const limit = searchParams.get('limit');
     const page = searchParams.get('page');
+    
+    // NEW: Search parameter
+    const search = searchParams.get('search');
+    
+    // NEW: Tags filtering (comma-separated)
+    const tags = searchParams.get('tags');
+    const tagsArray = tags ? tags.split(',').map(t => t.trim()) : [];
 
-    // Build filter object
-    const where: {
-      status?: string;
-      category?: string;
-      featured?: boolean;
-      OR?: Array<{
-        title?: { contains: string; mode: 'insensitive' };
-        excerpt?: { contains: string; mode: 'insensitive' };
-      }>;
-    } = {};
+    // Build filter object with proper Prisma types
+    const where: any = {};
 
     // Add status filter only if not 'all'
     if (status && status !== 'all') {
@@ -35,6 +34,22 @@ export async function GET(request: NextRequest) {
 
     if (featured === 'true') {
       where.featured = true;
+    }
+
+    // NEW: Search functionality (title, excerpt, content)
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { excerpt: { contains: search, mode: 'insensitive' } },
+        { content: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    // NEW: Tag filtering (must have at least one of the tags)
+    if (tagsArray.length > 0) {
+      where.tags = {
+        hasSome: tagsArray
+      };
     }
 
     // Pagination

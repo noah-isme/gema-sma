@@ -51,10 +51,15 @@ export default function EditArticlePage() {
   const [readTime, setReadTime] = useState(5);
 
   const categories = [
-    { value: 'tutorial', label: 'Tutorial' },
-    { value: 'news', label: 'News' },
-    { value: 'technology', label: 'Technology' },
-    { value: 'programming', label: 'Programming' }
+    { value: 'artikel', label: '📄 Artikel' },
+    { value: 'tutorial', label: '📖 Tutorial' },
+    { value: 'prompt', label: '💡 Prompt AI' },
+    { value: 'berita', label: '📰 Berita' },
+    { value: 'kuis', label: '❓ Kuis' },
+    { value: 'diskusi', label: '💬 Diskusi' },
+    { value: 'programming', label: '💻 Programming' },
+    { value: 'technology', label: '🔧 Technology' },
+    { value: 'news', label: '📢 News' }
   ];
 
   const fetchArticle = useCallback(async () => {
