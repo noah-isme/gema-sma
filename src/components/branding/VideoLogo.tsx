@@ -97,7 +97,7 @@ export default function VideoLogo({
         playsInline
         disablePictureInPicture
         controlsList="nodownload nofullscreen noremoteplayback"
-        className="w-full h-auto pointer-events-none"
+        className="gema-video-element w-full h-auto pointer-events-none"
         poster={fallbackImage}
         style={{ pointerEvents: 'none' }}
       >

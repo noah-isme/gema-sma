@@ -3,29 +3,36 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/prisma';
 
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    let studentId: string | null = null;
-    let student = null;
+async function resolveStudent(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  let studentId: string | null = null;
+  let student = null;
 
-    if (session?.user?.id && session.user.userType === 'student') {
-      studentId = session.user.id;
+  if (session?.user?.id && session.user.userType === 'student') {
+    student = await prisma.student.findUnique({
+      where: { id: session.user.id }
+    });
+    if (student) {
+      studentId = student.id;
+    }
+  } else {
+    const headerStudentId = request.headers.get('x-student-id');
+    if (headerStudentId) {
       student = await prisma.student.findUnique({
-        where: { id: studentId }
+        where: { id: headerStudentId }
       });
-    } else {
-      const headerStudentId = request.headers.get('x-student-id');
-      if (headerStudentId) {
-        student = await prisma.student.findUnique({
-          where: { id: headerStudentId }
-        });
-        if (student) {
-          studentId = student.id;
-        }
+      if (student) {
+        studentId = student.id;
       }
     }
+  }
+
+  return { studentId, student };
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { studentId, student } = await resolveStudent(request);
 
     if (!studentId || !student) {
       return NextResponse.json(
@@ -120,6 +127,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const { studentId } = await resolveStudent(request);
+
     // Get feedback for specific article with student information
     const feedback = await prisma.articleFeedback.findMany({
       where: { articleId },
@@ -135,9 +144,26 @@ export async function GET(request: NextRequest) {
             fullName: true,
             class: true
           }
+        },
+        _count: {
+          select: { upvotes: true }
         }
       }
     });
+
+    let upvotedIds = new Set<string>();
+    if (studentId && feedback.length > 0) {
+      const upvotes = await prisma.articleFeedbackUpvote.findMany({
+        where: {
+          studentId,
+          feedbackId: {
+            in: feedback.map((item) => item.id)
+          }
+        },
+        select: { feedbackId: true }
+      });
+      upvotedIds = new Set(upvotes.map((item) => item.feedbackId));
+    }
 
     // Get article stats
     const article = await prisma.article.findUnique({
@@ -158,7 +184,9 @@ export async function GET(request: NextRequest) {
       timestamp: item.timestamp,
       studentName: item.student?.fullName || 'Anonymous',
       studentClass: item.student?.class || '',
-      timeAgo: getTimeAgo(item.timestamp)
+      timeAgo: getTimeAgo(item.timestamp),
+      upvotes: item._count.upvotes,
+      hasUpvoted: upvotedIds.has(item.id)
     }));
 
     return NextResponse.json({

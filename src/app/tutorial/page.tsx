@@ -23,6 +23,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { studentAuth } from "@/lib/student-auth";
+import type { DiscussionThreadDetailDTO } from "@/types/discussion";
 
 interface Article {
   id: string;
@@ -37,11 +38,18 @@ interface Article {
   featured?: boolean; // From API
   isFeatured?: boolean; // Processed
   isTrending?: boolean; // Processed
-  tags?: string[];
+  tags?: string[] | string | null;
   imageUrl?: string;
   status?: string;
   createdAt?: string;
   updatedAt?: string;
+  questionCount?: number;
+  defaultPoints?: number;
+  timePerQuestion?: number | null;
+  replyCount?: number;
+  lastReplyAt?: string;
+  lastReplyBy?: string;
+  lastReplyPreview?: string;
 }
 
 interface PromptFromDB {
@@ -58,6 +66,24 @@ interface PromptFromDB {
   views: number;
   publishedAt: string;
   createdAt: string;
+}
+
+
+interface QuizApiItem {
+  id: string;
+  title: string;
+  description?: string | null;
+  slug?: string | null;
+  tags?: unknown;
+  isPublic: boolean;
+  defaultPoints: number;
+  publishedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  timePerQuestion?: number | null;
+  _count?: {
+    questions?: number;
+  };
 }
 
 type TabType = "berita" | "artikel" | "prompt" | "kuis" | "diskusi";
@@ -98,6 +124,73 @@ const floatingParticles = [
   { x: "50%", y: "30%", size: 5, delay: 0.5 },
 ];
 
+const formatDate = (value: string) =>
+  new Date(value).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+const normalizeTags = (input: unknown): string[] => {
+  if (!input) {
+    return [];
+  }
+
+  if (Array.isArray(input)) {
+    return input
+      .map((tag) => (typeof tag === "string" ? tag.trim() : ""))
+      .filter(Boolean);
+  }
+
+  if (typeof input === "string") {
+    try {
+      const parsed = JSON.parse(input);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((tag) => (typeof tag === "string" ? tag.trim() : ""))
+          .filter(Boolean);
+      }
+    } catch {
+      // Fallback to comma-separated parsing
+    }
+
+    return input
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+  }
+
+  if (typeof input === "object") {
+    const maybeSet = (input as { set?: unknown }).set;
+    if (maybeSet) {
+      return normalizeTags(maybeSet);
+    }
+  }
+
+  return [];
+};
+
+const isQuizArticle = (article?: Article | null) =>
+  Boolean(article?.category && article.category.toLowerCase() === "kuis");
+
+const buildArticleLink = (article: Article) => {
+  const slugOrId = article.slug || article.id;
+  if (isQuizArticle(article)) {
+    return slugOrId ? `/quiz/join?quizId=${slugOrId}` : "/quiz/join";
+  }
+  if (article.category?.toLowerCase() === "diskusi") {
+    return slugOrId ? `/tutorial/discussion/${slugOrId}` : "/tutorial";
+  }
+  return slugOrId ? `/tutorial/articles/${slugOrId}` : "/tutorial/articles";
+};
+
+const getArticleCtaLabel = (article: Article) =>
+  article.category?.toLowerCase() === "diskusi"
+    ? "Ikuti diskusi"
+    : isQuizArticle(article)
+      ? "Ikuti kuis"
+      : "Baca artikel";
+
 export default function TutorialPage() {
   const [activeTab, setActiveTab] = useState<TabType>("artikel");
   const [articles, setArticles] = useState<Article[]>([]);
@@ -126,76 +219,156 @@ export default function TutorialPage() {
   const fetchArticles = async () => {
     try {
       setLoading(true);
-      
-      // Fetch articles from database
-      const res = await fetch("/api/tutorial/articles?status=all");
-      if (res.ok) {
-        const data = await res.json();
-        const articlesData = Array.isArray(data.data) ? data.data : [];
-        
-        // Fetch prompts from database (new API)
-        const promptRes = await fetch("/api/tutorial/prompts?status=all");
-        let promptArticles: Article[] = [];
-        
-        if (promptRes.ok) {
-          const promptData = await promptRes.json();
-          if (promptData.data && Array.isArray(promptData.data)) {
-            // Convert prompts to article format for unified display
-            promptArticles = promptData.data.map((prompt: PromptFromDB) => ({
-              id: prompt.id,
-              title: prompt.title,
-              slug: prompt.slug,
-              excerpt: prompt.roleDeskripsi || prompt.taskInstruksi || '',
-              category: 'prompt',
-              tags: Array.isArray(prompt.tags) ? prompt.tags : [],
-              author: prompt.author || 'Admin GEMA',
-              status: prompt.status,
-              featured: prompt.featured,
-              readTime: prompt.durasiMenit || 0,
-              views: prompt.views || 0,
-              publishedAt: prompt.publishedAt || prompt.createdAt,
-              isFeatured: prompt.featured || false,
-              isTrending: (prompt.views || 0) > 50,
-            }));
-          }
-        }
-        
-        // Merge database articles with prompt articles
-        const allArticles = [...articlesData, ...promptArticles];
-        
-        // Process articles: add isTrending based on views and recency
-        const processedArticles = allArticles.map((article: Article) => {
-          const publishedDate = article.publishedAt ? new Date(article.publishedAt) : new Date();
-          const daysSincePublished = (Date.now() - publishedDate.getTime()) / (1000 * 60 * 60 * 24);
-          
-          // Mark as trending if: published within 7 days AND has views > 50
-          // OR has views > 100 regardless of date
-          const isTrending = 
-            (daysSincePublished <= 7 && (article.views || 0) > 50) ||
-            (article.views || 0) > 100;
-          
-          // Normalize tags to array
-          let tags: string[] = [];
-          if (Array.isArray(article.tags)) {
-            tags = article.tags;
-          } else if (typeof article.tags === 'string' && article.tags) {
-            try {
-              tags = JSON.parse(article.tags);
-            } catch {
-              tags = article.tags.split(',').map(t => t.trim()).filter(t => t);
-            }
-          }
-          
-          return {
-            ...article,
-            tags,
-            isFeatured: article.featured || false,
-            isTrending,
-          };
-        });
-        
-        setArticles(processedArticles);
+
+      const [articleRes, promptRes, quizRes, discussionRes] = await Promise.all([
+        fetch("/api/tutorial/articles?status=all"),
+        fetch("/api/tutorial/prompts?status=all"),
+        fetch("/api/quizzes?publicOnly=true"),
+        fetch("/api/discussion/threads?limit=12"),
+      ]);
+
+      let articlesData: Article[] = [];
+      if (articleRes.ok) {
+        const articlePayload = await articleRes.json();
+        articlesData = Array.isArray(articlePayload?.data)
+          ? (articlePayload.data as Article[])
+          : [];
+      } else {
+        console.error("Failed to fetch tutorial articles:", articleRes.statusText);
       }
+
+      let promptArticles: Article[] = [];
+      if (promptRes.ok) {
+        const promptPayload = await promptRes.json();
+        if (Array.isArray(promptPayload?.data)) {
+          promptArticles = promptPayload.data.map((prompt: PromptFromDB) => ({
+            id: prompt.id,
+            title: prompt.title,
+            slug: prompt.slug,
+            excerpt: prompt.roleDeskripsi || prompt.taskInstruksi || "",
+            category: "prompt",
+            tags: normalizeTags(prompt.tags),
+            author: prompt.author || "Tim Prompt GEMA",
+            status: prompt.status,
+            featured: prompt.featured,
+            readTime: prompt.durasiMenit || 0,
+            views: prompt.views || 0,
+            publishedAt: prompt.publishedAt || prompt.createdAt,
+            isFeatured: prompt.featured || false,
+            isTrending: (prompt.views || 0) > 50,
+          }));
+        }
+      } else {
+        console.error("Failed to fetch tutorial prompts:", promptRes.statusText);
+      }
+
+      let quizArticles: Article[] = [];
+      if (quizRes.ok) {
+        const quizPayload = await quizRes.json();
+        const quizData: QuizApiItem[] = Array.isArray(quizPayload) ? quizPayload : [];
+        quizArticles = quizData
+          .filter((quiz) => quiz.isPublic)
+          .map((quiz) => {
+            const questionCount = quiz._count?.questions ?? 0;
+            const secondsPerQuestion = quiz.timePerQuestion ?? 75;
+            const estimatedMinutes =
+              questionCount > 0
+                ? Math.max(2, Math.round((questionCount * secondsPerQuestion) / 60))
+                : 5;
+            const tags = [...normalizeTags(quiz.tags)];
+            if (!tags.some((tag) => tag.toLowerCase() === "kuis")) {
+              tags.push("kuis");
+            }
+
+            return {
+              id: quiz.id,
+              title: quiz.title,
+              slug: quiz.slug ?? quiz.id,
+              excerpt:
+                quiz.description?.trim() ||
+                `Kuis interaktif dengan ${questionCount || "beragam"} soal siap kamu coba.`,
+              category: "kuis",
+              tags,
+              author: "Tim Quiz GEMA",
+              status: quiz.isPublic ? "published" : "draft",
+              featured: questionCount >= 12,
+              readTime: estimatedMinutes,
+              views: Math.max(30, questionCount * 15),
+              publishedAt: quiz.publishedAt || quiz.updatedAt || quiz.createdAt,
+              createdAt: quiz.createdAt,
+              updatedAt: quiz.updatedAt,
+              questionCount,
+              defaultPoints: quiz.defaultPoints,
+              timePerQuestion: quiz.timePerQuestion ?? null,
+            };
+          });
+      } else {
+        console.error("Failed to fetch quizzes:", quizRes.statusText);
+      }
+
+      let discussionArticles: Article[] = [];
+      if (discussionRes.ok) {
+        const discussionPayload = await discussionRes.json();
+        if (Array.isArray(discussionPayload?.data)) {
+          discussionArticles = discussionPayload.data.map(
+            (thread: DiscussionThreadDetailDTO) => ({
+              id: thread.id,
+              title: thread.title,
+              slug: thread.id,
+              excerpt:
+                thread.content ||
+                thread.lastReplyPreview ||
+                "Diskusi aktif dari komunitas GEMA.",
+              category: "diskusi",
+              author: thread.authorName,
+              status: "published",
+              publishedAt: thread.createdAt,
+              createdAt: thread.createdAt,
+              updatedAt: thread.updatedAt,
+              views: (thread.replyCount ?? 0) * 15,
+              readTime: Math.max(
+                1,
+                Math.round(((thread.content?.split(" ").length || 60) / 120) * 1),
+              ),
+              replyCount: thread.replyCount,
+              lastReplyAt: thread.lastReplyAt || thread.updatedAt,
+              lastReplyBy: thread.lastReplyBy || thread.authorName,
+              lastReplyPreview: thread.lastReplyPreview || thread.content || "",
+              tags: ["diskusi", "forum", "tanya-jawab"],
+            }),
+          );
+        }
+      } else {
+        console.error("Failed to fetch discussion threads:", discussionRes.statusText);
+      }
+
+      const allArticles = [
+        ...articlesData,
+        ...promptArticles,
+        ...quizArticles,
+        ...discussionArticles,
+      ];
+
+      const processedArticles = allArticles.map((article: Article) => {
+        const publishedDate = article.publishedAt ? new Date(article.publishedAt) : new Date();
+        const daysSincePublished =
+          (Date.now() - publishedDate.getTime()) / (1000 * 60 * 60 * 24);
+
+        const isTrending =
+          (daysSincePublished <= 7 && (article.views || 0) > 50) ||
+          (article.views || 0) > 100;
+
+        const tags = normalizeTags(article.tags);
+
+        return {
+          ...article,
+          tags,
+          isFeatured: article.featured || false,
+          isTrending,
+        };
+      });
+
+      setArticles(processedArticles);
     } catch (error) {
       console.error("Error fetching articles:", error);
     } finally {
@@ -230,22 +403,8 @@ export default function TutorialPage() {
 
     if (selectedTags.length > 0) {
       filtered = filtered.filter((article) => {
-        // Handle tags as string or array
-        let articleTags: string[] = [];
-        
-        if (Array.isArray(article.tags)) {
-          articleTags = article.tags;
-        } else if (typeof article.tags === 'string') {
-          try {
-            // Try parse as JSON if it's a JSON string
-            articleTags = JSON.parse(article.tags);
-          } catch {
-            // If not JSON, split by comma
-            articleTags = article.tags.split(',').map(t => t.trim());
-          }
-        }
-        
-        return articleTags.some((tag) => selectedTags.includes(tag.toLowerCase()));
+        const articleTags = normalizeTags(article.tags).map((tag) => tag.toLowerCase());
+        return articleTags.some((tag) => selectedTags.includes(tag));
       });
     }
 
@@ -257,6 +416,10 @@ export default function TutorialPage() {
     () => filteredArticles.find((a) => a.isFeatured) || filteredArticles[0],
     [filteredArticles]
   );
+
+  const featuredArticleIsQuiz = isQuizArticle(featuredArticle);
+  const featuredArticleIsDiscussion =
+    featuredArticle?.category?.toLowerCase() === "diskusi";
 
   // Get recommended articles (simulated)
   const recommendedArticles = useMemo(
@@ -351,7 +514,7 @@ export default function TutorialPage() {
       </section>
 
       {/* Adaptive Category Tabs */}
-      <div className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 shadow-sm">
+      <div id="diskusi" className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex gap-3 overflow-x-auto scrollbar-hide">
             {categories.map((cat, index) => {
@@ -501,7 +664,7 @@ export default function TutorialPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
                   >
-                    <Link href={`/tutorial/articles/${featuredArticle.slug}`}>
+                    <Link href={buildArticleLink(featuredArticle)}>
                       <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#06B6D4]/10 to-[#10B981]/10 border border-[#06B6D4]/20 p-8 md:p-12 cursor-pointer transition-all duration-500 hover:shadow-2xl">
                         {/* Background gradient shift on hover */}
                         <div className="absolute inset-0 bg-gradient-to-br from-[#06B6D4]/5 to-[#10B981]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -533,13 +696,26 @@ export default function TutorialPage() {
                                 {featuredArticle.author}
                               </div>
                             )}
+                            {featuredArticleIsDiscussion &&
+                              typeof featuredArticle.replyCount === "number" && (
+                                <div className="flex items-center gap-2">
+                                  <MessageSquare className="w-4 h-4" />
+                                  {featuredArticle.replyCount} balasan
+                                </div>
+                              )}
+                            {featuredArticleIsQuiz && typeof featuredArticle.questionCount === "number" && (
+                              <div className="flex items-center gap-2">
+                                <HelpCircle className="w-4 h-4" />
+                                {featuredArticle.questionCount} soal
+                              </div>
+                            )}
                             {featuredArticle.readTime && (
                               <div className="flex items-center gap-2">
                                 <Clock className="w-4 h-4" />
                                 {featuredArticle.readTime} menit
                               </div>
                             )}
-                            {featuredArticle.views && (
+                            {!featuredArticleIsDiscussion && !featuredArticleIsQuiz && featuredArticle.views && (
                               <div className="flex items-center gap-2">
                                 <Eye className="w-4 h-4" />
                                 {featuredArticle.views} views
@@ -547,12 +723,19 @@ export default function TutorialPage() {
                             )}
                           </div>
 
+                          {featuredArticleIsDiscussion && featuredArticle.lastReplyBy && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                              Terakhir dibalas oleh <span className="font-medium">{featuredArticle.lastReplyBy}</span>
+                              {featuredArticle.lastReplyAt && ` • ${formatDate(featuredArticle.lastReplyAt)}`}
+                            </p>
+                          )}
+
                           <motion.button
                             className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#06B6D4] to-[#10B981] text-white font-semibold shadow-lg group-hover:shadow-xl transition-all duration-300"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                           >
-                            Baca Sekarang
+                            {getArticleCtaLabel(featuredArticle)}
                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
                           </motion.button>
                         </div>
@@ -701,13 +884,16 @@ interface ArticleCardProps {
 }
 
 function ArticleCard({ article, index, compact = false }: ArticleCardProps) {
+  const isQuiz = isQuizArticle(article);
+  const isDiscussion = article.category?.toLowerCase() === "diskusi";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.05 }}
     >
-      <Link href={`/tutorial/articles/${article.slug}`}>
+      <Link href={buildArticleLink(article)}>
         <div className="group h-full p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
           {/* Category & Status Badges */}
           <div className="flex items-center gap-2 mb-3">
@@ -738,14 +924,26 @@ function ArticleCard({ article, index, compact = false }: ArticleCardProps) {
           )}
 
           {/* Meta Info */}
-          <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+            {isQuiz && typeof article.questionCount === "number" && (
+              <div className="flex items-center gap-1">
+                <HelpCircle className="w-3 h-3" />
+                {article.questionCount} soal
+              </div>
+            )}
+            {isDiscussion && typeof article.replyCount === "number" && (
+              <div className="flex items-center gap-1">
+                <MessageSquare className="w-3 h-3" />
+                {article.replyCount} balasan
+              </div>
+            )}
             {article.readTime && (
               <div className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
-                {article.readTime} min
+                {article.readTime} menit
               </div>
             )}
-            {article.views && (
+            {!isQuiz && !isDiscussion && article.views && (
               <div className="flex items-center gap-1">
                 <Eye className="w-3 h-3" />
                 {article.views}
@@ -753,9 +951,16 @@ function ArticleCard({ article, index, compact = false }: ArticleCardProps) {
             )}
           </div>
 
+          {isDiscussion && article.lastReplyBy && (
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              Terakhir oleh <span className="font-semibold">{article.lastReplyBy}</span>
+              {article.lastReplyAt && ` • ${formatDate(article.lastReplyAt)}`}
+            </p>
+          )}
+
           {/* CTA Arrow */}
           <div className="mt-4 flex items-center gap-2 text-sm font-semibold text-[#06B6D4] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <span>Baca artikel</span>
+            <span>{getArticleCtaLabel(article)}</span>
             <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
           </div>
         </div>

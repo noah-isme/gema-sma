@@ -134,8 +134,12 @@ export async function GET(request: NextRequest) {
         id: true,
         title: true,
         description: true,
+        slug: true,
+        tags: true,
         isPublic: true,
         defaultPoints: true,
+        publishedAt: true,
+        timePerQuestion: true,
         createdAt: true,
         updatedAt: true,
         _count: {

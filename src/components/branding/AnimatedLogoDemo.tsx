@@ -66,7 +66,7 @@ export default function AnimatedLogoDemo() {
   }
 
   return (
-    <div className="relative group bg-white rounded-lg overflow-hidden shadow-lg max-w-2xl mx-auto">
+    <div className="relative bg-white rounded-lg overflow-hidden shadow-lg max-w-2xl mx-auto">
       {/* Main Animation Container */}
       <div className="relative w-full h-96 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 p-8">
         
@@ -182,32 +182,44 @@ export default function AnimatedLogoDemo() {
         </div>
       </div>
 
-      {/* Custom Controls Overlay */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center bg-black bg-opacity-30">
+      {/* Info Text & Static Controls */}
+      <div className="bg-slate-50 px-6 py-5 border-t border-slate-100 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-base font-semibold text-slate-800">Animated Branding Preview</p>
+          <p className="text-sm text-slate-500">
+            Lihat bagaimana logo GEMA tampil dengan animasi organik tanpa gangguan overlay.
+          </p>
+        </div>
         <div className="flex gap-3">
           <button
             onClick={toggleAnimation}
-            className="bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-800 p-3 rounded-full transition-all duration-200 hover:scale-110"
-            title={isPlaying ? 'Pause Animation' : 'Play Animation'}
+            className="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+            type="button"
+            aria-label={isPlaying ? "Jeda animasi" : "Putar animasi"}
           >
             {isPlaying ? (
-              <Pause className="w-6 h-6" />
+              <>
+                <Pause className="mr-2 h-4 w-4" />
+                Jeda
+              </>
             ) : (
-              <Play className="w-6 h-6 ml-1" />
+              <>
+                <Play className="mr-2 h-4 w-4" />
+                Putar
+              </>
             )}
           </button>
           <button
             onClick={restartAnimation}
-            className="bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-800 p-3 rounded-full transition-all duration-200 hover:scale-110"
-            title="Restart Animation"
+            className="inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+            type="button"
+            aria-label="Mulai ulang animasi"
           >
-            <RotateCcw className="w-6 h-6" />
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Restart
           </button>
         </div>
       </div>
-
-      {/* Info Text */}
-      
     </div>
   )
 }

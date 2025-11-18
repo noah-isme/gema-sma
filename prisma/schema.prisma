@@ -629,6 +629,8 @@ model Student {
   grades              Grade[]
   bookmarks           ArticleBookmark[]     @relation("StudentBookmarks")
   readingProgress     ReadingProgress[]     @relation("StudentReadingProgress")
+  articleReactions    ArticleReaction[]
+  feedbackUpvotes     ArticleFeedbackUpvote[]
 
   @@index([studentId])
   @@index([status])
@@ -860,6 +862,7 @@ model Article {
 
   // Relations
   feedback ArticleFeedback[]
+  reactions ArticleReaction[]
 
   @@index([status])
   @@index([category])
@@ -884,12 +887,44 @@ model ArticleFeedback {
   // Relations
   article Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
   student Student? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  upvotes ArticleFeedbackUpvote[]
 
   @@index([articleId])
   @@index([studentId])
   @@index([rating])
   @@index([timestamp])
   @@map("article_feedback")
+}
+
+model ArticleReaction {
+  id        String   @id @default(cuid())
+  articleId String
+  studentId String
+  reaction  String
+  createdAt DateTime @default(now())
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, studentId])
+  @@index([articleId])
+  @@index([studentId])
+  @@map("article_reactions")
+}
+
+model ArticleFeedbackUpvote {
+  id         String   @id @default(cuid())
+  feedbackId String
+  studentId  String
+  createdAt  DateTime @default(now())
+
+  feedback ArticleFeedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  student  Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([feedbackId, studentId])
+  @@index([feedbackId])
+  @@index([studentId])
+  @@map("article_feedback_upvotes")
 }
 
 model ArticleBookmark {

@@ -6,6 +6,7 @@
   --foreground: #171717;
   --auth-gradient-angle: 128deg;
   --auth-gradient-shift: 50%;
+  --parallax-base: 0px;
   
   /* Brand Colors - Bright & Modern (Duolingo/Replit inspired) */
   --brand-primary: #4F46E5;        /* Indigo - Main brand color */
@@ -173,6 +174,28 @@ body {
   --type-caption-leading: 1.5;
 }
 
+/* CSS-driven parallax system */
+[data-parallax] {
+  --parallax-offset: calc(var(--parallax-base, 0px) * var(--parallax-speed, 0));
+  will-change: transform;
+  transform: translate3d(0, var(--parallax-offset), 0);
+}
+
+@supports (translate: 0) {
+  [data-parallax] {
+    transform: none;
+    translate: 0 var(--parallax-offset);
+    will-change: translate;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-parallax] {
+    transform: none !important;
+    translate: none !important;
+  }
+}
+
 @layer components {
   /* Typography Utility Classes */
   .type-h1 {
@@ -197,6 +220,21 @@ body {
     font-weight: var(--type-body-weight);
     line-height: var(--type-body-leading);
   }
+}
+
+/* Hide native overlay controls on decorative video elements */
+.gema-video-element::-webkit-media-controls,
+.gema-video-element::-webkit-media-controls-panel,
+.gema-video-element::-webkit-media-controls-start-playback-button,
+.gema-video-element::-webkit-media-controls-play-button,
+.gema-video-element::-webkit-media-controls-pause-button,
+.gema-video-element::-webkit-media-controls-overlay-play-button {
+  display: none !important;
+  -webkit-appearance: none;
+}
+
+.gema-video-element::-webkit-media-controls-enclosure {
+  display: none !important;
 }
 
 /* Student playful tour styles */

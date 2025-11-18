@@ -47,6 +47,7 @@ import { OptimizedImage } from "@/components/ui/OptimizedImage";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { useParallaxMotion } from "@/hooks/useParallaxMotion";
 
 const VantaBackground = dynamic(() => import("@/components/landing/VantaBackground"), {
   ssr: false,
@@ -461,6 +462,7 @@ export default function HomePage() {
   const [isLottieLoaded, setIsLottieLoaded] = useState(false);
 
   const prefersReducedMotion = usePrefersReducedMotion();
+  useParallaxMotion({ disabled: prefersReducedMotion });
 
   useKeyboardNavigation({
     onEnter: () => {
@@ -616,42 +618,6 @@ export default function HomePage() {
     },
     [],
   );
-
-  // Parallax effect for hero elements
-  useEffect(() => {
-    if (prefersReducedMotion) {
-      return;
-    }
-
-    let rafId: number | null = null;
-    let lastScrollY = window.scrollY;
-
-    const handleScroll = () => {
-      lastScrollY = window.scrollY;
-      
-      // Use RAF to throttle updates to 60fps
-      if (rafId === null) {
-        rafId = requestAnimationFrame(() => {
-          const parallaxElements = document.querySelectorAll('[data-parallax]');
-          
-          parallaxElements.forEach((element) => {
-            const speed = parseFloat(element.getAttribute('data-parallax') || '0');
-            const yPos = -(lastScrollY * speed);
-            (element as HTMLElement).style.transform = `translate3d(0, ${yPos}px, 0)`;
-          });
-          rafId = null;
-        });
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
-      }
-    };
-  }, [prefersReducedMotion]);
 
   // Feature cards animation now handled by useScrollReveal hook + CSS
   // Native Intersection Observer triggers .scroll-reveal animations with stagger delays

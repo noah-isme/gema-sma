@@ -94,7 +94,7 @@ export default function LogoAnimated({
     <div className={`relative select-none ${sizeClasses[size]} ${className}`}>
       <video
         ref={videoRef}
-        className="w-full h-full rounded-2xl shadow-[0_10px_30px_rgba(79,70,229,0.25)] object-cover"
+        className="gema-video-element w-full h-full rounded-2xl shadow-[0_10px_30px_rgba(79,70,229,0.25)] object-cover"
         autoPlay
         muted
         playsInline

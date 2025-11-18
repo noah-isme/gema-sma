@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import AdminLayout from '@/components/admin/AdminLayout';
 import { MessageSquare, Plus, Edit, Trash2 } from 'lucide-react';
 
@@ -9,30 +10,42 @@ interface Thread {
   title: string;
   authorId: string;
   authorName: string;
-  content?: string;
+  content?: string | null;
   createdAt: string;
-  replies: number;
+  updatedAt: string;
+  replyCount: number;
+  lastReplyBy?: string | null;
+  lastReplyAt?: string | null;
+  lastReplyPreview?: string | null;
 }
 
 export default function AdminDiskusiPage() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingThread, setEditingThread] = useState<Thread | null>(null);
-  const [form, setForm] = useState({ title: "", authorName: "", authorId: "", content: "" });
+  const [form, setForm] = useState({
+    title: "",
+    content: "",
+  });
   const [loading, setLoading] = useState(false);
+  const { data: session } = useSession();
+  const adminName = session?.user?.name ?? "Admin GEMA";
 
   // Fetch threads from API
   const fetchThreads = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/discussion/threads");
-      const data = await res.json();
-      setThreads(
-        data.map((t: Thread & { replies?: unknown[] }) => ({
-          ...t,
-          replies: Array.isArray(t.replies) ? t.replies.length : 0,
-        }))
-      );
+      const res = await fetch("/api/discussion/threads?limit=100", {
+        cache: "no-store",
+      });
+      const payload = await res.json();
+      if (!res.ok || !payload?.success) {
+        throw new Error(payload?.error || "Gagal memuat thread");
+      }
+      setThreads(payload.data ?? []);
+    } catch (error) {
+      console.error(error);
+      setThreads([]);
     } finally {
       setLoading(false);
     }
@@ -44,46 +57,75 @@ export default function AdminDiskusiPage() {
 
   const openAdd = () => {
     setEditingThread(null);
-    setForm({ title: "", authorName: "Admin", authorId: "admin-1", content: "" });
+    setForm({
+      title: "",
+      content: "",
+    });
     setShowModal(true);
   };
   const openEdit = (thread: Thread) => {
     setEditingThread(thread);
-    setForm({ title: thread.title, authorName: thread.authorName, authorId: thread.authorId, content: thread.content || "" });
+    setForm({ title: thread.title, content: thread.content || "" });
     setShowModal(true);
   };
   const closeModal = () => {
     setShowModal(false);
     setEditingThread(null);
-    setForm({ title: "", authorName: "", authorId: "", content: "" });
+    setForm({
+      title: "",
+      content: "",
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title.trim() || !form.authorName.trim() || !form.authorId.trim()) return;
-    if (editingThread) {
-      // Update thread
-      await fetch(`/api/discussion/threads/${editingThread.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: form.title, content: form.content }),
-      });
-    } else {
-      // Create thread
-      await fetch("/api/discussion/threads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: form.title, authorName: form.authorName, authorId: form.authorId, content: form.content }),
-      });
+    if (!form.title.trim()) {
+      return;
     }
-    closeModal();
-    fetchThreads();
+
+    try {
+      const endpoint = editingThread
+        ? `/api/discussion/threads/${editingThread.id}`
+        : "/api/discussion/threads";
+      const method = editingThread ? "PUT" : "POST";
+      const body = {
+        title: form.title,
+        content: form.content,
+      };
+
+      const res = await fetch(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const payload = await res.json();
+      if (!res.ok || !payload?.success) {
+        throw new Error(payload?.error || "Gagal menyimpan thread");
+      }
+
+      closeModal();
+      fetchThreads();
+    } catch (error) {
+      console.error(error);
+      alert("Gagal menyimpan thread. Coba lagi.");
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (window.confirm("Hapus thread ini?")) {
-      await fetch(`/api/discussion/threads/${id}`, { method: "DELETE" });
-      fetchThreads();
+      try {
+        const res = await fetch(`/api/discussion/threads/${id}`, {
+          method: "DELETE",
+        });
+        const payload = await res.json();
+        if (!res.ok || !payload?.success) {
+          throw new Error(payload?.error || "Gagal menghapus thread");
+        }
+        fetchThreads();
+      } catch (error) {
+        console.error(error);
+        alert("Gagal menghapus thread.");
+      }
     }
   };
 
@@ -121,10 +163,31 @@ export default function AdminDiskusiPage() {
                   <tr><td colSpan={5} className="text-center py-8 text-gray-400">Belum ada thread diskusi.</td></tr>
                 ) : threads.map(thread => (
                   <tr key={thread.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-semibold text-gray-900">{thread.title}</td>
-                    <td className="px-6 py-4 text-gray-700">{thread.authorName}</td>
-                    <td className="px-6 py-4 text-center text-blue-700 font-bold">{thread.replies}</td>
-                    <td className="px-6 py-4 text-gray-500">{thread.createdAt?.slice(0,10)}</td>
+                    <td className="px-6 py-4">
+                      <p className="font-semibold text-gray-900">{thread.title}</p>
+                      {thread.lastReplyPreview && (
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+                          {thread.lastReplyPreview}
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700">
+                      <p className="font-medium">{thread.authorName}</p>
+                      {thread.lastReplyBy && (
+                        <p className="text-xs text-gray-500">
+                          Terakhir oleh {thread.lastReplyBy}
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-center text-blue-700 font-bold">{thread.replyCount}</td>
+                    <td className="px-6 py-4 text-gray-500">
+                      <p>{thread.createdAt?.slice(0,10)}</p>
+                      {thread.lastReplyAt && (
+                        <p className="text-xs text-gray-400">
+                          Update {thread.lastReplyAt.slice(0,10)}
+                        </p>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-right">
                       <button onClick={() => openEdit(thread)} className="text-blue-600 hover:text-blue-900 p-1" title="Edit"><Edit className="w-4 h-4" /></button>
                       <button onClick={() => handleDelete(thread.id)} className="text-red-600 hover:text-red-900 p-1 ml-2" title="Hapus"><Trash2 className="w-4 h-4" /></button>
@@ -146,10 +209,9 @@ export default function AdminDiskusiPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Judul Thread</label>
                   <input type="text" className="w-full px-3 py-2 border rounded" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Penanya</label>
-                  <input type="text" className="w-full px-3 py-2 border rounded" value={form.authorName} onChange={e => setForm(f => ({ ...f, authorName: e.target.value }))} required disabled={!!editingThread} />
-                </div>
+                <p className="text-sm text-gray-500">
+                  Thread akan diposting sebagai <span className="font-semibold text-gray-700">{adminName}</span>
+                </p>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Isi Thread</label>
                   <textarea className="w-full px-3 py-2 border rounded" value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} rows={3} required />

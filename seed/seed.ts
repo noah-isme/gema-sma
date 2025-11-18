@@ -4,6 +4,37 @@ import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
+async function ensureAnnouncementSchema() {
+  await prisma.$executeRawUnsafe(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_type WHERE typname = 'AnnouncementCategory'
+      ) THEN
+        CREATE TYPE "AnnouncementCategory" AS ENUM ('KELAS', 'EVENT', 'TUGAS', 'NILAI', 'SISTEM');
+      END IF;
+    END
+    $$;
+  `)
+
+  const statements = [
+    `ALTER TABLE "announcements" ADD COLUMN IF NOT EXISTS "excerpt" TEXT`,
+    `ALTER TABLE "announcements" ADD COLUMN IF NOT EXISTS "category" "AnnouncementCategory" NOT NULL DEFAULT 'SISTEM'`,
+    `ALTER TABLE "announcements" ADD COLUMN IF NOT EXISTS "type" TEXT NOT NULL DEFAULT 'info'`,
+    `ALTER TABLE "announcements" ADD COLUMN IF NOT EXISTS "isImportant" BOOLEAN NOT NULL DEFAULT false`,
+    `ALTER TABLE "announcements" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true`,
+    `ALTER TABLE "announcements" ADD COLUMN IF NOT EXISTS "showOnHomepage" BOOLEAN NOT NULL DEFAULT false`,
+    `ALTER TABLE "announcements" ADD COLUMN IF NOT EXISTS "deadline" TIMESTAMPTZ`,
+    `ALTER TABLE "announcements" ADD COLUMN IF NOT EXISTS "link" TEXT`,
+    `ALTER TABLE "announcements" ADD COLUMN IF NOT EXISTS "views" INTEGER NOT NULL DEFAULT 0`,
+    `ALTER TABLE "announcements" ADD COLUMN IF NOT EXISTS "publishDate" TIMESTAMPTZ NOT NULL DEFAULT now()`
+  ]
+
+  for (const statement of statements) {
+    await prisma.$executeRawUnsafe(statement)
+  }
+}
+
 async function main() {
   console.log('🌱 Starting database seed...')
 
@@ -39,6 +70,11 @@ async function main() {
   }
 
   console.log('✅ Created 2 admin accounts')
+  const adminRecords = await prisma.admin.findMany({
+    where: { email: { in: admins.map((admin) => admin.email) } },
+    select: { id: true, email: true, name: true },
+  })
+  const adminMap = new Map(adminRecords.map((admin) => [admin.email, admin]))
 
   // Create student accounts (20 students)
   console.log('👨‍🎓 Creating student accounts...')
@@ -72,9 +108,15 @@ async function main() {
   }
 
   console.log('✅ Created 20 student accounts')
+  const studentRecords = await prisma.student.findMany({
+    where: { studentId: { in: students.map((student) => student.studentId) } },
+    select: { id: true, studentId: true, fullName: true },
+  })
+  const studentMap = new Map(studentRecords.map((student) => [student.studentId, student]))
 
   // Create sample announcements
   console.log('📢 Creating announcements...')
+  await ensureAnnouncementSchema()
   await prisma.announcement.createMany({
     data: [
       {
@@ -456,6 +498,152 @@ async function main() {
 
   console.log('✅ Created system settings')
 
+  // Seed discussion threads
+  console.log('💬 Seeding tutorial discussions...')
+  type ActorRef =
+    | { type: 'admin'; email: string }
+    | { type: 'student'; studentId: string }
+
+  const daysAgo = (days: number, hours = 0) =>
+    new Date(Date.now() - days * 24 * 60 * 60 * 1000 + hours * 60 * 60 * 1000)
+
+  const resolveActor = (actor: ActorRef) => {
+    if (actor.type === 'admin') {
+      const admin = adminMap.get(actor.email)
+      if (!admin) {
+        throw new Error(`Admin with email ${actor.email} not found for discussion seed`)
+      }
+      return { id: admin.id, name: admin.name ?? 'Admin GEMA' }
+    }
+
+    const student = studentMap.get(actor.studentId)
+    if (!student) {
+      throw new Error(`Student ${actor.studentId} not found for discussion seed`)
+    }
+    return { id: student.id, name: student.fullName }
+  }
+
+  const discussionSeeds: Array<{
+    id: string
+    title: string
+    owner: ActorRef
+    content: string
+    createdAt: Date
+    replies: Array<{ actor: ActorRef; content: string; createdAt: Date }>
+  }> = [
+    {
+      id: 'diskusi-hero-optimasi',
+      title: 'Optimasi animasi hero supaya tidak patah-patah',
+      owner: { type: 'student', studentId: '2025003' }, // Indah Permata
+      content:
+        'Saat scroll di landing page, animasi hero saya terasa lag. Apakah ada tips supaya elemen dekoratifnya lebih ringan?',
+      createdAt: daysAgo(4, 2),
+      replies: [
+        {
+          actor: { type: 'admin', email: 'admin.gema@smawahidiyah.edu' },
+          content:
+            'Halo Indah! Coba gunakan CSS transform + will-change dan hindari terlalu banyak blur besar. Di repo terbaru kami juga pindah ke CSS native parallax supaya JS-nya lebih ringan.',
+          createdAt: daysAgo(4, 5),
+        },
+        {
+          actor: { type: 'student', studentId: '2025010' }, // Hadi Wijaya
+          content:
+            'Aku sempat turun jumlah blur dari 80px ke 40px dan efeknya lumayan. Bisa juga compress gradient sebagai SVG.',
+          createdAt: daysAgo(3, 1),
+        },
+      ],
+    },
+    {
+      id: 'diskusi-kuis-state',
+      title: 'Simpan state jawaban kuis sebelum submit?',
+      owner: { type: 'student', studentId: '2025008' }, // Gita Sari
+      content:
+        'Kalau siswa reload halaman kuis, apakah jawaban terakhir bisa dipulihkan? Ada ide penyimpanan local storage?',
+      createdAt: daysAgo(2, 4),
+      replies: [
+        {
+          actor: { type: 'admin', email: 'admin.gema@smawahidiyah.edu' },
+          content:
+            'Di modul quiz kami pakai client storage helper (`quiz.participant:*`). Kamu bisa niru pola itu: simpan array jawaban ke localStorage lalu restore ketika komponen mount.',
+          createdAt: daysAgo(2, 6),
+        },
+        {
+          actor: { type: 'student', studentId: '2025015' }, // Oka Widodo
+          content:
+            'Aku tambahkan indicator auto-save tiap 30 detik supaya siswa tenang. Pastikan encrypt datanya kalau sensitif ya.',
+          createdAt: daysAgo(1, 3),
+        },
+        {
+          actor: { type: 'admin', email: 'admin.gema@smawahidiyah.edu' },
+          content:
+            'Kami catat sebagai feedback, nanti fitur resume progress akan dibuka di dashboard siswa.',
+          createdAt: daysAgo(1, 6),
+        },
+      ],
+    },
+    {
+      id: 'diskusi-gallery-optimasi',
+      title: 'Strategi optimasi gambar galeri kelas',
+      owner: { type: 'student', studentId: '2025005' }, // Budi Santoso
+      content:
+        'Galeri kegiatan memakai foto 3MB-an. Bagaimana workflow kompresi yang aman supaya tidak pecah?',
+      createdAt: daysAgo(3, 5),
+      replies: [
+        {
+          actor: { type: 'student', studentId: '2025012' }, // Lutfi Hakim
+          content:
+            'Aku pakai Squoosh + ubah ke WebP 80%. Selain itu set `sizes` di Next/Image supaya tidak download 1200px di mobile.',
+          createdAt: daysAgo(3, 9),
+        },
+        {
+          actor: { type: 'admin', email: 'admin.gema@smawahidiyah.edu' },
+          content:
+            'Betul, Next/Image + preset breakpoints membantu. Kita juga set quality 70 dan lazy loading.',
+          createdAt: daysAgo(2, 2),
+        },
+      ],
+    },
+  ]
+
+  for (const seed of discussionSeeds) {
+    const owner = resolveActor(seed.owner)
+    await prisma.discussionReply.deleteMany({ where: { threadId: seed.id } })
+    await prisma.discussionThread.upsert({
+      where: { id: seed.id },
+      update: {
+        title: seed.title,
+        content: seed.content,
+        authorId: owner.id,
+        authorName: owner.name,
+      },
+      create: {
+        id: seed.id,
+        title: seed.title,
+        content: seed.content,
+        authorId: owner.id,
+        authorName: owner.name,
+        createdAt: seed.createdAt,
+      },
+    })
+
+    if (seed.replies.length > 0) {
+      const replyData = seed.replies.map((reply) => {
+        const actor = resolveActor(reply.actor)
+        return {
+          threadId: seed.id,
+          authorId: actor.id,
+          authorName: actor.name,
+          content: reply.content,
+          createdAt: reply.createdAt,
+          updatedAt: reply.createdAt,
+        }
+      })
+      await prisma.discussionReply.createMany({ data: replyData })
+    }
+  }
+
+  console.log(`✅ Seeded ${discussionSeeds.length} discussion threads with lively replies`)
+
   // Create Python Coding Lab tasks
   console.log('🐍 Creating Python Coding Lab tasks...')
   
@@ -678,6 +866,7 @@ if __name__ == "__main__":
   console.log('- 4 Activities created')
   console.log('- 4 Gallery items created')
   console.log(`- ${quizzesSeeded} quizzes created (${quizQuestionsSeeded} questions, ${quizSessionsSeeded} demo sessions)`)
+  console.log('- 3 Discussion threads created')
   console.log('- 3 Python Coding Lab tasks created')
   console.log('- System settings configured')
   console.log('')
