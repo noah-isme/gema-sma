@@ -38,16 +38,27 @@ async function ensureAnnouncementSchema() {
 async function main() {
   console.log('🌱 Starting database seed...')
 
-  // Check if database already has data
+  // Check what data already exists
   const existingAdmins = await prisma.admin.count()
   const existingStudents = await prisma.student.count()
+  const existingAnnouncements = await prisma.announcement.count()
+  const existingArticles = await prisma.tutorialArticle.count()
   
-  if (existingAdmins > 0 && existingStudents > 0) {
-    console.log('✅ Database already seeded. Skipping...')
-    console.log(`   - ${existingAdmins} admins found`)
-    console.log(`   - ${existingStudents} students found`)
+  console.log('📊 Current database state:')
+  console.log(`   - Admins: ${existingAdmins}`)
+  console.log(`   - Students: ${existingStudents}`)
+  console.log(`   - Announcements: ${existingAnnouncements}`)
+  console.log(`   - Articles: ${existingArticles}`)
+  console.log('')
+  
+  // Only skip if ALL data exists (not just admins/students)
+  if (existingAdmins >= 2 && existingStudents >= 20 && existingAnnouncements >= 3 && existingArticles >= 5) {
+    console.log('✅ Database fully seeded. Skipping...')
     return
   }
+  
+  console.log('⚠️  Database incomplete. Running full seed...')
+  console.log('')
 
   let quizzesSeeded = 0
   let quizQuestionsSeeded = 0

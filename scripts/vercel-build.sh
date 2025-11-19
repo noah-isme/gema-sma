@@ -15,9 +15,9 @@ else
   echo "🗄️  DATABASE_URL found - running migrations..."
   prisma migrate deploy
   
-  # Seed database if not already seeded
-  echo "🌱 Checking if database needs seeding..."
-  npx tsx seed/seed.ts || echo "⚠️  Seeding skipped or already done"
+  # Seed database with all data
+  echo "🌱 Seeding database with all data..."
+  npx tsx scripts/seed-all-production.ts || echo "⚠️  Seeding completed with warnings"
 fi
 
 # Build Next.js application
