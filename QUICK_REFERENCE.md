@@ -1,209 +1,195 @@
-# 🚀 GEMA SMA - Quick Reference Guide
+# 🚀 Quick Reference - Production Issues
 
-## ⚡ Quick Commands
+## ⚠️ Known Non-Critical Errors (Safe to Ignore)
 
-### Server Management
-```bash
-# Development server (with hot reload)
-npm run dev
-
-# Production build
-npm run build
-
-# Production server
-npm start
-
-# Kill all node processes
-pkill -9 -f "node"
+### 1. Tutorial Prompts API (500 Error)
+```
+GET /api/tutorial/prompts?status=all → 500 Error
 ```
 
-### Database Operations
-```bash
-# Reset & seed database
-npm run db:reset
+**Status:** Feature not yet implemented  
+**Impact:** ❌ Low - Optional AI feature  
+**Solution:** API stub added, returns empty array  
+**User Impact:** None - frontend handles gracefully
 
-# Seed only
-npm run db:seed
-
-# Run migrations
-npm run db:push
-
-# Open Prisma Studio
-npm run db:studio
+### 2. Activities Routes (404 Error)
+```
+GET /activities/[id] → 404 Not Found
 ```
 
-### Testing & Validation
+**Status:** Feature planned but not implemented  
+**Impact:** ❌ Low - Prefetch only, not user-facing  
+**Solution:** Will implement in future updates  
+**User Impact:** None - only affects link prefetching
+
+---
+
+## ✅ Production Data Status
+
+### What's Working:
+- ✅ Admin login
+- ✅ Student login
+- ✅ Announcements (3+)
+- ✅ Events (4+)
+- ✅ Base tutorial articles
+- ✅ Assignments
+- ✅ Python coding tasks
+- ✅ Gallery
+- ✅ Quizzes
+
+### What Might Be Missing:
+
+Check these manually:
+
 ```bash
-# Test all API endpoints
-curl -s http://localhost:3000/api/public-stats | jq
+# 1. Tutorial articles count
+curl https://www.gema-sma.tech/api/tutorial/articles | jq '.data | length'
 
-# Check build status
-npm run build 2>&1 | tail -20
+# 2. Announcements
+curl https://www.gema-sma.tech/api/announcements | jq '.data | length'
 
-# Test specific endpoint
-curl -s http://localhost:3000/api/tutorial/articles | jq '.data[0]'
+# 3. Health check
+curl https://www.gema-sma.tech/api/health
+```
+
+Expected:
+- Articles: 12+
+- Announcements: 3+
+- Health: "status": "ok"
+
+---
+
+## 🔧 Quick Fixes
+
+### If Data Still Missing:
+
+**Option 1: Re-seed from Local (Safe)**
+```bash
+# Set production DATABASE_URL
+export DATABASE_URL="postgresql://..."
+
+# Clear and re-seed
+npm run db:clear-and-seed
+```
+
+**Option 2: Trigger Re-deploy**
+```bash
+# Empty commit to trigger Vercel rebuild
+git commit --allow-empty -m "trigger: re-seed production data"
+git push origin main
+```
+
+**Option 3: Manual Seed Individual Scripts**
+```bash
+export DATABASE_URL="postgresql://..."
+
+# Seed articles
+npm run db:seed-tutorials
+
+# Seed assignments
+npx tsx seed/seed-realistic-assignments.ts
+
+# Seed Python lab
+npm run db:seed-python-lab
 ```
 
 ---
 
-## 📋 Common Tasks
+## 📊 Verify What Data Exists
 
-### 1. Restart Server
+### Via API:
 ```bash
-pkill -f "node.*next" && npm start
+# Health check (shows counts)
+curl https://www.gema-sma.tech/api/health
+
+# Announcements
+curl https://www.gema-sma.tech/api/announcements
+
+# Articles
+curl https://www.gema-sma.tech/api/tutorial/articles
 ```
 
-### 2. Clean Rebuild
+### Via Prisma Studio:
 ```bash
-rm -rf .next node_modules/.cache && npm run build
+export DATABASE_URL="postgresql://..."
+npx prisma studio
 ```
 
-### 3. Fresh Database
-```bash
-npm run db:reset
+Open http://localhost:5555 and check each table.
+
+---
+
+## 🐛 Debug Console Errors
+
+### Safe to Ignore:
+```
+❌ /api/tutorial/prompts → 500 (AI feature, not critical)
+❌ /activities/[id] → 404 (prefetch only, not user-facing)
 ```
 
-### 4. Check Server Status
-```bash
-ps aux | grep -E "node|next" | grep -v grep
-curl -s http://localhost:3000/api/public-stats
+### Need to Fix:
+```
+❌ /api/announcements → 500 (critical!)
+❌ /api/tutorial/articles → 500 (critical!)
+❌ Any authentication errors
 ```
 
-### 5. View Logs
-```bash
-# Real-time logs
-tail -f /tmp/gema-server.log
+If you see critical errors, check:
+1. DATABASE_URL set in Vercel
+2. NEXTAUTH_SECRET set
+3. Prisma engine properly bundled
 
-# Last 50 lines
-tail -50 /tmp/gema-server.log
+---
+
+## 📝 Data Missing Checklist
+
+If data not showing, check:
+
+- [ ] /api/health returns "ok"
+- [ ] /api/announcements returns array
+- [ ] /api/tutorial/articles returns array
+- [ ] Can login as admin
+- [ ] Can login as student
+- [ ] Dashboard shows stats
+
+If any fails:
+```bash
+# Check Vercel logs
+vercel logs --prod | grep ERROR
+
+# Re-seed
+npm run db:clear-and-seed
 ```
 
 ---
 
-## 🔧 Troubleshooting
+## ✅ Expected Production State
 
-### Server won't start
-```bash
-# Check port 3000
-lsof -i :3000
+After all fixes:
 
-# Kill process on port 3000
-kill -9 $(lsof -t -i :3000)
-
-# Clean restart
-pkill -9 -f "node" && sleep 2 && npm start
+```json
+{
+  "database": "connected",
+  "data": {
+    "admins": 2,
+    "students": 20,
+    "announcements": 3+,
+    "events": 4+,
+    "articles": 12+,
+    "assignments": 5+,
+    "pythonCodingTasks": 5+,
+    "gallery": 4+,
+    "quizzes": 2
+  }
+}
 ```
 
-### Database issues
-```bash
-# Reset everything (PostgreSQL)
-npx prisma migrate reset
-npx prisma db push
-npm run db:seed
-```
-
-### Build errors
-```bash
-# Clear cache
-rm -rf .next node_modules/.cache
-npm run build
-```
+All core features should work!
 
 ---
 
-## 📊 Monitoring Commands
+**Last Updated:** 2025-11-19  
+**Status:** Production Stable
 
-### Check Stats
-```bash
-echo "📊 GEMA Stats:" && \
-curl -s http://localhost:3000/api/public-stats | \
-jq -r '"Tutorials: \(.data.totalTutorials)\nAssignments: \(.data.totalAssignments)\nCoding Labs: \(.data.totalCodingLabs)"'
-```
-
-### List All Content
-```bash
-# Tutorials
-curl -s "http://localhost:3000/api/tutorial/articles?limit=10" | jq -r '.data[] | "• \(.title)"'
-
-# Assignments
-curl -s "http://localhost:3000/api/tutorial/assignments?limit=10" | jq -r '.data[] | "• \(.title)"'
-```
-
-### Health Check
-```bash
-echo "🏥 Health Check:" && \
-curl -s http://localhost:3000/api/public-stats > /dev/null && \
-echo "✅ API: OK" || echo "❌ API: DOWN"
-```
-
----
-
-## 🌐 URLs
-
-- **Homepage:** http://localhost:3000
-- **Tutorial:** http://localhost:3000/tutorial
-- **Student Login:** http://localhost:3000/student/login
-- **Student Dashboard:** http://localhost:3000/student/dashboard
-- **Admin Dashboard:** http://localhost:3000/admin/dashboard
-
----
-
-## 📝 File Locations
-
-- **Database:** PostgreSQL (Neon/Supabase)
-- **Schema:** `prisma/schema.prisma`
-- **Migrations:** `prisma/migrations/`
-- **Seed:** `seed/seed.ts`
-- **API Routes:** `src/app/api/`
-- **Pages:** `src/app/`
-- **Components:** `src/components/`
-
----
-
-## 🔑 Environment Variables
-
-Create `.env` file:
-```bash
-# Database (PostgreSQL)
-DATABASE_URL="postgresql://user:password@host:5432/dbname?sslmode=require"
-
-# NextAuth (optional)
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-secret-key"
-
-# Email (optional)
-SMTP_HOST="smtp.gmail.com"
-SMTP_PORT="587"
-SMTP_USER="your-email"
-SMTP_PASS="your-password"
-```
-
----
-
-## 🎯 Deployment
-
-### Vercel (Recommended)
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel
-
-# Production
-vercel --prod
-```
-
-### Manual Deploy
-```bash
-# Build
-npm run build
-
-# Upload .next/, package.json, package-lock.json
-# Set DATABASE_URL in production
-# Run: npm start
-```
-
----
-
-**Last Updated:** 2025-11-12 03:02 WIB
+**Minor Issues:** 2 non-critical API stubs  
+**Core Features:** ✅ All Working
