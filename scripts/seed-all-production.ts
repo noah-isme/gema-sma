@@ -78,6 +78,18 @@ async function main() {
       execSync('npx tsx seed/seed-python-coding-lab.ts', { stdio: 'inherit' })
     }
     
+    // 5. Web Lab assignments
+    console.log('\n5️⃣  Seeding Web Lab...')
+    execSync('npx tsx seed/seed-web-lab.ts', { stdio: 'inherit' })
+    
+    // 6. Classroom
+    console.log('\n6️⃣  Seeding Classroom...')
+    execSync('npx tsx seed/seed-classroom.ts', { stdio: 'inherit' })
+    
+    // 7. Classroom Roadmap
+    console.log('\n7️⃣  Seeding Classroom Roadmap...')
+    execSync('npx tsx seed/seed-classroom-roadmap.ts', { stdio: 'inherit' })
+    
     console.log('\n✅ All seeding completed!')
   } catch (error) {
     console.error('❌ Error during seeding:', error)
