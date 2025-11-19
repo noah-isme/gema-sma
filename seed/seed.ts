@@ -42,7 +42,7 @@ async function main() {
   const existingAdmins = await prisma.admin.count()
   const existingStudents = await prisma.student.count()
   const existingAnnouncements = await prisma.announcement.count()
-  const existingArticles = await prisma.tutorialArticle.count()
+  const existingArticles = await prisma.article.count()
   
   console.log('📊 Current database state:')
   console.log(`   - Admins: ${existingAdmins}`)
