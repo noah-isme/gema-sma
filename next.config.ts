@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Serverless function configuration for Prisma
+  outputFileTracing: true,
+  
   // Image optimization
   images: {
     domains: ['localhost', 'images.unsplash.com'],
@@ -21,7 +24,15 @@ const nextConfig: NextConfig = {
   // Experimental features for better performance
   experimental: {
     optimizeCss: true,
-    optimizePackageImports: ['lucide-react', 'framer-motion', '@prisma/client'],
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
+  },
+  
+  // Webpack configuration for Prisma
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals.push('@prisma/client')
+    }
+    return config
   },
   
   // Compiler optimizations
