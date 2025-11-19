@@ -13,7 +13,7 @@ async function checkDatabaseState() {
     events: await prisma.event.count(),
     articles: await prisma.article.count(),
     assignments: await prisma.assignment.count(),
-    codingTasks: await prisma.codingTask.count(),
+    codingTasks: await prisma.codingLabTask.count(),
     quizzes: await prisma.quiz.count()
   }
   
