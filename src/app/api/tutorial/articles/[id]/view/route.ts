@@ -4,10 +4,10 @@ import { prisma } from '@/lib/prisma';
 // POST /api/tutorial/articles/[id]/view - Increment view count
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Increment view count
     const article = await prisma.article.update({

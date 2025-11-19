@@ -36,7 +36,7 @@ interface Assignment {
 type DerivedStatus = 'pending' | 'in_progress' | 'completed' | 'overdue'
 type AssignmentGroup = 'urgent' | 'overdue' | 'in_progress' | 'pending' | 'completed'
 
-type ProcessedAssignment = Assignment & {
+type ProcessedAssignment = Omit<Assignment, 'dueDate'> & {
   dueDate: Date | null
   diffDays: number | null
   derivedStatus: DerivedStatus

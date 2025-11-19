@@ -825,7 +825,7 @@ export default function StudentDashboardPage() {
       transition: {
         delay,
         duration: variant === 'card' ? 0.38 : 0.6,
-        ease: variant === 'card' ? [0.16, 1, 0.3, 1] : 'easeOut'
+        ease: variant === 'card' ? [0.16, 1, 0.3, 1] as const : [0.4, 0.0, 0.2, 1] as const
       }
     }
   }

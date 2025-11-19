@@ -21,11 +21,12 @@ const baseThreadInclude = {
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const { id } = await params;
     const thread = await prisma.discussionThread.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: baseThreadInclude,
     });
 
@@ -65,7 +66,7 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -76,9 +77,10 @@ export async function PUT(
       );
     }
 
+    const { id } = await params;
     const { title, content } = await req.json();
     const updated = await prisma.discussionThread.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(title ? { title } : {}),
         ...(typeof content !== "undefined" ? { content } : {}),
@@ -103,7 +105,7 @@ export async function PUT(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -114,7 +116,8 @@ export async function DELETE(
       );
     }
 
-    await prisma.discussionThread.delete({ where: { id: params.id } });
+    const { id } = await params;
+    await prisma.discussionThread.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to delete discussion thread:", error);

@@ -16,8 +16,8 @@ const formatFullDate = (value: string) =>
     timeStyle: "short",
   });
 
-const buildBaseUrl = () => {
-  const headersList = headers();
+const buildBaseUrl = async () => {
+  const headersList = await headers();
   const protocol = headersList.get("x-forwarded-proto") ?? "http";
   const host =
     headersList.get("x-forwarded-host") ?? headersList.get("host") ?? "localhost:3000";
@@ -25,7 +25,7 @@ const buildBaseUrl = () => {
 };
 
 const fetchThread = async (id: string): Promise<DiscussionThreadDetailDTO | null> => {
-  const baseUrl = buildBaseUrl();
+  const baseUrl = await buildBaseUrl();
   const res = await fetch(`${baseUrl}/api/discussion/threads/${id}`, {
     cache: "no-store",
   });
@@ -45,9 +45,10 @@ const fetchThread = async (id: string): Promise<DiscussionThreadDetailDTO | null
 export default async function DiscussionDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const thread = await fetchThread(params.id);
+  const { id } = await params;
+  const thread = await fetchThread(id);
 
   if (!thread) {
     notFound();

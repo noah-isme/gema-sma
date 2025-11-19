@@ -45,3 +45,24 @@ coverage/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Testing
+test-results/
+playwright-report/
+*.spec.ts
+*.test.ts
+
+# Documentation (optional, keep if you want docs in deployment)
+# *.md
+# docs/
+
+# Database files
+*.db
+*.db-journal
+dev.db
+prisma/dev.db
+
+# Temporary files
+temp/
+tmp/
+*.tmp

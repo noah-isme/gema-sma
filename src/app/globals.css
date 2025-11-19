@@ -6163,6 +6163,7 @@ dotlottie-wc {
   display: block !important;
   width: 100% !important;
   height: 100% !important;
+  pointer-events: none !important;
 }
 
 /* Target canvas inside dotlottie-wc shadow DOM */
@@ -6175,17 +6176,20 @@ dotlottie-wc::part(animation) {
 .hero-lottie dotlottie-wc {
   min-width: 600px !important;
   min-height: 600px !important;
+  pointer-events: none !important;
 }
 
 @media (max-width: 768px) {
   .hero-lottie dotlottie-wc {
     min-width: 300px !important;
     min-height: 300px !important;
+    pointer-events: none !important;
   }
   
   /* Prevent overflow on mobile */
   .hero-lottie {
     max-width: 100%;
     overflow: hidden;
+    pointer-events: none;
   }
 }

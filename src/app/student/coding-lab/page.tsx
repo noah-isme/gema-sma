@@ -122,7 +122,7 @@ const codingLabTourSteps: TourStep[] = [
   }
 ]
 
-type HeroStat = { label: string; value: string | number; icon: JSX.Element }
+type HeroStat = { label: string; value: string | number; icon: React.ReactElement }
 
 type ProgressSummary = {
   total: number

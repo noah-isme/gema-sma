@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const tagsArray = tags ? tags.split(',').map(t => t.trim()) : [];
 
     // Build filter object with proper Prisma types
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     // Add status filter only if not 'all'
     if (status && status !== 'all') {

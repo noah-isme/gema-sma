@@ -12,7 +12,7 @@ export function useAnimatedAuthBackground() {
 
     const root = document.documentElement
     let frame = 0
-    let start = performance.now()
+    const start = performance.now()
 
     const animate = (time: number) => {
       const elapsed = (time - start) / 1000

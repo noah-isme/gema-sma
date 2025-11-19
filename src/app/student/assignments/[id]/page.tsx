@@ -84,9 +84,6 @@ const typeDisplayMap: Record<AssignmentType, { chip: string; cta: string; descri
 
 const detectAssignmentType = (assignment?: Assignment | null): AssignmentType => {
   if (!assignment) return 'presentation'
-  if (assignment.type && typeDisplayMap[assignment.type as AssignmentType]) {
-    return assignment.type as AssignmentType
-  }
   const title = assignment.title.toLowerCase()
   if (title.includes('makalah')) return 'paper'
   if (title.includes('esai')) return 'essay'

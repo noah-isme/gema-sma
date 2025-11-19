@@ -2,6 +2,50 @@
 
 ## Common Issues & Solutions
 
+### 0. Build Error: DATABASE_URL Not Found (P1012)
+
+**Problem:** Build fails with error: `Environment variable not found: DATABASE_URL`
+
+**Root Cause:** 
+- Vercel runs `prisma migrate deploy` during build but DATABASE_URL is not available
+- This happens on preview deployments or when database is not configured yet
+
+**Solution Implemented:**
+
+We created a conditional build script that skips database migration if DATABASE_URL is not set:
+
+```bash
+# scripts/vercel-build.sh
+- Generates Prisma Client (required)
+- Checks if DATABASE_URL exists
+- Runs migrations only if DATABASE_URL is set
+- Builds Next.js application
+```
+
+**Setup in Vercel:**
+
+1. **For Production Deployment (with database):**
+   ```bash
+   # Add in Vercel Environment Variables:
+   DATABASE_URL="postgresql://user:password@host:5432/database"
+   ```
+
+2. **For Preview Deployment (without database):**
+   - No DATABASE_URL needed
+   - Build will succeed, migrations skipped
+   - App will run with mock data
+
+**Testing Locally:**
+```bash
+# Test build without database
+unset DATABASE_URL
+npm run vercel-build
+
+# Test build with database
+export DATABASE_URL="file:./dev.db"
+npm run vercel-build
+```
+
 ### 1. API 500 Errors on Vercel
 
 **Problem:** `/api/public-stats` and `/api/public` return 500 errors

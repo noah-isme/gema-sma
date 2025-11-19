@@ -149,6 +149,36 @@ Sudah termasuk dalam project:
 - ✅ JavaScript bundling
 - ✅ Gzip compression
 
+## 🔧 Troubleshooting Build Errors
+
+### Error: DATABASE_URL not found (P1012)
+
+**Problem:** Build fails with `Environment variable not found: DATABASE_URL`
+
+**Solution:** Project sudah dilengkapi dengan conditional build script:
+- `scripts/vercel-build.sh` - Automatically skips migrations if DATABASE_URL not set
+- Build akan sukses untuk preview deployment tanpa database
+- Untuk production, tambahkan DATABASE_URL di Vercel environment variables
+
+**Deploy without database (preview):**
+```bash
+vercel  # Build will succeed, migrations skipped
+```
+
+**Deploy with database (production):**
+```bash
+# 1. Add DATABASE_URL to Vercel env vars
+# 2. Deploy
+vercel --prod  # Build will run migrations
+```
+
+### TypeScript Lint Errors
+
+All TypeScript lint errors sudah diperbaiki:
+- ✅ Fixed `@typescript-eslint/no-explicit-any` errors
+- ✅ Fixed `prefer-const` warnings
+- ✅ Code ready for production build
+
 ## 🎉 Success!
 
 Setelah deployment berhasil, landing page GEMA akan tersedia di:

@@ -1169,21 +1169,21 @@ export default function HomePage() {
             </div>
 
             {/* Right Column - Lottie Animation (Asymmetric 45%) */}
-            <div className="relative flex-1 md:w-[45%]" data-parallax="0.25">
+            <div className="relative flex-1 md:w-[45%] pointer-events-none" data-parallax="0.25">
               <div 
                 ref={lottieContainerRef}
-                className="relative flex items-center justify-center"
+                className="relative flex items-center justify-center pointer-events-none"
               >
                 {/* Decorative joyful blobs */}
-                <div className="absolute -left-16 top-20 h-64 w-64 bg-[#6366F1]/25 blur-3xl blob-shape-1 animate-breathe" data-parallax="0.3" />
-                <div className="absolute -right-12 bottom-16 h-52 w-52 bg-[#22D3EE]/25 blur-3xl blob-shape-2 animate-breathe" data-parallax="0.28" style={{ animationDelay: '1s' }} />
-                <div className="absolute top-40 right-20 h-40 w-40 bg-[#FBBF24]/20 blur-2xl blob-shape-3 animate-breathe" data-parallax="0.32" style={{ animationDelay: '2s' }} />
+                <div className="absolute -left-16 top-20 h-64 w-64 bg-[#6366F1]/25 blur-3xl blob-shape-1 animate-breathe pointer-events-none" data-parallax="0.3" />
+                <div className="absolute -right-12 bottom-16 h-52 w-52 bg-[#22D3EE]/25 blur-3xl blob-shape-2 animate-breathe pointer-events-none" data-parallax="0.28" style={{ animationDelay: '1s' }} />
+                <div className="absolute top-40 right-20 h-40 w-40 bg-[#FBBF24]/20 blur-2xl blob-shape-3 animate-breathe pointer-events-none" data-parallax="0.32" style={{ animationDelay: '2s' }} />
                 
                 {/* Lottie Animation Container - Scaled 2x desktop, 1.2x mobile */}
-                <div className="hero-lottie relative z-10 scale-[1.2] md:scale-[2]" style={{ transformOrigin: 'center' }}>
+                <div className="hero-lottie relative z-10 scale-[1.2] md:scale-[2] pointer-events-none" style={{ transformOrigin: 'center' }}>
                   <dotlottie-wc 
                     src="https://lottie.host/3d2f4808-10b3-440a-bed8-687a32569b66/kxkNTFuOxU.lottie"
-                    style={{ width: '500px', height: '500px' } as CSSProperties}
+                    style={{ width: '500px', height: '500px', pointerEvents: 'none' } as CSSProperties}
                     autoplay 
                     loop
                   />
@@ -1191,21 +1191,21 @@ export default function HomePage() {
 
                 {/* Floating badges - Hidden on mobile to avoid collision */}
                 <div 
-                  className="floating-card absolute -left-8 top-24 animate-float p-4 shadow-brand-lg hover-lift cursor-pointer group hidden md:block" 
+                  className="floating-card absolute left-4 top-24 animate-float p-4 shadow-brand-lg hover-lift cursor-pointer group hidden md:block pointer-events-auto" 
                   style={{ animationDelay: '0s' }}
                   title="Coding Lab Interactive"
                 >
                   <Code2 className="h-8 w-8 text-[#4F46E5] transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12" />
                 </div>
                 <div 
-                  className="floating-card absolute -right-4 top-40 animate-float p-4 shadow-cyan-md hover-lift cursor-pointer group hidden md:block" 
+                  className="floating-card absolute -right-4 top-40 animate-float p-4 shadow-cyan-md hover-lift cursor-pointer group hidden md:block pointer-events-auto" 
                   style={{ animationDelay: '1s' }}
                   title="Sparkles & Magic"
                 >
                   <Sparkles className="h-8 w-8 text-[#22D3EE] transition-transform duration-300 group-hover:scale-125 group-hover:rotate-180" />
                 </div>
                 <div 
-                  className="floating-card absolute bottom-32 left-12 animate-float p-4 shadow-warm-md hover-lift cursor-pointer group hidden md:block" 
+                  className="floating-card absolute bottom-32 left-12 animate-float p-4 shadow-warm-md hover-lift cursor-pointer group hidden md:block pointer-events-auto" 
                   style={{ animationDelay: '2s' }}
                   title="Achievement Unlocked"
                 >

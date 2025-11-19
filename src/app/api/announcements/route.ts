@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     const isActive = searchParams.get("isActive");
     const showOnHomepage = searchParams.get("showOnHomepage");
 
-    const where: any = {};
+    const where: Record<string, string | boolean> = {};
 
     if (category && category !== "all") {
       where.category = category.toUpperCase();
