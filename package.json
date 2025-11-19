@@ -12,6 +12,8 @@
     "db:migrate": "prisma migrate deploy",
     "db:seed": "npx tsx seed/seed.ts",
     "db:seed-prod": "bash scripts/seed-production.sh",
+    "db:reset-admin": "npx tsx scripts/reset-admin-password.ts",
+    "db:reset-student": "npx tsx scripts/reset-student-password.ts",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "vercel-build": "bash scripts/vercel-build.sh",
