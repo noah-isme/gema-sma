@@ -13,7 +13,8 @@ async function checkDatabaseState() {
     events: await prisma.event.count(),
     articles: await prisma.article.count(),
     assignments: await prisma.assignment.count(),
-    codingTasks: await prisma.codingLabTask.count(),
+    codingLabTasks: await prisma.codingLabTask.count(),
+    pythonCodingTasks: await prisma.pythonCodingTask.count(),
     quizzes: await prisma.quiz.count()
   }
   
@@ -35,31 +36,59 @@ async function main() {
   // Check initial state
   const initialState = await checkDatabaseState()
   
-  console.log('📝 Running comprehensive seed...')
+  // Check if ALL data is complete
+  const isFullySeeded = initialState.admins >= 2 && 
+                        initialState.students >= 20 && 
+                        initialState.announcements >= 3 &&
+                        initialState.articles >= 5 &&
+                        initialState.assignments >= 5 &&
+                        initialState.pythonCodingTasks >= 3
+  
+  if (isFullySeeded) {
+    console.log('✅ Database already fully seeded. Skipping...')
+    return
+  }
+  
+  console.log('⚠️  Database incomplete. Running seed...')
   console.log('')
   
-  // Import and run seed scripts
-  // We'll just run the main seed which should handle everything
-  // The seed.ts has been updated to check for incomplete data
+  // Import seed modules
+  const { execSync } = require('child_process')
   
-  // For now, let's use a simpler approach:
-  // Force re-run seed.ts with better logic
+  try {
+    // 1. Main seed (admins, students, announcements, events, etc)
+    console.log('1️⃣  Seeding base data...')
+    execSync('npx tsx seed/seed.ts', { stdio: 'inherit' })
+    
+    // 2. Tutorial articles (if not exist)
+    if (initialState.articles === 0) {
+      console.log('\n2️⃣  Seeding tutorial articles...')
+      execSync('npx tsx seed/seed-tutorial-articles.ts', { stdio: 'inherit' })
+    }
+    
+    // 3. Assignments (if not exist)
+    if (initialState.assignments === 0) {
+      console.log('\n3️⃣  Seeding assignments...')
+      execSync('npx tsx seed/seed-realistic-assignments.ts', { stdio: 'inherit' })
+    }
+    
+    // 4. Python Coding lab (if not exist)
+    if (initialState.pythonCodingTasks === 0) {
+      console.log('\n4️⃣  Seeding Python coding lab...')
+      execSync('npx tsx seed/seed-python-coding-lab.ts', { stdio: 'inherit' })
+    }
+    
+    console.log('\n✅ All seeding completed!')
+  } catch (error) {
+    console.error('❌ Error during seeding:', error)
+    // Don't throw, let build continue
+  }
   
-  console.log('✅ Note: Run individual seed scripts manually if needed:')
-  console.log('   - npm run db:seed-tutorials')
-  console.log('   - npm run db:seed-python-lab')
-  console.log('   - npm run db:seed-announcements')
   console.log('')
-  console.log('Or better: Clear and re-seed from scratch')
-  console.log('')
-  
   console.log('═'.repeat(50))
-  console.log('📊 Current database state:')
+  console.log('📊 Final database state:')
   console.log('═'.repeat(50))
   await checkDatabaseState()
-  
-  console.log('💡 Recommendation: Run `npm run db:clear-and-seed` for fresh data')
-  console.log('')
 }
 
 main()
