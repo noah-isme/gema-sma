@@ -6,6 +6,7 @@ import { useRouter, useParams } from 'next/navigation'
 import StudentLayout from '@/components/student/StudentLayout'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import { studentAuth } from '@/lib/student-auth'
+import type { editor } from 'monaco-editor'
 import {
   AlertCircle,
   AlertTriangle,
@@ -128,7 +129,7 @@ export default function PythonCodingTaskPage() {
   const [toast, setToast] = useState<{ type: 'success' | 'info'; text: string } | null>(null)
   const [isCodeRestored, setIsCodeRestored] = useState(false)
   const [editorKey, setEditorKey] = useState(0)
-  const editorRef = useRef<{ getValue: () => string; setValue: (value: string) => void; getPosition: () => unknown; setPosition: (position: unknown) => void; focus: () => void } | null>(null)
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
 
   const autosaveKey = useMemo(() => {
     if (!task) return ''
