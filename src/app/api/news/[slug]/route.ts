@@ -4,10 +4,10 @@ import { prisma } from '@/lib/prisma'
 // GET /api/news/[slug] - Get single news article by slug
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  context: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const slug = params.slug;
+    const { slug } = await context.params;
 
     if (!slug) {
       return NextResponse.json(

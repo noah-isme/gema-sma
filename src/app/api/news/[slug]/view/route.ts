@@ -4,10 +4,10 @@ import { prisma } from '@/lib/prisma'
 // POST /api/news/[slug]/view - Increment view count
 export async function POST(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  context: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const slug = params.slug;
+    const { slug } = await context.params;
 
     if (!slug) {
       return NextResponse.json(
