@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import StudentLayout from '@/components/student/StudentLayout'
 import Breadcrumb from '@/components/ui/Breadcrumb'
@@ -126,6 +126,9 @@ export default function PythonCodingTaskPage() {
 
   const [lastAction, setLastAction] = useState<'run' | 'submit' | null>(null)
   const [toast, setToast] = useState<{ type: 'success' | 'info'; text: string } | null>(null)
+  const [isCodeRestored, setIsCodeRestored] = useState(false)
+  const [editorKey, setEditorKey] = useState(0)
+  const editorRef = useRef<any>(null)
 
   const autosaveKey = useMemo(() => {
     if (!task) return ''
@@ -191,20 +194,24 @@ export default function PythonCodingTaskPage() {
   }, [toast])
 
   useEffect(() => {
-    if (!task) return
+    if (!task || isCodeRestored) return
 
     if (typeof window !== 'undefined' && autosaveKey) {
       const savedCode = localStorage.getItem(autosaveKey)
       if (savedCode) {
         setCode(savedCode)
         setAutosaveMessage('Draft dipulihkan dari autosave')
+        setIsCodeRestored(true)
+        setEditorKey(prev => prev + 1) // Force editor remount with restored code
+      } else {
+        setIsCodeRestored(true)
       }
     }
 
     if (task.testCases?.length) {
       setActiveTestCaseId(task.testCases[0].id)
     }
-  }, [task, autosaveKey])
+  }, [task, autosaveKey, isCodeRestored])
 
   useEffect(() => {
     if (!task || !autosaveKey) return
@@ -553,16 +560,21 @@ export default function PythonCodingTaskPage() {
 
               <div className="python-editor-shell">
                 <Editor
+                  key={editorKey}
                   language="python"
                   theme={editorTheme}
                   value={code}
                   onChange={(value) => setCode(value || '')}
+                  onMount={(editor) => {
+                    editorRef.current = editor
+                  }}
                   options={{
                     minimap: { enabled: false },
                     fontFamily: 'JetBrains Mono, Fira Code, monospace',
                     fontSize: 14,
                     scrollBeyondLastLine: false,
-                    smoothScrolling: true
+                    smoothScrolling: true,
+                    automaticLayout: true
                   }}
                   height="480px"
                 />

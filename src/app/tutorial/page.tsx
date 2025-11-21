@@ -86,11 +86,10 @@ interface QuizApiItem {
   };
 }
 
-type TabType = "berita" | "artikel" | "prompt" | "kuis" | "diskusi";
+type TabType = "artikel" | "prompt" | "kuis" | "diskusi";
 
 const categories = [
   { id: "artikel", label: "Artikel", icon: FileText, color: "#06B6D4", emoji: "📄" },
-  { id: "berita", label: "Berita", icon: Newspaper, color: "#6366F1", emoji: "📰" },
 ];
 
 // Category aliases for flexible matching
@@ -272,12 +271,6 @@ export default function TutorialPage() {
         const articleCategory = article.category?.toLowerCase() || '';
         return articleCategory === 'tutorial' || articleCategory === 'article' || articleCategory === 'artikel';
       });
-    } else if (activeTab === 'berita') {
-      // Show only news articles
-      filtered = articles.filter((article) => {
-        const articleCategory = article.category?.toLowerCase() || '';
-        return articleCategory === 'news' || articleCategory === 'berita';
-      });
     }
 
     // Apply tag filter if tags are selected
@@ -390,6 +383,26 @@ export default function TutorialPage() {
           >
             Artikel, Prompt, Kuis, dan Diskusi — terus berkembang tiap minggu ✨
           </motion.p>
+
+          {/* Link to News Page */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mt-4"
+          >
+            <Link href="/news">
+              <motion.button
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#6366F1] to-[#EC4899] text-white font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-300"
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Newspaper className="w-4 h-4" />
+                Lihat Berita
+                <ArrowRight className="w-4 h-4" />
+              </motion.button>
+            </Link>
+          </motion.div>
         </div>
       </section>
 

@@ -1090,6 +1090,15 @@ export default function HomePage() {
                     Lihat Tutorial
                   </Link>
                   <Link
+                    href="/news"
+                    className="group inline-flex items-center gap-3 rounded-full border-2 border-[#6366F1]/30 bg-white/90 px-6 py-3 font-inter text-base font-semibold text-[#6366F1] backdrop-blur-sm transition-all duration-300 hover:border-[#6366F1] hover:bg-[#6366F1]/10 hover:shadow-brand-md dark:border-[#EC4899]/30 dark:bg-slate-700/90 dark:text-[#EC4899] dark:hover:border-[#EC4899] dark:hover:bg-[#EC4899]/10 focus-visible:outline focus-visible:outline-4 focus-visible:outline-[#6366F1]"
+                    aria-label="Lihat berita terkini GEMA"
+                    role="button"
+                  >
+                    <Megaphone className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" aria-hidden="true" />
+                    Lihat Berita
+                  </Link>
+                  <Link
                     href="/gallery"
                     className="group inline-flex items-center gap-2 font-inter text-sm font-medium text-slate-700 transition-all duration-300 hover:text-[#EC4899] dark:text-slate-300 dark:hover:text-[#F472B6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#EC4899]"
                     aria-label="Lihat galeri kegiatan GEMA"

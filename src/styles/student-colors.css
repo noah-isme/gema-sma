@@ -1,0 +1,464 @@
+/**
+ * Student Dashboard Color System
+ * Ensuring proper contrast for readability
+ * Light backgrounds → Dark text
+ * Dark backgrounds → Light text
+ */
+
+/* ============================================
+   BASE COLOR VARIABLES
+   ============================================ */
+
+:root {
+  /* Primary Brand Colors */
+  --student-primary: #06B6D4;
+  --student-primary-dark: #0891B2;
+  --student-primary-light: #22D3EE;
+  
+  /* Background Colors - Light Mode */
+  --student-bg-main: #F8FAFC;
+  --student-bg-card: #FFFFFF;
+  --student-bg-hover: #F1F5F9;
+  --student-bg-active: #E2E8F0;
+  
+  /* Text Colors - Light Mode */
+  --student-text-primary: #0F172A;
+  --student-text-secondary: #475569;
+  --student-text-muted: #64748B;
+  --student-text-disabled: #94A3B8;
+  
+  /* Border Colors */
+  --student-border: #E2E8F0;
+  --student-border-hover: #CBD5E1;
+  
+  /* Accent Colors with Contrast */
+  --student-blue-bg: #EFF6FF;
+  --student-blue-text: #1E40AF;
+  --student-blue-icon: #3B82F6;
+  
+  --student-purple-bg: #F5F3FF;
+  --student-purple-text: #6D28D9;
+  --student-purple-icon: #8B5CF6;
+  
+  --student-green-bg: #F0FDF4;
+  --student-green-text: #166534;
+  --student-green-icon: #22C55E;
+  
+  --student-orange-bg: #FFF7ED;
+  --student-orange-text: #C2410C;
+  --student-orange-icon: #F97316;
+  
+  --student-pink-bg: #FDF2F8;
+  --student-pink-text: #BE185D;
+  --student-pink-icon: #EC4899;
+  
+  --student-cyan-bg: #ECFEFF;
+  --student-cyan-text: #0E7490;
+  --student-cyan-icon: #06B6D4;
+  
+  /* Status Colors */
+  --student-success-bg: #F0FDF4;
+  --student-success-text: #166534;
+  --student-success-border: #BBF7D0;
+  
+  --student-warning-bg: #FFFBEB;
+  --student-warning-text: #92400E;
+  --student-warning-border: #FDE68A;
+  
+  --student-error-bg: #FEF2F2;
+  --student-error-text: #991B1B;
+  --student-error-border: #FECACA;
+  
+  --student-info-bg: #EFF6FF;
+  --student-info-text: #1E40AF;
+  --student-info-border: #BFDBFE;
+}
+
+/* Dark Mode Colors */
+.dark {
+  /* Background Colors - Dark Mode */
+  --student-bg-main: #0F172A;
+  --student-bg-card: #1E293B;
+  --student-bg-hover: #334155;
+  --student-bg-active: #475569;
+  
+  /* Text Colors - Dark Mode */
+  --student-text-primary: #F1F5F9;
+  --student-text-secondary: #CBD5E1;
+  --student-text-muted: #94A3B8;
+  --student-text-disabled: #64748B;
+  
+  /* Border Colors - Dark Mode */
+  --student-border: #334155;
+  --student-border-hover: #475569;
+  
+  /* Accent Colors - Dark Mode */
+  --student-blue-bg: #1E3A8A;
+  --student-blue-text: #BFDBFE;
+  --student-blue-icon: #60A5FA;
+  
+  --student-purple-bg: #581C87;
+  --student-purple-text: #E9D5FF;
+  --student-purple-icon: #A78BFA;
+  
+  --student-green-bg: #166534;
+  --student-green-text: #BBF7D0;
+  --student-green-icon: #4ADE80;
+  
+  --student-orange-bg: #9A3412;
+  --student-orange-text: #FED7AA;
+  --student-orange-icon: #FB923C;
+  
+  --student-pink-bg: #9F1239;
+  --student-pink-text: #FBCFE8;
+  --student-pink-icon: #F472B6;
+  
+  --student-cyan-bg: #164E63;
+  --student-cyan-text: #A5F3FC;
+  --student-cyan-icon: #22D3EE;
+  
+  /* Status Colors - Dark Mode */
+  --student-success-bg: #14532D;
+  --student-success-text: #BBF7D0;
+  --student-success-border: #166534;
+  
+  --student-warning-bg: #78350F;
+  --student-warning-text: #FDE68A;
+  --student-warning-border: #92400E;
+  
+  --student-error-bg: #7F1D1D;
+  --student-error-text: #FECACA;
+  --student-error-border: #991B1B;
+  
+  --student-info-bg: #1E3A8A;
+  --student-info-text: #BFDBFE;
+  --student-info-border: #1E40AF;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Backgrounds */
+.student-bg-main { background-color: var(--student-bg-main); }
+.student-bg-card { background-color: var(--student-bg-card); }
+.student-bg-hover:hover { background-color: var(--student-bg-hover); }
+.student-bg-active { background-color: var(--student-bg-active); }
+
+/* Text Colors */
+.student-text-primary { color: var(--student-text-primary); }
+.student-text-secondary { color: var(--student-text-secondary); }
+.student-text-muted { color: var(--student-text-muted); }
+.student-text-disabled { color: var(--student-text-disabled); }
+
+/* Borders */
+.student-border { border-color: var(--student-border); }
+.student-border-hover:hover { border-color: var(--student-border-hover); }
+
+/* Accent Backgrounds & Text */
+.student-blue-card { 
+  background-color: var(--student-blue-bg); 
+  color: var(--student-blue-text); 
+}
+
+.student-purple-card { 
+  background-color: var(--student-purple-bg); 
+  color: var(--student-purple-text); 
+}
+
+.student-green-card { 
+  background-color: var(--student-green-bg); 
+  color: var(--student-green-text); 
+}
+
+.student-orange-card { 
+  background-color: var(--student-orange-bg); 
+  color: var(--student-orange-text); 
+}
+
+.student-pink-card { 
+  background-color: var(--student-pink-bg); 
+  color: var(--student-pink-text); 
+}
+
+.student-cyan-card { 
+  background-color: var(--student-cyan-bg); 
+  color: var(--student-cyan-text); 
+}
+
+/* Status Badges */
+.student-badge-success {
+  background-color: var(--student-success-bg);
+  color: var(--student-success-text);
+  border: 1px solid var(--student-success-border);
+}
+
+.student-badge-warning {
+  background-color: var(--student-warning-bg);
+  color: var(--student-warning-text);
+  border: 1px solid var(--student-warning-border);
+}
+
+.student-badge-error {
+  background-color: var(--student-error-bg);
+  color: var(--student-error-text);
+  border: 1px solid var(--student-error-border);
+}
+
+.student-badge-info {
+  background-color: var(--student-info-bg);
+  color: var(--student-info-text);
+  border: 1px solid var(--student-info-border);
+}
+
+/* ============================================
+   COMPONENT SPECIFIC STYLES
+   ============================================ */
+
+/* Cards */
+.student-card {
+  background-color: var(--student-bg-card);
+  color: var(--student-text-primary);
+  border: 1px solid var(--student-border);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.student-card:hover {
+  border-color: var(--student-border-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1);
+}
+
+/* Card Headers */
+.student-card-header {
+  color: var(--student-text-primary);
+  font-weight: 600;
+  font-size: 1.125rem;
+  margin-bottom: 0.5rem;
+}
+
+.student-card-subtext {
+  color: var(--student-text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Stat Cards */
+.student-stat-card {
+  background-color: var(--student-bg-card);
+  border: 1px solid var(--student-border);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.student-stat-label {
+  color: var(--student-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.student-stat-value {
+  color: var(--student-text-primary);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.student-stat-helper {
+  color: var(--student-text-muted);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+/* Buttons */
+.student-btn-primary {
+  background: linear-gradient(135deg, var(--student-primary), var(--student-primary-dark));
+  color: #FFFFFF;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.student-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgb(6 182 212 / 0.4);
+}
+
+.student-btn-secondary {
+  background-color: var(--student-bg-card);
+  color: var(--student-text-primary);
+  border: 1px solid var(--student-border);
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.student-btn-secondary:hover {
+  background-color: var(--student-bg-hover);
+  border-color: var(--student-border-hover);
+}
+
+/* Links */
+.student-link {
+  color: var(--student-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.student-link:hover {
+  color: var(--student-primary-dark);
+  text-decoration: underline;
+}
+
+/* Navigation */
+.student-nav-item {
+  color: var(--student-text-secondary);
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.student-nav-item:hover {
+  background-color: var(--student-bg-hover);
+  color: var(--student-text-primary);
+}
+
+.student-nav-item.active {
+  background-color: var(--student-bg-active);
+  color: var(--student-primary);
+  font-weight: 600;
+}
+
+/* Form Inputs */
+.student-input {
+  background-color: var(--student-bg-card);
+  color: var(--student-text-primary);
+  border: 1px solid var(--student-border);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.student-input:focus {
+  outline: none;
+  border-color: var(--student-primary);
+  box-shadow: 0 0 0 3px rgb(6 182 212 / 0.1);
+}
+
+.student-input::placeholder {
+  color: var(--student-text-muted);
+}
+
+/* Labels */
+.student-label {
+  color: var(--student-text-primary);
+  font-weight: 500;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+/* ============================================
+   TYPOGRAPHY SCALE
+   ============================================ */
+
+.student-heading-1 {
+  color: var(--student-text-primary);
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.student-heading-2 {
+  color: var(--student-text-primary);
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.student-heading-3 {
+  color: var(--student-text-primary);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.student-heading-4 {
+  color: var(--student-text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.student-body-large {
+  color: var(--student-text-primary);
+  font-size: 1.125rem;
+  line-height: 1.75;
+}
+
+.student-body {
+  color: var(--student-text-secondary);
+  font-size: 1rem;
+  line-height: 1.625;
+}
+
+.student-body-small {
+  color: var(--student-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.student-caption {
+  color: var(--student-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+/* ============================================
+   ACCESSIBILITY ENHANCEMENTS
+   ============================================ */
+
+/* Focus Visible States */
+*:focus-visible {
+  outline: 2px solid var(--student-primary);
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  :root {
+    --student-text-primary: #000000;
+    --student-text-secondary: #1A1A1A;
+    --student-border: #000000;
+  }
+  
+  .dark {
+    --student-text-primary: #FFFFFF;
+    --student-text-secondary: #E5E5E5;
+    --student-border: #FFFFFF;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
