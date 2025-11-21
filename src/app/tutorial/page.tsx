@@ -89,20 +89,14 @@ interface QuizApiItem {
 type TabType = "berita" | "artikel" | "prompt" | "kuis" | "diskusi";
 
 const categories = [
-  { id: "berita", label: "Berita", icon: Newspaper, color: "#6366F1", emoji: "📰" },
   { id: "artikel", label: "Artikel", icon: FileText, color: "#06B6D4", emoji: "📄" },
-  { id: "prompt", label: "Prompt", icon: Lightbulb, color: "#FBBF24", emoji: "💡" },
-  { id: "kuis", label: "Kuis", icon: HelpCircle, color: "#EC4899", emoji: "❓" },
-  { id: "diskusi", label: "Diskusi", icon: MessageSquare, color: "#10B981", emoji: "💬" },
+  { id: "berita", label: "Berita", icon: Newspaper, color: "#6366F1", emoji: "📰" },
 ];
 
 // Category aliases for flexible matching
 const categoryAliases: Record<string, string[]> = {
   'artikel': ['artikel', 'article', 'tutorial', 'guide', 'programming', 'technology'],
   'berita': ['berita', 'news', 'announcement'],
-  'prompt': ['prompt', 'ai', 'chatgpt', 'gpt'],
-  'kuis': ['kuis', 'quiz', 'test'],
-  'diskusi': ['diskusi', 'discussion', 'forum'],
 };
 
 const quickTags = [
@@ -220,12 +214,8 @@ export default function TutorialPage() {
     try {
       setLoading(true);
 
-      const [articleRes, promptRes, quizRes, discussionRes] = await Promise.all([
-        fetch("/api/tutorial/articles?status=all"),
-        fetch("/api/tutorial/prompts?status=all"),
-        fetch("/api/quizzes?publicOnly=true"),
-        fetch("/api/discussion/threads?limit=12"),
-      ]);
+      // Only fetch articles (tutorial & news) - no prompts, quizzes, or discussions
+      const articleRes = await fetch("/api/tutorial/articles?status=published");
 
       let articlesData: Article[] = [];
       if (articleRes.ok) {
@@ -237,119 +227,8 @@ export default function TutorialPage() {
         console.error("Failed to fetch tutorial articles:", articleRes.statusText);
       }
 
-      let promptArticles: Article[] = [];
-      if (promptRes.ok) {
-        const promptPayload = await promptRes.json();
-        if (Array.isArray(promptPayload?.data)) {
-          promptArticles = promptPayload.data.map((prompt: PromptFromDB) => ({
-            id: prompt.id,
-            title: prompt.title,
-            slug: prompt.slug,
-            excerpt: prompt.roleDeskripsi || prompt.taskInstruksi || "",
-            category: "prompt",
-            tags: normalizeTags(prompt.tags),
-            author: prompt.author || "Tim Prompt GEMA",
-            status: prompt.status,
-            featured: prompt.featured,
-            readTime: prompt.durasiMenit || 0,
-            views: prompt.views || 0,
-            publishedAt: prompt.publishedAt || prompt.createdAt,
-            isFeatured: prompt.featured || false,
-            isTrending: (prompt.views || 0) > 50,
-          }));
-        }
-      } else {
-        console.error("Failed to fetch tutorial prompts:", promptRes.statusText);
-      }
-
-      let quizArticles: Article[] = [];
-      if (quizRes.ok) {
-        const quizPayload = await quizRes.json();
-        const quizData: QuizApiItem[] = Array.isArray(quizPayload) ? quizPayload : [];
-        quizArticles = quizData
-          .filter((quiz) => quiz.isPublic)
-          .map((quiz) => {
-            const questionCount = quiz._count?.questions ?? 0;
-            const secondsPerQuestion = quiz.timePerQuestion ?? 75;
-            const estimatedMinutes =
-              questionCount > 0
-                ? Math.max(2, Math.round((questionCount * secondsPerQuestion) / 60))
-                : 5;
-            const tags = [...normalizeTags(quiz.tags)];
-            if (!tags.some((tag) => tag.toLowerCase() === "kuis")) {
-              tags.push("kuis");
-            }
-
-            return {
-              id: quiz.id,
-              title: quiz.title,
-              slug: quiz.slug ?? quiz.id,
-              excerpt:
-                quiz.description?.trim() ||
-                `Kuis interaktif dengan ${questionCount || "beragam"} soal siap kamu coba.`,
-              category: "kuis",
-              tags,
-              author: "Tim Quiz GEMA",
-              status: quiz.isPublic ? "published" : "draft",
-              featured: questionCount >= 12,
-              readTime: estimatedMinutes,
-              views: Math.max(30, questionCount * 15),
-              publishedAt: quiz.publishedAt || quiz.updatedAt || quiz.createdAt,
-              createdAt: quiz.createdAt,
-              updatedAt: quiz.updatedAt,
-              questionCount,
-              defaultPoints: quiz.defaultPoints,
-              timePerQuestion: quiz.timePerQuestion ?? null,
-            };
-          });
-      } else {
-        console.error("Failed to fetch quizzes:", quizRes.statusText);
-      }
-
-      let discussionArticles: Article[] = [];
-      if (discussionRes.ok) {
-        const discussionPayload = await discussionRes.json();
-        if (Array.isArray(discussionPayload?.data)) {
-          discussionArticles = discussionPayload.data.map(
-            (thread: DiscussionThreadDetailDTO) => ({
-              id: thread.id,
-              title: thread.title,
-              slug: thread.id,
-              excerpt:
-                thread.content ||
-                thread.lastReplyPreview ||
-                "Diskusi aktif dari komunitas GEMA.",
-              category: "diskusi",
-              author: thread.authorName,
-              status: "published",
-              publishedAt: thread.createdAt,
-              createdAt: thread.createdAt,
-              updatedAt: thread.updatedAt,
-              views: (thread.replyCount ?? 0) * 15,
-              readTime: Math.max(
-                1,
-                Math.round(((thread.content?.split(" ").length || 60) / 120) * 1),
-              ),
-              replyCount: thread.replyCount,
-              lastReplyAt: thread.lastReplyAt || thread.updatedAt,
-              lastReplyBy: thread.lastReplyBy || thread.authorName,
-              lastReplyPreview: thread.lastReplyPreview || thread.content || "",
-              tags: ["diskusi", "forum", "tanya-jawab"],
-            }),
-          );
-        }
-      } else {
-        console.error("Failed to fetch discussion threads:", discussionRes.statusText);
-      }
-
-      const allArticles = [
-        ...articlesData,
-        ...promptArticles,
-        ...quizArticles,
-        ...discussionArticles,
-      ];
-
-      const processedArticles = allArticles.map((article: Article) => {
+      // Process articles: mark featured and trending
+      const processedArticles = articlesData.map((article: Article) => {
         const publishedDate = article.publishedAt ? new Date(article.publishedAt) : new Date();
         const daysSincePublished =
           (Date.now() - publishedDate.getTime()) / (1000 * 60 * 60 * 24);
@@ -382,25 +261,26 @@ export default function TutorialPage() {
     );
   };
 
-  // Filter articles
+  // Filter articles based on active tab
   const filteredArticles = useMemo(() => {
     let filtered = articles;
     
-    // Only filter by category if not on "artikel" tab or if category matches
-    // This makes "artikel" tab show all article types as fallback
-    if (activeTab !== 'artikel') {
+    // Filter by category based on active tab
+    if (activeTab === 'artikel') {
+      // Show only tutorial articles
       filtered = articles.filter((article) => {
         const articleCategory = article.category?.toLowerCase() || '';
-        const aliases = categoryAliases[activeTab] || [activeTab];
-        return aliases.includes(articleCategory);
+        return articleCategory === 'tutorial' || articleCategory === 'article' || articleCategory === 'artikel';
+      });
+    } else if (activeTab === 'berita') {
+      // Show only news articles
+      filtered = articles.filter((article) => {
+        const articleCategory = article.category?.toLowerCase() || '';
+        return articleCategory === 'news' || articleCategory === 'berita';
       });
     }
 
-    // If filtered is empty and we're not on artikel tab, fallback to show all
-    if (filtered.length === 0 && activeTab === 'artikel') {
-      filtered = articles;
-    }
-
+    // Apply tag filter if tags are selected
     if (selectedTags.length > 0) {
       filtered = filtered.filter((article) => {
         const articleTags = normalizeTags(article.tags).map((tag) => tag.toLowerCase());

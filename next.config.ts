@@ -1,9 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Serverless function configuration for Prisma
-  outputFileTracing: true,
-  
   // Image optimization
   images: {
     domains: ['localhost', 'images.unsplash.com'],

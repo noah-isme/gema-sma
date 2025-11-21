@@ -18,9 +18,15 @@ export async function GET(request: NextRequest) {
       featured?: boolean;
     } = {};
 
-    // Add status filter only if not 'all'
-    if (status && status !== 'all') {
+    // ALWAYS filter by published status for public API
+    if (status === 'all') {
+      // Default to published only for security
+      where.status = 'published';
+    } else if (status) {
       where.status = status;
+    } else {
+      // Default to published
+      where.status = 'published';
     }
 
     if (schemaId) {
@@ -62,8 +68,13 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching prompts:', error);
+    console.error('Full error:', JSON.stringify(error, null, 2));
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch prompts' },
+      { 
+        success: false, 
+        error: 'Failed to fetch prompts',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

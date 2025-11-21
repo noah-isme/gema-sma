@@ -366,9 +366,9 @@ const dashboardTourSteps: TourStep[] = [
   {
     selector: '[data-tour-id="nav-learningpath"]',
     emoji: '🗺️',
-    title: 'Menu Learning Path',
+    title: 'Menu Ekstra',
     subtitle: 'Roadmap belajar bertahap',
-    text: 'Learning Path kayak peta perjalanan belajar kamu. Ada tahapan-tahapan materi yang tersusun rapi dari dasar sampai mahir.'
+    text: 'Ekstra kayak peta perjalanan belajar kamu. Ada tahapan-tahapan materi yang tersusun rapi dari dasar sampai mahir.'
   },
   {
     selector: '#student-dashboard-tabs',

@@ -78,7 +78,7 @@ export default function StudentLayout({ children, loading = false }: StudentLayo
     { name: 'Assignments', href: '/student/assignments', icon: BookOpen, active: false, iconColor: 'text-[#A492FF]', iconBg: 'bg-[#F1E9FF]', tourId: 'nav-assignments' },
     { name: 'Web Lab', href: '/student/web-lab', icon: Code, active: false, iconColor: 'text-[#7AF2C3]', iconBg: 'bg-[#E7FFF5]', tourId: 'nav-weblab' },
     { name: 'Coding Lab', href: '/student/coding-lab', icon: Code2, active: false, iconColor: 'text-[#FFB347]', iconBg: 'bg-[#FFF3E6]', tourId: 'nav-codinglab' },
-    { name: 'Learning Path', href: '/student/learning-path', icon: Target, active: false, iconColor: 'text-[#F78FB3]', iconBg: 'bg-[#FFE9F1]', tourId: 'nav-learningpath' }
+    { name: 'Ekstra', href: '/student/learning-path', icon: Target, active: false, iconColor: 'text-[#F78FB3]', iconBg: 'bg-[#FFE9F1]', tourId: 'nav-learningpath' }
   ]
 
   // Mark active menu item

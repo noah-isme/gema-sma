@@ -23,9 +23,17 @@ export async function GET(request: NextRequest) {
     // Build filter object with proper Prisma types
     const where: Record<string, unknown> = {};
 
-    // Add status filter only if not 'all'
-    if (status && status !== 'all') {
+    // ALWAYS filter by published status for public API
+    // Only allow 'all' status if user is authenticated admin
+    if (status === 'all') {
+      // Check if user is admin (optional: add session check here)
+      // For now, default to published only for security
+      where.status = 'published';
+    } else if (status) {
       where.status = status;
+    } else {
+      // Default to published
+      where.status = 'published';
     }
 
     if (category && category !== 'all') {

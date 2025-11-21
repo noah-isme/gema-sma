@@ -794,11 +794,11 @@ export default function ArticleDetailPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-slate-400" />
-                  <span>{estimatedMinutes} menit</span>
+                  <span>{estimatedMinutes} menit baca</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Eye className="h-4 w-4 text-slate-400" />
-                  <span>{article.views.toLocaleString("id-ID")} views</span>
+                  <span>{article.views.toLocaleString("id-ID")} dibaca</span>
                 </div>
               </div>
               <div className="flex flex-wrap gap-4 text-xs uppercase tracking-[0.3em] text-slate-400">
@@ -812,7 +812,7 @@ export default function ArticleDetailPage() {
                   href="#overview"
                   className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/30 transition hover:-translate-y-0.5"
                 >
-                  Mulai eksplor
+                  Mulai Belajar
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
@@ -820,7 +820,7 @@ export default function ArticleDetailPage() {
                   className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 hover:border-slate-400"
                 >
                   <LayoutDashboard className="h-4 w-4" />
-                  Buka Coding Lab
+                  Coba Praktek
                 </Link>
               </div>
             </div>
@@ -828,7 +828,7 @@ export default function ArticleDetailPage() {
               <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#c7f4ff] via-white to-[#f7d5ff] shadow-inner" />
               <div className="relative rounded-3xl border border-white/60 bg-white/80 p-6 text-center shadow-2xl backdrop-blur">
                 <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
-                  Visual Insight
+                  Ilustrasi Materi
                 </p>
                 <div
                   className="mt-4 h-48 w-full overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br from-[#4F46E5]/10 to-[#06B6D4]/10"
@@ -843,7 +843,7 @@ export default function ArticleDetailPage() {
                   }
                 />
                 <p className="mt-4 text-sm text-slate-500">
-                  Visualisasikan step penting dengan panel modular & timeline.
+                  Gambar pendukung biar makin gampang dipahami.
                 </p>
               </div>
             </div>
@@ -856,7 +856,7 @@ export default function ArticleDetailPage() {
         >
           <div className="rounded-3xl border border-white/60 bg-white/90 p-6 shadow">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-              🎯 Objectives
+              🎯 Tujuan Belajar
             </p>
             <ul className="mt-4 space-y-3 text-sm text-slate-600">
               {learningObjectives.map((objective, idx) => (
@@ -869,7 +869,7 @@ export default function ArticleDetailPage() {
           </div>
           <div className="rounded-3xl border border-white/60 bg-white/90 p-6 shadow">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-              🧩 Skill set
+              🧩 Yang Akan Dipelajari
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {skills.map((skill) => (
@@ -884,7 +884,7 @@ export default function ArticleDetailPage() {
           </div>
           <div className="rounded-3xl border border-white/60 bg-white/90 p-6 shadow">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-              🔑 Prasyarat
+              🔑 Yang Perlu Dikuasai Dulu
             </p>
             <ul className="mt-4 space-y-2 text-sm text-slate-600">
               {prerequisites.map((item) => (
@@ -902,14 +902,14 @@ export default function ArticleDetailPage() {
             <div className="mt-4 flex items-center justify-between">
               <div>
                 <p className="text-2xl font-bold text-slate-900">{estimatedMinutes}m</p>
-                <p className="text-xs text-slate-500">Estimasi belajar</p>
+                <p className="text-xs text-slate-500">Waktu baca</p>
               </div>
               <div className="text-right">
                 <p className={`text-sm font-semibold ${difficultyPreset.tone}`}>
                   {difficultyPreset.emoji} {difficultyPreset.label}
                 </p>
                 <p className="text-xs text-slate-400">
-                  {article.tags?.[0] || "Project readiness"}
+                  {article.tags?.[0] || "Tingkat kesulitan"}
                 </p>
               </div>
             </div>
@@ -918,134 +918,26 @@ export default function ArticleDetailPage() {
 
         <section ref={contentRef} className="mt-16 grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-10">
-            {structuredSections.map((section) => (
-              <div
-                key={`section-${section.id}`}
-                className="rounded-3xl border border-white/60 bg-white/90 p-8 shadow"
-              >
-                <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
-                  Bagian {section.id.toString().padStart(2, "0")}
-                </p>
-                <h3 className="mt-2 text-2xl font-semibold text-slate-900">
-                  {section.title}
-                </h3>
-                <p className="mt-4 text-base text-slate-600">{section.description}</p>
-                {section.body && (
-                  <p className="mt-3 text-sm text-slate-500">{section.body}</p>
-                )}
-              </div>
-            ))}
+            {/* Render full HTML content from database */}
+            <div 
+              className="article-content"
+              dangerouslySetInnerHTML={{ __html: article.content }}
+            />
 
-            <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-8 text-white shadow-2xl">
-              <div className="absolute inset-0 opacity-10">
-                <div className="h-full w-full bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.2),_transparent_60%)]" />
-              </div>
-              <div className="relative space-y-8">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.4em] text-slate-300">Timeline</p>
-                  <h3 className="mt-2 text-2xl font-semibold text-white">Ikuti langkah modul</h3>
-                </div>
-                <div className="space-y-8">
-                  {steps.map((step, idx) => (
-                    <div key={step.id} className="relative flex gap-4">
-                      <div className="flex flex-col items-center">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-lg font-bold text-white">
-                          {step.id.toString().padStart(2, "0")}
-                        </div>
-                        {idx !== steps.length - 1 && <span className="mt-2 h-12 w-px bg-white/30" />}
-                      </div>
-                      <div className="flex-1 rounded-2xl bg-white/10 p-4 shadow-inner">
-                        <h4 className="font-semibold text-white">{step.title}</h4>
-                        <p className="mt-2 text-sm text-white/80">{step.description}</p>
-                        {step.example && (
-                          <p className="mt-2 text-xs uppercase tracking-wide text-teal-200">
-                            Contoh: {step.example}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {codeSamples.length > 0 && (
-              <div className="overflow-hidden rounded-3xl border border-slate-900/10 bg-slate-900 text-sm text-white shadow-xl">
-                {codeSamples.map((sample, idx) => (
-                  <div key={`${sample.language}-${idx}`} className="border-t border-white/5 first:border-t-0">
-                    <div className="flex items-center justify-between border-b border-white/5 px-6 py-3 text-xs uppercase tracking-[0.3em] text-slate-300">
-                      <span>{sample.language}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopyCode(sample.code)}
-                        className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold hover:bg-white/20"
-                      >
-                        Copy
-                      </button>
-                    </div>
-                    <pre className="overflow-x-auto px-6 py-4 text-sm leading-relaxed">
-                      <code>{sample.code}</code>
-                    </pre>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="rounded-3xl border border-white/60 bg-white/90 p-8 shadow">
-              <div className="flex flex-col gap-4 md:flex-row">
-                <div className="md:w-1/2">
-                  <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
-                    Visual Example
-                  </p>
-                  <h4 className="mt-2 text-2xl font-semibold text-slate-900">Story-driven layout</h4>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Gunakan garis konektor, badge step, dan warna lembut untuk membantu siswa mengikuti konteks tanpa harus membaca paragraf panjang.
-                  </p>
-                </div>
-                <div className="md:w-1/2">
-                  <div
-                    className="h-48 rounded-2xl border border-dashed border-slate-200 bg-slate-100"
-                    style={
-                      heroIllustration
-                        ? {
-                            backgroundImage: `url(${heroIllustration})`,
-                            backgroundSize: "cover",
-                            backgroundPosition: "center",
-                          }
-                        : undefined
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              {callouts.map((callout, idx) => (
-                <div
-                  key={`${callout.tone}-${idx}`}
-                  className={`rounded-2xl border border-white/60 bg-gradient-to-br ${callout.gradient} p-5 shadow`}
-                >
-                  <p className="text-sm font-semibold text-slate-700">
-                    {callout.emoji} {callout.title}
-                  </p>
-                  <p className="mt-2 text-sm text-slate-600">{callout.body}</p>
-                </div>
-              ))}
-            </div>
           </div>
 
           <aside className="space-y-6">
             <div className="rounded-3xl border border-white/60 bg-white/90 p-6 shadow">
               <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
-                Quick stats
+                Info Artikel
               </p>
               <ul className="mt-4 space-y-3 text-sm text-slate-600">
                 <li className="flex justify-between border-b border-slate-100 pb-2">
-                  <span>Publikasi</span>
+                  <span>Dipublikasi</span>
                   <span className="font-semibold">{formatDate(article.publishedAt)}</span>
                 </li>
                 <li className="flex justify-between border-b border-slate-100 pb-2">
-                  <span>Pembaruan</span>
+                  <span>Diperbarui</span>
                   <span className="font-semibold">{formatDate(article.updatedAt)}</span>
                 </li>
                 <li className="flex justify-between border-b border-slate-100 pb-2">
@@ -1053,8 +945,8 @@ export default function ArticleDetailPage() {
                   <span className="font-semibold capitalize">{article.category}</span>
                 </li>
                 <li className="flex justify-between">
-                  <span>Total views</span>
-                  <span className="font-semibold">{article.views.toLocaleString("id-ID")}</span>
+                  <span>Sudah dibaca</span>
+                  <span className="font-semibold">{article.views.toLocaleString("id-ID")} kali</span>
                 </li>
               </ul>
             </div>
@@ -1063,7 +955,7 @@ export default function ArticleDetailPage() {
               id="mini-quiz"
               className="rounded-3xl border border-white/60 bg-white/90 p-6 shadow"
             >
-              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Mini Quiz</p>
+              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Kuis Singkat</p>
               <p className="mt-3 text-sm font-semibold text-slate-900">{quizQuestion}</p>
               <div className="mt-4 space-y-2">
                 {quizOptions.map((option) => (
@@ -1087,15 +979,15 @@ export default function ArticleDetailPage() {
             </div>
 
             <div className="rounded-3xl border border-dashed border-[#06B6D4]/40 bg-[#06B6D4]/5 p-6 text-sm text-slate-700 shadow">
-              <p className="font-semibold text-[#0f5c68]">Diskusi aktif</p>
+              <p className="font-semibold text-[#0f5c68]">Ada yang mau ditanyakan?</p>
               <p className="mt-2">
-                Gabung diskusi untuk berbagi kemajuan dan bertanya hal teknis.
+                Gabung diskusi untuk berbagi cerita dan tanya-tanya sama teman.
               </p>
               <Link
                 href="/tutorial?tab=diskusi"
                 className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#0f5c68] hover:underline"
               >
-                Buka forum
+                Buka Forum Diskusi
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
@@ -1105,17 +997,17 @@ export default function ArticleDetailPage() {
         <section className="mt-16">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Lab interaktif</p>
-              <h2 className="text-2xl font-semibold text-slate-900">Tetapkan ritme belajar</h2>
+              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Fitur Interaktif</p>
+              <h2 className="text-2xl font-semibold text-slate-900">Belajar makin seru!</h2>
             </div>
             <p className="text-sm text-slate-500 sm:max-w-md">
-              Widget interaktif menjaga fokusmu: pilih reaksi, cek progress checklist, dan ulangi kuis mini bila perlu.
+              Kasih reaksi, cek progres belajarmu, dan coba kuis singkat kapan aja.
             </p>
           </div>
           <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-3xl border border-white/60 bg-white/95 p-6 shadow">
-              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Reactions</p>
-              <h3 className="mt-2 text-lg font-semibold text-slate-900">Mood belajarmu</h3>
+              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Reaksi</p>
+              <h3 className="mt-2 text-lg font-semibold text-slate-900">Gimana rasanya?</h3>
               <div className="mt-4 flex flex-wrap gap-3">
                 {reactionOptions.map((reaction) => (
                   <button
@@ -1141,7 +1033,7 @@ export default function ArticleDetailPage() {
               </div>
               {selectedReaction && (
                 <p className="mt-4 text-xs font-semibold text-[#0f5c68]">
-                  Terima kasih! Kami catat reaksimu.
+                  Makasih ya! Reaksi kamu udah tersimpan.
                 </p>
               )}
             </div>

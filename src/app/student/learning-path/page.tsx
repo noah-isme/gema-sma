@@ -163,7 +163,7 @@ export default function LearningPathPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [selectedStage, setSelectedStage] = useState<LearningStage | null>(null)
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
-  const [emptyMessage, setEmptyMessage] = useState<string | null>('Menunggu data Learning Path dari server...')
+  const [emptyMessage, setEmptyMessage] = useState<string | null>('Menunggu data Ekstra dari server...')
 
   const applyStages = useCallback((rawStages: RawStage[]) => {
     if (!rawStages || rawStages.length === 0) {
@@ -241,7 +241,7 @@ export default function LearningPathPage() {
       console.error('Error fetching learning path:', error)
       setStages([])
       setSelectedStage(null)
-      setEmptyMessage('Gagal memuat data Learning Path. Coba Refresh atau hubungi admin.')
+      setEmptyMessage('Gagal memuat data Ekstra. Coba Refresh atau hubungi admin.')
     } finally {
       setIsLoading(false)
     }
@@ -347,7 +347,7 @@ export default function LearningPathPage() {
         <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6">
           <div className="max-w-md rounded-2xl border border-indigo-100 bg-white p-8 text-center shadow-lg">
             <Sparkles className="mx-auto mb-4 h-10 w-10 text-indigo-500" />
-            <h2 className="text-xl font-semibold text-slate-900">Learning Path belum siap</h2>
+            <h2 className="text-xl font-semibold text-slate-900">Ekstra belum siap</h2>
             <p className="mt-3 text-sm text-slate-600">
               {emptyMessage ||
                 'Kami belum bisa memuat tahapan Coding Lab dari server. Jalankan kembali seed/seed-classroom-roadmap.ts atau hubungi admin.'}
@@ -407,7 +407,7 @@ export default function LearningPathPage() {
                   Coding Journey
                 </div>
                 <h1 className="mt-4 text-3xl font-bold leading-tight sm:text-4xl">
-                  Learning Path – Perjalanan Belajarmu Dimulai
+                  Ekstra – Perjalanan Belajarmu Dimulai
                 </h1>
                 <p className="mt-3 max-w-2xl text-base text-white/80">
                   Ikuti tahap demi tahap hingga menjadi Web Developer mandiri. Setiap stage memuat target dasar, bonus challenge, dan refleksi agar progresmu terasa seperti quest sungguhan.

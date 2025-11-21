@@ -185,18 +185,18 @@ const featuresData: FeatureCardConfig[] = [
 
 const heroSpotlightCards = [
   {
-    title: "Auto-Grading System",
-    caption: "Sistem penilaian otomatis untuk coding assignments dan quiz.",
+    title: "Nilai Otomatis",
+    caption: "Langsung tahu nilaimu begitu selesai ngerjain tugas atau kuis.",
     accent: "#5EEAD4",
   },
   {
-    title: "Multi-Language Support",
-    caption: "Mendukung Python, JavaScript, HTML/CSS untuk pembelajaran lengkap.",
+    title: "Banyak Bahasa Coding",
+    caption: "Belajar Python, JavaScript, HTML/CSS lengkap dalam satu tempat.",
     accent: "#F4B5FF",
   },
   {
-    title: "Real-Time Analytics",
-    caption: "Dashboard komprehensif untuk tracking progress dan performa siswa.",
+    title: "Pantau Progres Belajar",
+    caption: "Liat perkembangan belajarmu lewat dashboard yang mudah dimengerti.",
     accent: "#FFDB7D",
   },
 ];
@@ -628,7 +628,7 @@ export default function HomePage() {
         label: "Siswa Aktif",
         value: stats.totalStudents,
         suffix: "+",
-        description: "Lebih dari 20 siswa aktif belajar dan bereksperimen di GEMA setiap hari.",
+        description: "Teman-teman yang lagi asik belajar coding bareng di GEMA setiap hari.",
         emoji: "👨‍💻",
         icon: Users,
         color: "#6366F1", // Indigo - community & trust
@@ -648,7 +648,7 @@ export default function HomePage() {
         label: "Coding Lab Interaktif",
         value: stats.totalCodingLabs,
         suffix: "+",
-        description: "Lab coding dengan instant feedback — langsung praktik, langsung paham.",
+        description: "Lab coding yang langsung kasih feedback — tulis code, langsung ngerti hasilnya.",
         emoji: "⚡",
         icon: Code2,
         color: "#F59E0B", // Amber - energy & action
@@ -658,7 +658,7 @@ export default function HomePage() {
         label: "Tugas Berhasil",
         value: stats.completedAssignments,
         suffix: "+",
-        description: "Setiap minggu, tugas-tugas coding selesai dengan bangga! 💪",
+        description: "Setiap minggu, banyak banget tugas coding yang berhasil diselesaikan! 💪",
         emoji: "🎯",
         icon: GraduationCap,
         color: "#EC4899", // Pink - achievement & passion
@@ -1032,14 +1032,14 @@ export default function HomePage() {
                 role="heading"
                 aria-level={1}
               >
-                Platform LMS Informatika yang Bikin Belajar{" "}
+                Belajar{" "}
                 <span className="text-highlight font-extrabold" role="emphasis">Coding</span> Jadi{" "}
                 <span className="text-gradient-primary font-extrabold" role="emphasis">
                   Seru <span role="img" aria-label="roket">🚀</span>
                 </span>{" "}
                 dan{" "}
                 <span className="text-gradient-primary font-extrabold" role="emphasis">
-                  Interaktif!
+                  Gampang Banget!
                 </span>
               </h1>
               <p
@@ -1049,13 +1049,13 @@ export default function HomePage() {
                 role="doc-subtitle"
               >
                 <strong className="font-semibold text-slate-900 dark:text-white">
-                  <abbr title="Generasi Muda Informatika" className="no-underline">GEMA</abbr>
+                  <abbr title="Generasi Muda Informatika" className="no-underline">GEMA</abbr> (Generasi Muda Informatika)
                 </strong> adalah 
-                Learning Management System modern untuk mata pelajaran Informatika SMA. 
-                Dilengkapi <span className="font-medium text-slate-900 dark:text-slate-100">
-                  coding lab interaktif <span role="img" aria-label="kilat">⚡</span>
-                </span>, 
-                tutorial terstruktur, dan sistem penilaian otomatis.
+                platform belajar coding khusus buat kamu yang lagi belajar Informatika di SMA! 
+                Ada <span className="font-medium text-slate-900 dark:text-slate-100">
+                  lab coding interaktif <span role="img" aria-label="kilat">⚡</span>
+                </span> yang langsung bisa dicoba, 
+                tutorial gampang dipahami, dan nilai langsung keluar otomatis.
               </p>
 
               <div
@@ -1339,7 +1339,8 @@ export default function HomePage() {
                     Tentang GEMA
                   </h3>
                   <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-200/80">
-                    GEMA (Generasi Muda Informatika) adalah platform Learning Management System yang dirancang khusus untuk pembelajaran Informatika tingkat SMA.
+                    GEMA (Generasi Muda Informatika) adalah tempat belajar coding online yang bikin kamu makin jago ngoding! 
+                    Cocok banget buat siswa SMA yang mau belajar Informatika dengan cara yang asik dan nggak bikin ngantuk.
                   </p>
                   <div className="mt-4 grid gap-3 sm:grid-cols-3">
                     <div className="flex items-start gap-3">
@@ -1347,9 +1348,9 @@ export default function HomePage() {
                         <Code2 className="h-4 w-4" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">Interactive Coding Lab</p>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">Lab Coding Interaktif</p>
                         <p className="text-xs text-slate-600 dark:text-slate-200/70">
-                          Editor code dengan auto-grading
+                          Nulis code langsung dapat nilai
                         </p>
                       </div>
                     </div>
@@ -1358,9 +1359,9 @@ export default function HomePage() {
                         <BookOpenCheck className="h-4 w-4" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">Structured Learning Path</p>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">Tutorial Step by Step</p>
                         <p className="text-xs text-slate-600 dark:text-slate-200/70">
-                          Tutorial terstruktur sesuai kurikulum
+                          Materi rapi dari dasar sampai mahir
                         </p>
                       </div>
                     </div>
@@ -1369,9 +1370,9 @@ export default function HomePage() {
                         <BarChart3 className="h-4 w-4" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">Real-Time Analytics</p>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">Pantau Progres Belajar</p>
                         <p className="text-xs text-slate-600 dark:text-slate-200/70">
-                          Dashboard tracking progress siswa
+                          Liat perkembangan belajarmu kapan aja
                         </p>
                       </div>
                     </div>
@@ -1415,8 +1416,8 @@ export default function HomePage() {
                 sendiri
               </h2>
               <p className="mx-auto mt-6 max-w-2xl font-['Inter'] text-lg leading-relaxed text-slate-600 dark:text-slate-300">
-                GEMA memandumu dari <span className="font-semibold text-[#6366F1] dark:text-[#A5B4FC]">dasar</span> sampai{" "}
-                <span className="font-semibold text-[#EC4899] dark:text-[#F9A8D4]">jago coding</span> lewat 3 tahap yang menyenangkan.
+                GEMA bantuin kamu belajar dari <span className="font-semibold text-[#6366F1] dark:text-[#A5B4FC]">nol banget</span> sampai{" "}
+                <span className="font-semibold text-[#EC4899] dark:text-[#F9A8D4]">jago coding</span> lewat 3 tahap yang seru dan gampang diikuti.
               </p>
               
               {/* Animated Progress Ribbon */}
