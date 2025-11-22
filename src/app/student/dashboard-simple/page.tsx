@@ -508,7 +508,16 @@ export default function StudentDashboardPage() {
       console.log('Fetching dashboard stats for student:', studentId)
 
       const response = await fetch(`/api/student/dashboard?studentId=${studentId}`)
+      
       if (!response.ok) {
+        // If student not found (404), redirect to registration
+        if (response.status === 404) {
+          console.error('Student not found in database. Redirecting to registration...')
+          alert('⚠️ Akun tidak ditemukan di database. Silakan daftar terlebih dahulu.')
+          studentAuth.clearSession()
+          window.location.href = '/student/register'
+          return
+        }
         throw new Error(`Failed to fetch dashboard stats: ${response.status}`)
       }
 
@@ -518,9 +527,14 @@ export default function StudentDashboardPage() {
         console.log('Dashboard stats loaded:', result.data)
       } else {
         console.error('Failed to load dashboard stats:', result.error)
+        alert('❌ Gagal memuat data dashboard. Silakan coba lagi.')
+        window.location.href = '/student/login'
       }
     } catch (error) {
       console.error('Error fetching dashboard stats:', error)
+      alert('❌ Terjadi kesalahan. Silakan login kembali.')
+      studentAuth.clearSession()
+      window.location.href = '/student/login'
     } finally {
       setStatsLoading(false)
     }
@@ -989,17 +1003,25 @@ export default function StudentDashboardPage() {
         <Breadcrumb items={[{ label: 'Dashboard' }]} />
       </div>
       <div className="flex justify-end px-6 pt-4">
-        <PlayfulTourGuide
-          tourId="student-dashboard"
-          steps={dashboardTourSteps}
-          autoStartDelay={900}
-          renderTrigger={({ startTour, hasSeenTutorial, storageReady }) => (
-            <button type="button" className="tour-trigger-chip" onClick={startTour}>
-              {storageReady && hasSeenTutorial ? 'Ulang panduan' : 'Butuh panduan?'}
-              <span aria-hidden>🎧</span>
-            </button>
-          )}
-        />
+        {/* Only show tour when data is loaded */}
+        {!statsLoading && !assignmentsLoading ? (
+          <>
+            {console.log('[Dashboard] Rendering tour component - stats loaded')}
+            <PlayfulTourGuide
+              tourId={`student-dashboard-${student?.studentId || 'guest'}`}
+              steps={dashboardTourSteps}
+              autoStartDelay={1200}
+              renderTrigger={({ startTour, hasSeenTutorial, storageReady }) => (
+                <button type="button" className="tour-trigger-chip" onClick={startTour}>
+                  {storageReady && hasSeenTutorial ? 'Ulang panduan' : 'Butuh panduan?'}
+                  <span aria-hidden>🎧</span>
+                </button>
+              )}
+            />
+          </>
+        ) : (
+          console.log('[Dashboard] Tour NOT rendered - still loading:', { statsLoading, assignmentsLoading })
+        )}
       </div>
 
       <div className="container mx-auto px-6 py-8 relative">

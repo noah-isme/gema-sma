@@ -243,7 +243,7 @@ body {
 .tour-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 9998;
   pointer-events: none;
   animation: tour-backdrop-fade-in 300ms ease-out forwards;
 }
@@ -260,7 +260,7 @@ body {
 .tour-spotlight {
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: 9999;
   pointer-events: none;
 }
 
@@ -274,6 +274,9 @@ body {
     0 18px 35px rgba(15, 23, 42, 0.2);
   transition: transform 220ms var(--motion-ease-standard), box-shadow 220ms var(--motion-ease-standard);
   will-change: transform, box-shadow;
+  /* Force element to be visible above backdrop */
+  isolation: isolate;
+  filter: brightness(1.15) contrast(1.05);
 }
 
 .tour-highlight::before {
@@ -315,6 +318,7 @@ body {
     0 0 0 4px rgba(79, 70, 229, 0.9),
     0 0 60px 12px rgba(99, 102, 241, 0.6),
     0 32px 55px rgba(15, 23, 42, 0.35);
+  filter: brightness(1.2) contrast(1.1);
 }
 
 .tour-highlight-active::after {

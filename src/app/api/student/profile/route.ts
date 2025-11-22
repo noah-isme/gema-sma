@@ -13,11 +13,18 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const student = await prisma.student.findUnique({
-      where: { studentId: studentId },
+    // Find by studentId OR username (both can be used for login)
+    const student = await prisma.student.findFirst({
+      where: {
+        OR: [
+          { studentId: studentId },
+          { username: studentId }
+        ]
+      },
       select: {
         id: true,
         studentId: true,
+        username: true,
         email: true,
         fullName: true,
         class: true,

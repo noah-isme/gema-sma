@@ -18,12 +18,18 @@ export async function GET(request: NextRequest) {
 
     console.log('Fetching data for student:', studentId)
 
-    // First, get student internal ID
-    const studentInfo = await prisma.student.findUnique({
-      where: { studentId: studentId },
+    // First, get student internal ID (search by studentId OR username)
+    const studentInfo = await prisma.student.findFirst({
+      where: {
+        OR: [
+          { studentId: studentId },
+          { username: studentId }
+        ]
+      },
       select: {
         id: true,
         studentId: true,
+        username: true,
         fullName: true,
         class: true,
         email: true,

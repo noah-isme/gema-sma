@@ -19,13 +19,19 @@ export async function GET(
       return NextResponse.json({ error: 'Assignment ID is required' }, { status: 400 })
     }
 
-    // Verify student exists and is active
-    const student = await prisma.student.findUnique({
-      where: { studentId },
+    // Verify student exists and is active (support username OR studentId)
+    const student = await prisma.student.findFirst({
+      where: {
+        OR: [
+          { studentId: studentId },
+          { username: studentId }
+        ],
+        status: 'ACTIVE'
+      },
       select: { id: true, class: true, status: true }
     })
 
-    if (!student || student.status !== 'ACTIVE') {
+    if (!student) {
       return NextResponse.json({ error: 'Student not found or inactive' }, { status: 404 })
     }
 

@@ -10,19 +10,22 @@ export async function POST(request: NextRequest) {
 
     if (!studentId || !password) {
       return NextResponse.json(
-        { success: false, error: 'Student ID and password are required' },
+        { success: false, error: 'Student ID/Username and password are required' },
         { status: 400 }
       )
     }
 
-    // Find student by studentId
-    const student = await prisma.student.findUnique({
+    // Find student by studentId OR username
+    const student = await prisma.student.findFirst({
       where: {
-        studentId: studentId
+        OR: [
+          { studentId: studentId },
+          { username: studentId }
+        ]
       }
     })
 
-    console.log('Student found:', !!student, student ? { id: student.id, studentId: student.studentId, status: student.status } : null)
+    console.log('Student found:', !!student, student ? { id: student.id, studentId: student.studentId, username: student.username, status: student.status } : null)
 
     if (!student) {
       return NextResponse.json(
@@ -62,7 +65,8 @@ export async function POST(request: NextRequest) {
       success: true,
       student: {
         id: student.id,
-        studentId: student.studentId,
+        studentId: student.studentId || student.username,
+        username: student.username,
         fullName: student.fullName,
         email: student.email,
         class: student.class

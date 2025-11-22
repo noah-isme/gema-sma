@@ -78,10 +78,10 @@ export default function StudentLoginPage() {
       const authResult = await response.json()
 
       if (!authResult.success) {
-        raiseError('NIS atau password salah. Silakan periksa data Anda.')
+        raiseError('NIS/username atau password salah. Silakan periksa data Anda.')
         setToast({
           show: true,
-          message: 'Login gagal! Periksa NIS dan password Anda.',
+          message: 'Login gagal! Periksa NIS/username dan password Anda.',
           type: 'error'
         })
         setIsLoading(false)
@@ -204,9 +204,9 @@ export default function StudentLoginPage() {
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <label htmlFor="studentId" className="text-sm font-semibold text-slate-800">
-                  NIS / Student ID
+                  NIS / Username
                 </label>
-                <span className="text-xs text-slate-400">Gunakan NIS resmi sekolah.</span>
+                <span className="text-xs text-slate-400">Gunakan NIS atau username.</span>
               </div>
               <div className={inputWrapperStyles(focusedField === 'studentId')}>
                 <div className="flex items-center gap-3">
@@ -227,7 +227,7 @@ export default function StudentLoginPage() {
                     onBlur={() => setFocusedField(prev => (prev === 'studentId' ? null : prev))}
                     required
                     disabled={isLoading}
-                    placeholder="Masukkan NIS kamu"
+                    placeholder="NIS atau username kamu"
                     className={`w-full rounded-2xl bg-transparent text-base font-medium text-slate-900 outline-none ${placeholderClass}`}
                   />
                 </div>

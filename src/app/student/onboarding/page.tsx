@@ -1,9 +1,11 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Sparkles, Compass, BookOpenCheck, Rocket } from 'lucide-react'
+import { studentAuth } from '@/lib/student-auth'
 
 const steps = [
   {
@@ -25,6 +27,39 @@ const steps = [
 
 export default function StudentOnboardingPage() {
   const router = useRouter()
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Give a small delay to ensure session is loaded from localStorage
+    const checkSession = () => {
+      const session = studentAuth.getSession()
+      console.log('[Onboarding] Session check:', session ? session.studentId : 'NO SESSION')
+      
+      if (!session) {
+        console.log('[Onboarding] No session found, redirecting to login')
+        router.push('/student/login')
+        return
+      }
+      
+      console.log('[Onboarding] Session valid:', session.studentId)
+      setLoading(false)
+    }
+
+    // Small delay to ensure localStorage is ready
+    const timer = setTimeout(checkSession, 100)
+    return () => clearTimeout(timer)
+  }, [router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f5f7ff] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Memuat onboarding...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#f5f7ff] py-16 px-4">
@@ -80,23 +115,23 @@ export default function StudentOnboardingPage() {
             <div>
               <h2 className="text-2xl font-semibold">Langkah selanjutnya</h2>
               <p className="mt-2 text-sm text-white/80">
-                Masuk kembali untuk memilih preferensi belajar dan mulai tutorial fitur GEMA.
+                Akun kamu sudah siap! Klik tombol di bawah untuk mulai menggunakan GEMA.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
-                className="rounded-2xl bg-white/15 px-5 py-3 text-sm font-semibold text-white backdrop-blur"
-                onClick={() => router.push('/student/login')}
+                className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-blue-600 shadow-lg"
+                onClick={() => router.push('/student/dashboard-simple')}
               >
-                Saya siap login
+                Menuju Dashboard GEMA →
               </motion.button>
               <Link
-                href="/student/dashboard-simple"
+                href="/student/learning-path"
                 className="inline-flex items-center justify-center rounded-2xl bg-white/20 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/30"
               >
-                Lihat dashboard demo
+                Lihat Learning Path
               </Link>
             </div>
           </div>

@@ -57,7 +57,7 @@ export default function PlayfulTourGuide({
     left: 0,
     placement: 'bottom'
   })
-  const [hasSeenTutorial, setHasSeenTutorial] = useState(true)
+  const [hasSeenTutorial, setHasSeenTutorial] = useState(false)
   const [storageReady, setStorageReady] = useState(false)
   const [showCompletion, setShowCompletion] = useState(false)
   const [targetRect, setTargetRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
@@ -78,7 +78,12 @@ export default function PlayfulTourGuide({
   useEffect(() => {
     if (typeof window === 'undefined') return
     const stored = window.localStorage.getItem(buildStorageKey(tourId))
-    setHasSeenTutorial(Boolean(stored))
+    const hasSeenValue = Boolean(stored)
+    console.log('[Tour Debug] tourId:', tourId)
+    console.log('[Tour Debug] localStorage key:', buildStorageKey(tourId))
+    console.log('[Tour Debug] localStorage value:', stored)
+    console.log('[Tour Debug] hasSeenTutorial:', hasSeenValue)
+    setHasSeenTutorial(hasSeenValue)
     setStorageReady(true)
   }, [tourId])
 
@@ -108,10 +113,18 @@ export default function PlayfulTourGuide({
   }, [targetRect])
 
   const clearHighlight = useCallback(() => {
+    // Clear current highlighted element
     if (highlightRef.current) {
       highlightRef.current.classList.remove('tour-highlight', 'tour-highlight-active')
       highlightRef.current = null
     }
+    
+    // Also clear any leftover highlights in DOM
+    const allHighlights = document.querySelectorAll('.tour-highlight, .tour-highlight-active')
+    allHighlights.forEach(el => {
+      el.classList.remove('tour-highlight', 'tour-highlight-active')
+    })
+    
     setParticles([])
     if (particleIntervalRef.current) {
       window.clearInterval(particleIntervalRef.current)
@@ -179,26 +192,59 @@ export default function PlayfulTourGuide({
       left: fitHorizontalCenter
     }
 
-    setTooltipPosition({
+    const newTooltipPosition = {
       top: Math.max(margin, chosen.top),
       left: Math.max(margin, Math.min(chosen.left, viewportWidth - approxWidth - margin)),
       placement: chosen.placement
-    })
-    setTargetRect({
+    }
+    
+    const newTargetRect = {
       top: rect.top,
       left: rect.left,
       width: rect.width,
       height: rect.height
+    }
+
+    // Only update if position actually changed (prevent infinite loop)
+    setTooltipPosition(prev => {
+      if (prev.top === newTooltipPosition.top && 
+          prev.left === newTooltipPosition.left && 
+          prev.placement === newTooltipPosition.placement) {
+        return prev
+      }
+      return newTooltipPosition
+    })
+    
+    setTargetRect(prev => {
+      if (prev && 
+          prev.top === newTargetRect.top && 
+          prev.left === newTargetRect.left && 
+          prev.width === newTargetRect.width && 
+          prev.height === newTargetRect.height) {
+        return prev
+      }
+      return newTargetRect
     })
 
     requestAnimationFrame(() => {
       if (!tooltipRef.current) return
       const bounds = tooltipRef.current.getBoundingClientRect()
-      setTooltipBounds({
+      const newBounds = {
         top: bounds.top,
         left: bounds.left,
         width: bounds.width,
         height: bounds.height
+      }
+      
+      setTooltipBounds(prev => {
+        if (prev && 
+            prev.top === newBounds.top && 
+            prev.left === newBounds.left && 
+            prev.width === newBounds.width && 
+            prev.height === newBounds.height) {
+          return prev
+        }
+        return newBounds
       })
     })
 
@@ -224,6 +270,7 @@ export default function PlayfulTourGuide({
 
   const stopTour = useCallback(
     (options?: { showCompletion?: boolean }) => {
+      console.log('[Tour] Stopping tour and cleaning up...')
       markTourSeen()
       setIsRunning(false)
       setTooltipActive(false)
@@ -233,21 +280,33 @@ export default function PlayfulTourGuide({
       // Clear highlight immediately
       clearHighlight()
       
-      // Also clear after a short delay to ensure cleanup
+      // Multiple cleanup attempts to ensure all highlights are removed
       requestAnimationFrame(() => {
         clearHighlight()
         setTargetRect(null)
         setTooltipBounds(null)
       })
+      
+      // Final cleanup after animation
+      setTimeout(() => {
+        clearHighlight()
+        console.log('[Tour] Final cleanup complete')
+      }, 300)
     },
     [clearHighlight, hideWithDelay, markTourSeen]
   )
 
   const closeCompletion = useCallback(() => {
+    console.log('[Tour] Closing completion modal...')
     setShowCompletion(false)
     clearHighlight()
     setTargetRect(null)
     setTooltipBounds(null)
+    
+    // Extra cleanup for any lingering highlights
+    setTimeout(() => {
+      clearHighlight()
+    }, 100)
   }, [clearHighlight])
 
   const endTour = useCallback(() => {
@@ -351,8 +410,26 @@ export default function PlayfulTourGuide({
   }, [isRunning, updateTooltipPosition])
 
   useEffect(() => {
-    if (!storageReady || !autoStart || hasSeenTutorial || !steps.length) return
-    const timeout = window.setTimeout(() => startTour(), autoStartDelay)
+    console.log('[Tour Debug] Auto-start check:')
+    console.log('  - storageReady:', storageReady)
+    console.log('  - autoStart:', autoStart)
+    console.log('  - hasSeenTutorial:', hasSeenTutorial)
+    console.log('  - steps.length:', steps.length)
+    
+    if (!storageReady || !autoStart || hasSeenTutorial || !steps.length) {
+      console.log('[Tour Debug] Auto-start BLOCKED:')
+      if (!storageReady) console.log('  ❌ Storage not ready')
+      if (!autoStart) console.log('  ❌ Auto-start disabled')
+      if (hasSeenTutorial) console.log('  ❌ User has seen tutorial before')
+      if (!steps.length) console.log('  ❌ No steps defined')
+      return
+    }
+    
+    console.log('[Tour Debug] ✅ Starting tour in', autoStartDelay, 'ms')
+    const timeout = window.setTimeout(() => {
+      console.log('[Tour Debug] 🚀 Auto-start triggered!')
+      startTour()
+    }, autoStartDelay)
     return () => window.clearTimeout(timeout)
   }, [autoStart, autoStartDelay, hasSeenTutorial, startTour, steps.length, storageReady])
 
@@ -438,11 +515,11 @@ export default function PlayfulTourGuide({
                       <mask id={`tour-mask-${tourId}`}>
                         <rect x="0" y="0" width="100%" height="100%" fill="white" />
                         <rect
-                          x={targetRect.left - 8}
-                          y={targetRect.top - 8}
-                          width={targetRect.width + 16}
-                          height={targetRect.height + 16}
-                          rx="16"
+                          x={targetRect.left - 12}
+                          y={targetRect.top - 12}
+                          width={targetRect.width + 24}
+                          height={targetRect.height + 24}
+                          rx="20"
                           fill="black"
                         />
                       </mask>
@@ -452,7 +529,7 @@ export default function PlayfulTourGuide({
                       y="0"
                       width="100%"
                       height="100%"
-                      fill="rgba(0, 0, 0, 0.75)"
+                      fill="rgba(0, 0, 0, 0.8)"
                       mask={`url(#tour-mask-${tourId})`}
                     />
                   </svg>

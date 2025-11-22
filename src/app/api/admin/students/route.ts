@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
         { fullName: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
         { studentId: { contains: search, mode: 'insensitive' } },
+        { username: { contains: search, mode: 'insensitive' } },
         { phone: { contains: search } }
       ]
     }
@@ -54,6 +55,7 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         studentId: true,
+        username: true,
         fullName: true,
         email: true,
         class: true,
@@ -92,6 +94,7 @@ export async function POST(request: NextRequest) {
 
     const {
       studentId,
+      username,
       fullName,
       email,
       password,
@@ -105,45 +108,65 @@ export async function POST(request: NextRequest) {
     } = await request.json()
 
     const sanitizedStudentId = typeof studentId === 'string' ? studentId.trim() : ''
+    const sanitizedUsername = typeof username === 'string' ? username.trim() : ''
     const sanitizedFullName = typeof fullName === 'string' ? fullName.trim() : ''
     const sanitizedEmail = typeof email === 'string' ? email.trim() : ''
 
-    if (!sanitizedStudentId || !sanitizedFullName || !sanitizedEmail || !password) {
+    // Must have either studentId or username
+    if ((!sanitizedStudentId && !sanitizedUsername) || !sanitizedFullName || !password) {
       return NextResponse.json(
-        { error: 'Student ID, name, email, and password are required' },
+        { error: 'Student ID or Username, name, and password are required' },
         { status: 400 }
       )
     }
 
-    const existingStudentId = await prisma.student.findUnique({
-      where: { studentId: sanitizedStudentId }
-    })
+    if (sanitizedStudentId) {
+      const existingStudentId = await prisma.student.findUnique({
+        where: { studentId: sanitizedStudentId }
+      })
 
-    if (existingStudentId) {
-      return NextResponse.json(
-        { error: 'Student ID already exists' },
-        { status: 400 }
-      )
+      if (existingStudentId) {
+        return NextResponse.json(
+          { error: 'Student ID already exists' },
+          { status: 400 }
+        )
+      }
     }
 
-    const existingEmail = await prisma.student.findUnique({
-      where: { email: sanitizedEmail }
-    })
+    if (sanitizedUsername) {
+      const existingUsername = await prisma.student.findUnique({
+        where: { username: sanitizedUsername }
+      })
 
-    if (existingEmail) {
-      return NextResponse.json(
-        { error: 'Email already exists' },
-        { status: 400 }
-      )
+      if (existingUsername) {
+        return NextResponse.json(
+          { error: 'Username already exists' },
+          { status: 400 }
+        )
+      }
+    }
+
+    if (sanitizedEmail) {
+      const existingEmail = await prisma.student.findUnique({
+        where: { email: sanitizedEmail }
+      })
+
+      if (existingEmail) {
+        return NextResponse.json(
+          { error: 'Email already exists' },
+          { status: 400 }
+        )
+      }
     }
 
     const hashedPassword = await hashPassword(password)
 
     const student = await prisma.student.create({
       data: {
-        studentId: sanitizedStudentId,
+        studentId: sanitizedStudentId || null,
+        username: sanitizedUsername || null,
         fullName: sanitizedFullName,
-        email: sanitizedEmail,
+        email: sanitizedEmail || null,
         password: hashedPassword,
         class: typeof studentClass === 'string' ? studentClass.trim() || null : studentClass ?? null,
         phone: typeof phone === 'string' ? phone.trim() || null : phone ?? null,
@@ -177,6 +200,7 @@ export async function PATCH(request: NextRequest) {
     const {
       id,
       studentId,
+      username,
       email,
       password,
       class: studentClass,
@@ -197,6 +221,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const sanitizedStudentId = typeof studentId === 'string' ? studentId.trim() : undefined
+    const sanitizedUsername = typeof username === 'string' ? username.trim() : undefined
     const sanitizedEmail = typeof email === 'string' ? email.trim() : undefined
 
     if (sanitizedStudentId) {
@@ -210,6 +235,22 @@ export async function PATCH(request: NextRequest) {
       if (existingStudentId) {
         return NextResponse.json(
           { error: 'Student ID already exists' },
+          { status: 400 }
+        )
+      }
+    }
+
+    if (sanitizedUsername) {
+      const existingUsername = await prisma.student.findFirst({
+        where: {
+          username: sanitizedUsername,
+          NOT: { id }
+        }
+      })
+
+      if (existingUsername) {
+        return NextResponse.json(
+          { error: 'Username already exists' },
           { status: 400 }
         )
       }
@@ -234,11 +275,15 @@ export async function PATCH(request: NextRequest) {
     const dataToUpdate: Record<string, unknown> = {}
 
     if (typeof sanitizedStudentId !== 'undefined') {
-      dataToUpdate.studentId = sanitizedStudentId
+      dataToUpdate.studentId = sanitizedStudentId || null
+    }
+
+    if (typeof sanitizedUsername !== 'undefined') {
+      dataToUpdate.username = sanitizedUsername || null
     }
 
     if (typeof sanitizedEmail !== 'undefined') {
-      dataToUpdate.email = sanitizedEmail
+      dataToUpdate.email = sanitizedEmail || null
     }
 
     if (typeof fullName !== 'undefined') {

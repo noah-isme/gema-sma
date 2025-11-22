@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import { Toast } from '@/components/feedback/toast'
 import { useAnimatedAuthBackground } from '@/hooks/useAnimatedAuthBackground'
+import { studentAuth } from '@/lib/student-auth'
 
 const CLASS_OPTIONS = [
   'X-1', 'X-2', 'X-3', 'X-4',
@@ -486,6 +487,19 @@ export default function StudentRegisterPage() {
       const data = await response.json()
 
       if (response.ok) {
+        // Save student session immediately after registration
+        const studentData = data.student
+        if (studentData) {
+          studentAuth.setSession({
+            id: studentData.id,
+            studentId: studentData.studentId || studentData.username,
+            fullName: studentData.fullName,
+            class: studentData.class || '',
+            email: studentData.email || ''
+          })
+          console.log('Session saved after registration:', studentData.studentId || studentData.username)
+        }
+
         setShowSuccess(true)
         setToast({
           show: true,
@@ -493,9 +507,13 @@ export default function StudentRegisterPage() {
           type: 'success'
         })
 
+        // Wait a bit for success animation, then redirect
         setTimeout(() => {
+          // Double check session before redirect
+          const session = studentAuth.getSession()
+          console.log('Session check before redirect:', session ? session.studentId : 'NO SESSION')
           router.push('/student/onboarding')
-        }, 2000)
+        }, 1500)
       } else {
         setError(data.message || 'Registrasi gagal')
         setToast({

@@ -111,12 +111,19 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Remove password from response
-    const studentWithoutPassword = (({ password, ...rest }) => rest)(student);
+    // Remove password from response and return necessary session data
+    const { password: _, ...studentWithoutPassword } = student;
 
     return NextResponse.json({
       message: 'Registrasi berhasil! Selamat datang di GEMA.',
-      student: studentWithoutPassword
+      student: {
+        id: student.id,
+        studentId: student.studentId,
+        username: student.username,
+        fullName: student.fullName,
+        email: student.email,
+        class: student.class
+      }
     }, { status: 201 })
 
   } catch (error) {

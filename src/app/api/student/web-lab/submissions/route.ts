@@ -17,12 +17,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify student exists and is active
-    const student = await prisma.student.findUnique({
-      where: { studentId },
+    const student = await prisma.student.findFirst({
+      where: {
+        OR: [
+          { studentId: studentId },
+          { username: studentId }
+        ],
+        status: 'ACTIVE'
+      },
       select: { id: true, status: true }
     })
 
-    if (!student || student.status !== 'ACTIVE') {
+    if (!student) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -72,12 +78,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify student exists and is active
-    const student = await prisma.student.findUnique({
-      where: { studentId },
+    const student = await prisma.student.findFirst({
+      where: {
+        OR: [
+          { studentId: studentId },
+          { username: studentId }
+        ],
+        status: 'ACTIVE'
+      },
       select: { id: true, status: true }
     })
 
-    if (!student || student.status !== 'ACTIVE') {
+    if (!student) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
