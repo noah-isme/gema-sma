@@ -1025,7 +1025,7 @@ export default function StudentDashboardPage() {
       </div>
 
       <div className="container mx-auto px-6 py-8 relative">
-        <div className="dashboard-particles pointer-events-none absolute inset-0" aria-hidden>
+        <div className="dashboard-particles pointer-events-none absolute inset-0 opacity-40" aria-hidden>
           {Array.from({ length: 8 }).map((_, particleIndex) => (
             <span
               key={`bg-particle-${particleIndex}`}
@@ -1303,11 +1303,11 @@ export default function StudentDashboardPage() {
                         className={`rounded-2xl border border-gray-100 p-5 flex gap-4 items-start ${story.accent}`}
                       >
                         <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-md">
-                          <Icon className="w-6 h-6 text-gray-700" />
+                          <Icon className="w-6 h-6 text-gray-800" />
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-900">{story.title}</p>
-                          <p className="text-sm text-gray-600 mt-1">{story.description}</p>
+                          <p className="font-bold text-gray-900">{story.title}</p>
+                          <p className="text-sm text-gray-700 mt-1">{story.description}</p>
                         </div>
                       </motion.div>
                     )
@@ -1390,19 +1390,19 @@ export default function StudentDashboardPage() {
                               </div>
                               <div className="space-y-2">
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <span className="text-[11px] uppercase tracking-[0.3em] text-gray-500">
+                                  <span className="text-[11px] uppercase tracking-[0.3em] text-gray-600 font-medium">
                                     {assignment.subject}
                                   </span>
-                                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+                                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700">
                                     {label}
                                   </span>
                                 </div>
                                 <h4 className="text-lg font-semibold text-gray-900">{assignment.title}</h4>
-                                <p className="text-sm text-gray-600">{assignment.description}</p>
+                                <p className="text-sm text-gray-700">{assignment.description}</p>
                                 {assignment.instructions && assignment.instructions.length > 0 && (
-                                  <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+                                  <div className="flex flex-wrap gap-2 text-xs text-gray-600 font-medium">
                                     {assignment.instructions.slice(0, 2).map((instruction, idx) => (
-                                      <span key={`${assignment.id}-instruction-${idx}`} className="rounded-full bg-slate-50 px-2.5 py-0.5">
+                                      <span key={`${assignment.id}-instruction-${idx}`} className="rounded-full bg-slate-100 px-2.5 py-0.5 border border-slate-200">
                                         {instruction}
                                       </span>
                                     ))}
@@ -1423,10 +1423,10 @@ export default function StudentDashboardPage() {
                                   {deadlineMeta.label}
                                 </span>
                               </div>
-                              <div className="mt-3 text-sm text-gray-600">
-                                Deadline: <span className="font-semibold text-gray-900">{formatDate(assignment.dueDate)}</span>
+                              <div className="mt-3 text-sm text-gray-700 font-medium">
+                                Deadline: <span className="font-bold text-gray-900">{formatDate(assignment.dueDate)}</span>
                               </div>
-                              <div className="mt-1 text-xs text-gray-500">
+                              <div className="mt-1 text-xs text-gray-600 font-medium">
                                 Submission {assignment.submissionCount}/{assignment.maxSubmissions}
                               </div>
                               <Link

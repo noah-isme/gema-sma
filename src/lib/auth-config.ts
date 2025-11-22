@@ -132,17 +132,23 @@ export const authOptions: AuthOptions = {
       id: 'student',
       name: 'Student Login',
       credentials: {
-        studentId: { label: 'Student ID', type: 'text' },
+        studentId: { label: 'NIS atau Username', type: 'text' },
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        if (!credentials?.studentId || !credentials?.password) {
+        const identifier = credentials?.studentId?.trim()
+        const password = credentials?.password
+
+        if (!identifier || !password) {
           return null
         }
 
-        const student = await prisma.student.findUnique({
+        const student = await prisma.student.findFirst({
           where: {
-            studentId: credentials.studentId
+            OR: [
+              { studentId: identifier },
+              { username: identifier }
+            ]
           }
         })
 
@@ -151,7 +157,7 @@ export const authOptions: AuthOptions = {
         }
 
         const isPasswordValid = await verifyPassword(
-          credentials.password,
+          password,
           student.password
         )
 
@@ -169,7 +175,7 @@ export const authOptions: AuthOptions = {
           id: student.id,
           email: student.email || null,
           name: student.fullName,
-          studentId: student.studentId || null,
+          studentId: student.studentId || student.username || null,
           username: student.username || null,
           class: student.class || undefined,
           role: 'STUDENT',
