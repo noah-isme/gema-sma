@@ -1004,23 +1004,18 @@ export default function StudentDashboardPage() {
       </div>
       <div className="flex justify-end px-6 pt-4">
         {/* Only show tour when data is loaded */}
-        {!statsLoading && !assignmentsLoading ? (
-          <>
-            {console.log('[Dashboard] Rendering tour component - stats loaded')}
-            <PlayfulTourGuide
-              tourId={`student-dashboard-${student?.studentId || 'guest'}`}
-              steps={dashboardTourSteps}
-              autoStartDelay={1200}
-              renderTrigger={({ startTour, hasSeenTutorial, storageReady }) => (
-                <button type="button" className="tour-trigger-chip" onClick={startTour}>
-                  {storageReady && hasSeenTutorial ? 'Ulang panduan' : 'Butuh panduan?'}
-                  <span aria-hidden>🎧</span>
-                </button>
-              )}
-            />
-          </>
-        ) : (
-          console.log('[Dashboard] Tour NOT rendered - still loading:', { statsLoading, assignmentsLoading })
+        {!statsLoading && !assignmentsLoading && (
+          <PlayfulTourGuide
+            tourId={`student-dashboard-${student?.studentId || 'guest'}`}
+            steps={dashboardTourSteps}
+            autoStartDelay={1200}
+            renderTrigger={({ startTour, hasSeenTutorial, storageReady }) => (
+              <button type="button" className="tour-trigger-chip" onClick={startTour}>
+                {storageReady && hasSeenTutorial ? 'Ulang panduan' : 'Butuh panduan?'}
+                <span aria-hidden>🎧</span>
+              </button>
+            )}
+          />
         )}
       </div>
 
