@@ -6,32 +6,47 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const email = searchParams.get('email')
     const studentId = searchParams.get('studentId')
+    const username = searchParams.get('username')
 
-    if (!email && !studentId) {
+    if (!email && !studentId && !username) {
       return NextResponse.json(
-        { message: 'Email atau studentId wajib disediakan.' },
+        { message: 'Email, studentId, atau username wajib disediakan.' },
         { status: 400 }
       )
     }
 
-    if (email && studentId) {
-      const [existingStudentId, existingEmail] = await Promise.all([
-        prisma.student.findUnique({ where: { studentId } }),
-        prisma.student.findUnique({ where: { email } })
+    // Check multiple fields at once
+    if ((email && studentId) || (email && username) || (studentId && username)) {
+      const checks = await Promise.all([
+        studentId ? prisma.student.findUnique({ where: { studentId } }) : Promise.resolve(null),
+        username ? prisma.student.findUnique({ where: { username } }) : Promise.resolve(null),
+        email ? prisma.student.findUnique({ where: { email } }) : Promise.resolve(null)
       ])
 
       return NextResponse.json({
-        field: 'both',
-        studentIdAvailable: !existingStudentId,
-        emailAvailable: !existingEmail
+        field: 'multiple',
+        studentIdAvailable: studentId ? !checks[0] : undefined,
+        usernameAvailable: username ? !checks[1] : undefined,
+        emailAvailable: email ? !checks[2] : undefined
       })
     }
 
+    // Check individual fields
     if (studentId) {
       const existingStudentId = await prisma.student.findUnique({ where: { studentId } })
       return NextResponse.json({
         field: 'studentId',
-        available: !existingStudentId
+        available: !existingStudentId,
+        studentIdAvailable: !existingStudentId
+      })
+    }
+
+    if (username) {
+      const existingUsername = await prisma.student.findUnique({ where: { username } })
+      return NextResponse.json({
+        field: 'username',
+        available: !existingUsername,
+        usernameAvailable: !existingUsername
       })
     }
 
@@ -39,7 +54,8 @@ export async function GET(request: NextRequest) {
       const existingEmail = await prisma.student.findUnique({ where: { email } })
       return NextResponse.json({
         field: 'email',
-        available: !existingEmail
+        available: !existingEmail,
+        emailAvailable: !existingEmail
       })
     }
 

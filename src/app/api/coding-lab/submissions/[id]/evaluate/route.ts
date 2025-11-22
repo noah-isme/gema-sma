@@ -166,22 +166,25 @@ export async function POST(
     return NextResponse.json({ error: (error as Error).message }, { status: 400 })
   }
 
-  await sendCodingLabNotification({
-    to: submission.student.email,
-    subject:
-      evaluationStatus === CodingLabSubmissionStatus.GRADED
-        ? 'Penilaian tugas Coding Lab kamu sudah tersedia'
-        : 'Tugas Coding Lab kamu perlu revisi',
-    message:
-      evaluationStatus === CodingLabSubmissionStatus.GRADED
-        ? 'Selamat! Coding Lab kamu sudah dinilai. Silakan cek detail skor dan masukan dari guru.'
-        : 'Coding Lab kamu dikembalikan untuk revisi. Mohon perhatikan komentar guru dan kirim ulang sebelum tenggat.',
-    metadata: {
-      submissionId: submission.id,
-      status: evaluationStatus,
-      totalScore
-    }
-  })
+  // Send notification only if student has email
+  if (submission.student.email) {
+    await sendCodingLabNotification({
+      to: submission.student.email,
+      subject:
+        evaluationStatus === CodingLabSubmissionStatus.GRADED
+          ? 'Penilaian tugas Coding Lab kamu sudah tersedia'
+          : 'Tugas Coding Lab kamu perlu revisi',
+      message:
+        evaluationStatus === CodingLabSubmissionStatus.GRADED
+          ? 'Selamat! Coding Lab kamu sudah dinilai. Silakan cek detail skor dan masukan dari guru.'
+          : 'Coding Lab kamu dikembalikan untuk revisi. Mohon perhatikan komentar guru dan kirim ulang sebelum tenggat.',
+      metadata: {
+        submissionId: submission.id,
+        status: evaluationStatus,
+        totalScore
+      }
+    })
+  }
 
   return NextResponse.json({
     success: true,

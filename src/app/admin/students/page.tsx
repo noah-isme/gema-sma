@@ -16,9 +16,10 @@ import AdminLayout from '@/components/admin/AdminLayout'
 
 interface Student {
   id: string
-  studentId: string
+  studentId?: string | null
+  username?: string | null
   fullName: string
-  email: string
+  email?: string | null
   class?: string | null
   phone?: string | null
   address?: string | null
@@ -34,9 +35,10 @@ interface Student {
 }
 
 interface StudentFormData {
-  studentId: string
+  studentId?: string
+  username?: string
   fullName: string
-  email: string
+  email?: string
   password: string
   class?: string
   phone?: string
@@ -49,6 +51,7 @@ interface StudentFormData {
 
 const initialFormState: StudentFormData = {
   studentId: '',
+  username: '',
   fullName: '',
   email: '',
   password: '',
@@ -138,9 +141,10 @@ export default function AdminStudentsPage() {
     try {
       const method = editingStudent ? 'PATCH' : 'POST'
       const payload: Record<string, unknown> = {
-        studentId: formData.studentId.trim(),
+        studentId: formData.studentId?.trim() || null,
+        username: formData.username?.trim() || null,
         fullName: formData.fullName.trim(),
-        email: formData.email.trim(),
+        email: formData.email?.trim() || null,
         password: formData.password,
         class: formData.class?.trim() ? formData.class.trim() : null,
         phone: formData.phone?.trim() ? formData.phone.trim() : null,
@@ -182,9 +186,10 @@ export default function AdminStudentsPage() {
   const handleEdit = (student: Student) => {
     setEditingStudent(student)
     setFormData({
-      studentId: student.studentId,
+      studentId: student.studentId || '',
+      username: student.username || '',
       fullName: student.fullName,
-      email: student.email,
+      email: student.email || '',
       password: '',
       class: student.class || '',
       phone: student.phone || '',
@@ -255,8 +260,9 @@ export default function AdminStudentsPage() {
   const filteredStudents = students.filter(student => {
     const matchesSearch =
       student.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (student.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (student.studentId || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (student.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (student.phone || '').includes(searchTerm)
 
     const matchesStatus = statusFilter === 'all' || student.status === statusFilter
@@ -391,7 +397,7 @@ export default function AdminStudentsPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Siswa</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">NIS</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">NIS / Username</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Email</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Kelas</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Ekstrakurikuler</th>
@@ -424,8 +430,22 @@ export default function AdminStudentsPage() {
                         <div className="text-sm text-gray-500">{student.phone || '-'}</div>
                         <div className="text-xs text-gray-400">Bergabung: {formatDate(student.joinedAt)}</div>
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{student.studentId}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{student.email}</td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        {student.studentId ? (
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{student.studentId}</div>
+                            <div className="text-xs text-gray-500">NIS</div>
+                          </div>
+                        ) : student.username ? (
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">@{student.username}</div>
+                            <div className="text-xs text-gray-500">Username</div>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{student.email || <span className="text-gray-400">-</span>}</td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">{student.class || '-'}</td>
                       <td className="px-6 py-4">
                         {interestList.length ? (
@@ -520,15 +540,29 @@ export default function AdminStudentsPage() {
               <form onSubmit={handleSubmit} className="max-h-[70vh] space-y-4 overflow-y-auto px-6 py-6">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">NIS</label>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      NIS <span className="text-xs text-gray-500">(Opsional)</span>
+                    </label>
                     <input
                       type="text"
                       name="studentId"
                       value={formData.studentId}
                       onChange={handleInputChange}
-                      required
                       className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                       placeholder="Masukkan NIS siswa"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Username <span className="text-xs text-gray-500">(Opsional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleInputChange}
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      placeholder="Username unik"
                     />
                   </div>
                   <div>
@@ -544,13 +578,14 @@ export default function AdminStudentsPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Email</label>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Email <span className="text-xs text-gray-500">(Opsional)</span>
+                    </label>
                     <input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      required
                       className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                       placeholder="contoh@gema.sch.id"
                     />
@@ -603,7 +638,9 @@ export default function AdminStudentsPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Nama Orang Tua/Wali</label>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Nama Orang Tua/Wali <span className="text-xs text-gray-500">(Opsional)</span>
+                    </label>
                     <input
                       type="text"
                       name="parentName"
@@ -614,7 +651,9 @@ export default function AdminStudentsPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">Telepon Orang Tua/Wali</label>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Telepon Orang Tua/Wali <span className="text-xs text-gray-500">(Opsional)</span>
+                    </label>
                     <input
                       type="tel"
                       name="parentPhone"

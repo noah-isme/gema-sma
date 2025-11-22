@@ -601,8 +601,9 @@ model Classroom {
 
 model Student {
   id           String    @id @default(cuid())
-  studentId    String    @unique // NIS atau nomor identitas siswa
-  email        String    @unique
+  studentId    String?   @unique // NIS (optional - jika ada dari sekolah)
+  username     String?   @unique // Username sebagai alternatif jika tidak ada NIS
+  email        String?   @unique // Optional - tidak semua siswa punya email
   password     String
   fullName     String
   class        String? // Kelas siswa (X-A, XI-B, XII-C, dll)
@@ -634,6 +635,7 @@ model Student {
   feedbackUpvotes     ArticleFeedbackUpvote[]
 
   @@index([studentId])
+  @@index([username])
   @@index([status])
   @@index([class])
   @@map("students")

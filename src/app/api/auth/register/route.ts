@@ -7,6 +7,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const {
       studentId,
+      username,
       fullName,
       email,
       password,
@@ -19,10 +20,17 @@ export async function POST(request: NextRequest) {
       userType
     } = body
 
-    // Validate required fields
-    if (!studentId || !fullName || !email || !password) {
+    // Validate required fields - must have either studentId or username
+    if (!fullName || !password) {
       return NextResponse.json(
-        { message: 'NIS, nama lengkap, email, dan password wajib diisi' },
+        { message: 'Nama lengkap dan password wajib diisi' },
+        { status: 400 }
+      )
+    }
+
+    if (!studentId && !username) {
+      return NextResponse.json(
+        { message: 'NIS atau username wajib diisi' },
         { status: 400 }
       )
     }
@@ -35,28 +43,46 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if student ID already exists
-    const existingStudentId = await prisma.student.findUnique({
-      where: { studentId }
-    })
+    // Check if student ID already exists (if provided)
+    if (studentId) {
+      const existingStudentId = await prisma.student.findUnique({
+        where: { studentId }
+      })
 
-    if (existingStudentId) {
-      return NextResponse.json(
-        { message: 'NIS sudah terdaftar. Gunakan NIS yang berbeda.' },
-        { status: 400 }
-      )
+      if (existingStudentId) {
+        return NextResponse.json(
+          { message: 'NIS sudah terdaftar. Gunakan NIS yang berbeda.' },
+          { status: 400 }
+        )
+      }
     }
 
-    // Check if email already exists
-    const existingEmail = await prisma.student.findUnique({
-      where: { email }
-    })
+    // Check if username already exists (if provided)
+    if (username) {
+      const existingUsername = await prisma.student.findUnique({
+        where: { username }
+      })
 
-    if (existingEmail) {
-      return NextResponse.json(
-        { message: 'Email sudah terdaftar. Gunakan email yang berbeda.' },
-        { status: 400 }
-      )
+      if (existingUsername) {
+        return NextResponse.json(
+          { message: 'Username sudah digunakan. Pilih username lain.' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Check if email already exists (if provided)
+    if (email) {
+      const existingEmail = await prisma.student.findUnique({
+        where: { email }
+      })
+
+      if (existingEmail) {
+        return NextResponse.json(
+          { message: 'Email sudah terdaftar. Gunakan email yang berbeda.' },
+          { status: 400 }
+        )
+      }
     }
 
     // Hash password
@@ -65,9 +91,10 @@ export async function POST(request: NextRequest) {
     // Create new student
     const student = await prisma.student.create({
       data: {
-        studentId,
+        studentId: studentId || null,
+        username: username || null,
         fullName,
-        email,
+        email: email || null,
         password: hashedPassword,
         class: studentClass,
         phone,

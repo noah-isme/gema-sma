@@ -1178,7 +1178,7 @@ export default function HomePage() {
             </div>
 
             {/* Right Column - Lottie Animation (Asymmetric 45%) */}
-            <div className="relative flex-1 md:w-[45%] pointer-events-none" data-parallax="0.25">
+            <div className="relative flex-1 md:w-[45%] pointer-events-none pt-16 md:pt-24" data-parallax="0.25">
               <div 
                 ref={lottieContainerRef}
                 className="relative flex items-center justify-center pointer-events-none"

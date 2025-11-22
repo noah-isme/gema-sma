@@ -167,9 +167,10 @@ export const authOptions: AuthOptions = {
 
         return {
           id: student.id,
-          email: student.email,
+          email: student.email || null,
           name: student.fullName,
-          studentId: student.studentId,
+          studentId: student.studentId || null,
+          username: student.username || null,
           class: student.class || undefined,
           role: 'STUDENT',
           userType: 'student'

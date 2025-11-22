@@ -54,7 +54,7 @@ const GRADE_FILTERS = [
 const STEP_DEFINITIONS = [
   { id: 'account', title: 'Informasi Akun', subtitle: 'Wajib diisi untuk membuat akun' },
   { id: 'identity', title: 'Data Identitas Siswa', subtitle: 'Pastikan sesuai data sekolah' },
-  { id: 'parent', title: 'Kontak Orang Tua', subtitle: 'Memudahkan guru menghubungi wali' },
+  { id: 'parent', title: 'Kontak Orang Tua', subtitle: 'Opsional - bisa dilewati jika tidak ada' },
   { id: 'interest', title: 'Minat Ekstrakurikuler', subtitle: 'Opsional untuk rekomendasi konten' }
 ] as const
 
@@ -65,6 +65,7 @@ export default function StudentRegisterPage() {
   useAnimatedAuthBackground()
   const [formData, setFormData] = useState({
     studentId: '',
+    username: '',
     fullName: '',
     email: '',
     password: '',
@@ -89,7 +90,8 @@ export default function StudentRegisterPage() {
   const [showSuccess, setShowSuccess] = useState(false)
   const [availability, setAvailability] = useState({
     email: { status: 'idle' as AvailabilityState, message: '' },
-    studentId: { status: 'idle' as AvailabilityState, message: '' }
+    studentId: { status: 'idle' as AvailabilityState, message: '' },
+    username: { status: 'idle' as AvailabilityState, message: '' }
   })
   const [toast, setToast] = useState<{
     show: boolean;
@@ -120,7 +122,9 @@ export default function StudentRegisterPage() {
   )
 
   const isPasswordStrong = formData.password.length >= 8
-  const isStudentIdComplete = formData.studentId.length === 7
+  // Username is required if no NIS, must be alphanumeric with underscore/dot
+  const isUsernameValid = formData.username ? /^[a-zA-Z0-9_.]{3,20}$/.test(formData.username) : !formData.studentId
+  const hasIdentifier = Boolean(formData.studentId || formData.username)
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -211,10 +215,11 @@ export default function StudentRegisterPage() {
       return
     }
 
-    if (formData.studentId.length < 7) {
+    // NIS tidak harus 7 digit lagi - bisa bervariasi
+    if (formData.studentId.length < 3) {
       setAvailability(prev => ({
         ...prev,
-        studentId: { status: 'error', message: 'NIS harus tepat 7 digit' }
+        studentId: { status: 'error', message: 'NIS minimal 3 karakter' }
       }))
       return
     }
@@ -264,12 +269,81 @@ export default function StudentRegisterPage() {
     }
   }, [formData.studentId])
 
+  useEffect(() => {
+    if (!formData.username) {
+      setAvailability(prev => ({
+        ...prev,
+        username: { status: 'idle', message: '' }
+      }))
+      return
+    }
+
+    // Validate username format
+    if (!/^[a-zA-Z0-9_.]{3,20}$/.test(formData.username)) {
+      setAvailability(prev => ({
+        ...prev,
+        username: { status: 'error', message: 'Username harus 3-20 karakter (huruf, angka, _, .)' }
+      }))
+      return
+    }
+
+    const controller = new AbortController()
+    const timeout = setTimeout(async () => {
+      setAvailability(prev => ({
+        ...prev,
+        username: { status: 'checking', message: 'Memeriksa username...' }
+      }))
+
+      try {
+        const response = await fetch(`/api/auth/student-availability?username=${formData.username}`, {
+          signal: controller.signal
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to check username')
+        }
+
+        const data = await response.json()
+        const available = typeof data.usernameAvailable === 'boolean'
+          ? data.usernameAvailable
+          : data.available
+
+        setAvailability(prev => ({
+          ...prev,
+          username: {
+            status: available ? 'available' : 'taken',
+            message: available ? 'Username tersedia' : 'Username sudah digunakan'
+          }
+        }))
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          console.error('Username availability error:', err)
+          setAvailability(prev => ({
+            ...prev,
+            username: { status: 'error', message: 'Tidak dapat memeriksa username' }
+          }))
+        }
+      }
+    }, 500)
+
+    return () => {
+      clearTimeout(timeout)
+      controller.abort()
+    }
+  }, [formData.username])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
 
     if (name === 'studentId') {
-      const sanitized = value.replace(/[^0-9]/g, '').slice(0, 7)
+      const sanitized = value.replace(/[^0-9]/g, '')
       setFormData(prev => ({ ...prev, studentId: sanitized }))
+      return
+    }
+
+    if (name === 'username') {
+      const sanitized = value.toLowerCase().replace(/[^a-z0-9_.]/g, '')
+      setFormData(prev => ({ ...prev, username: sanitized }))
       return
     }
 
@@ -318,8 +392,15 @@ export default function StudentRegisterPage() {
   const validateStep = (step: StepId) => {
     switch (step) {
       case 'account':
-        if (!isStudentIdComplete) {
-          setError('NIS harus tepat 7 digit sesuai data sekolah.')
+        // Must have either NIS or username
+        if (!hasIdentifier) {
+          setError('Isi NIS atau buat username untuk identifikasi akun.')
+          return false
+        }
+
+        // Validate username format if provided
+        if (formData.username && !isUsernameValid) {
+          setError('Username harus 3-20 karakter (huruf, angka, titik, underscore).')
           return false
         }
 
@@ -333,27 +414,26 @@ export default function StudentRegisterPage() {
           return false
         }
 
-        if (availability.email.status === 'taken' || availability.studentId.status === 'taken') {
-          setError('Periksa kembali NIS atau email yang sudah terdaftar.')
+        if (availability.email.status === 'taken' || 
+            availability.studentId.status === 'taken' ||
+            availability.username.status === 'taken') {
+          setError('Periksa kembali NIS, username, atau email yang sudah terdaftar.')
           return false
         }
 
-        if (!formData.email) {
-          setError('Email wajib diisi.')
+        if (!formData.fullName.trim()) {
+          setError('Nama lengkap wajib diisi.')
           return false
         }
         break
       case 'identity':
-        if (!formData.fullName.trim() || !formData.class.trim() || !formData.address.trim()) {
-          setError('Lengkapi nama, kelas, dan alamat sesuai data sekolah.')
+        if (!formData.class.trim() || !formData.address.trim()) {
+          setError('Lengkapi kelas dan alamat sesuai data sekolah.')
           return false
         }
         break
       case 'parent':
-        if (!formData.parentName.trim() || !formData.parentPhone.trim()) {
-          setError('Kontak orang tua wajib diisi untuk koordinasi guru.')
-          return false
-        }
+        // Parent contact is now optional - no validation needed
         break
       default:
         break
@@ -446,12 +526,27 @@ export default function StudentRegisterPage() {
     if (stepId === 'account') {
       return (
         <div className="space-y-6">
+          {/* Info Box - Pilih salah satu */}
+          <div className="rounded-xl bg-blue-50/70 border border-blue-200/50 p-4">
+            <div className="flex items-start gap-3">
+              <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-semibold text-blue-900 mb-1">Informasi Penting</h4>
+                <p className="text-xs text-blue-700/80 leading-relaxed">
+                  <strong>Wajib diisi:</strong> NIS atau Username (salah satu).<br/>
+                  <strong>Email:</strong> Opsional - isi jika punya, berguna untuk reset password.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div>
               <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <User className="h-[18px] w-[18px] text-[#9AA0B5]" />
                 NIS / Student ID
-                <InfoTooltip message="Gunakan nomor induk resmi sekolah" />
+                <span className="ml-1 text-xs font-normal text-slate-500">(Opsional)</span>
+                <InfoTooltip message="Gunakan nomor induk resmi sekolah jika ada" />
               </label>
               <div className="relative">
                 <input
@@ -459,9 +554,9 @@ export default function StudentRegisterPage() {
                   name="studentId"
                   value={formData.studentId}
                   onChange={handleChange}
-                  required
                   inputMode="numeric"
-                  className={`${inputBaseClass} pr-12`}
+                  disabled={!!formData.username}
+                  className={`${inputBaseClass} pr-12 ${formData.username ? 'bg-slate-100 cursor-not-allowed' : ''}`}
                   placeholder="Contoh: 2024123"
                 />
                 <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
@@ -472,7 +567,9 @@ export default function StudentRegisterPage() {
                   )}
                 </span>
               </div>
-              <p className="mt-2 text-xs text-slate-500">NIS harus 7 digit sesuai data sekolah.</p>
+              <p className="mt-2 text-xs text-slate-500">
+                {formData.username ? 'Kosongkan username untuk menggunakan NIS' : 'Minimal 3 karakter. Kosongkan jika belum punya NIS.'}
+              </p>
               {availability.studentId.message && (
                 <p className={`mt-1 text-xs font-medium ${availabilityMessageClass(availability.studentId.status)}`}>
                   {availability.studentId.message}
@@ -482,8 +579,46 @@ export default function StudentRegisterPage() {
 
             <div>
               <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <User className="h-[18px] w-[18px] text-[#9AA0B5]" />
+                Username
+                <span className="ml-1 text-xs font-normal text-slate-500">(Opsional)</span>
+                <InfoTooltip message="Username unik jika tidak punya NIS" />
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  disabled={!!formData.studentId}
+                  className={`${inputBaseClass} pr-12 ${formData.studentId ? 'bg-slate-100 cursor-not-allowed' : ''}`}
+                  placeholder="Contoh: john_doe123"
+                />
+                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+                  {availability.username.status === 'checking' && <Loader className="h-4 w-4 animate-spin text-blue-500" />}
+                  {availability.username.status === 'available' && <Check className="h-4 w-4 text-emerald-600" />}
+                  {(availability.username.status === 'taken' || availability.username.status === 'error') && (
+                    <AlertTriangle className="h-4 w-4 text-rose-500" />
+                  )}
+                </span>
+              </div>
+              <p className="mt-2 text-xs text-slate-500">
+                {formData.studentId ? 'Kosongkan NIS untuk menggunakan username' : '3-20 karakter: huruf, angka, titik, underscore.'}
+              </p>
+              {availability.username.message && (
+                <p className={`mt-1 text-xs font-medium ${availabilityMessageClass(availability.username.status)}`}>
+                  {availability.username.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div>
+              <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <Mail className="h-[18px] w-[18px] text-[#9AA0B5]" />
                 Email Aktif
+                <span className="ml-1 text-xs font-normal text-slate-500">(Opsional)</span>
               </label>
               <div className="relative">
                 <input
@@ -491,7 +626,6 @@ export default function StudentRegisterPage() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  required
                   className={`${inputBaseClass} pr-12`}
                   placeholder="email@sekolah.sch.id"
                 />
@@ -503,12 +637,28 @@ export default function StudentRegisterPage() {
                   )}
                 </span>
               </div>
-              <p className="mt-2 text-xs text-slate-500">Email akan digunakan untuk reset password.</p>
+              <p className="mt-2 text-xs text-slate-500">Email berguna untuk reset password jika lupa.</p>
               {availability.email.message && (
                 <p className={`mt-1 text-xs font-medium ${availabilityMessageClass(availability.email.status)}`}>
                   {availability.email.message}
                 </p>
               )}
+            </div>
+
+            <div>
+              <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <User className="h-[18px] w-[18px] text-[#9AA0B5]" />
+                Nama Lengkap
+              </label>
+              <input
+                type="text"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                required
+                className={inputBaseClass}
+                placeholder="Nama sesuai ijazah"
+              />
             </div>
           </div>
 
@@ -711,18 +861,32 @@ export default function StudentRegisterPage() {
     if (stepId === 'parent') {
       return (
         <div className="space-y-6">
+          {/* Info Box - Opsional */}
+          <div className="rounded-xl bg-amber-50/70 border border-amber-200/50 p-4">
+            <div className="flex items-start gap-3">
+              <Info className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-semibold text-amber-900 mb-1">Kontak Orang Tua (Opsional)</h4>
+                <p className="text-xs text-amber-700/80 leading-relaxed">
+                  Isi jika ingin memudahkan guru menghubungi wali untuk koordinasi. 
+                  <strong className="block mt-1">Bisa dilewati jika tidak memiliki data kontak orang tua.</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div>
               <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <Users className="h-[18px] w-[18px] text-[#9AA0B5]" />
                 Nama Orang Tua / Wali
+                <span className="ml-1 text-xs font-normal text-slate-500">(Opsional)</span>
               </label>
               <input
                 type="text"
                 name="parentName"
                 value={formData.parentName}
                 onChange={handleChange}
-                required
                 className={inputBaseClass}
                 placeholder="Nama orang tua atau wali"
               />
@@ -732,24 +896,25 @@ export default function StudentRegisterPage() {
               <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <Phone className="h-[18px] w-[18px] text-[#9AA0B5]" />
                 Nomor Telepon Orang Tua
+                <span className="ml-1 text-xs font-normal text-slate-500">(Opsional)</span>
               </label>
               <input
                 type="tel"
                 name="parentPhone"
                 value={formData.parentPhone}
                 onChange={handleChange}
-                required
                 className={inputBaseClass}
                 placeholder="Contoh: 0812xxxxxx"
               />
-              <p className="mt-2 text-xs text-slate-500">Kami menghubungi nomor ini untuk info penting sekolah.</p>
+              <p className="mt-2 text-xs text-slate-500">Untuk info penting sekolah (jika diisi).</p>
             </div>
           </div>
 
           <div>
             <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
               <Phone className="h-[18px] w-[18px] text-[#9AA0B5]" />
-              Telepon Siswa (opsional)
+              Telepon Siswa
+              <span className="ml-1 text-xs font-normal text-slate-500">(Opsional)</span>
             </label>
             <input
               type="tel"
@@ -998,6 +1163,18 @@ export default function StudentRegisterPage() {
             )}
 
             <div className="flex flex-1 items-center justify-end gap-3">
+              {/* Show "Skip" button for parent step */}
+              {STEP_DEFINITIONS[currentStep].id === 'parent' && (
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-600 transition hover:border-slate-400 hover:bg-slate-50"
+                  disabled={isLoading}
+                >
+                  Lewati Step Ini →
+                </button>
+              )}
+              
               {currentStep < STEP_DEFINITIONS.length - 1 ? (
                 <motion.button
                   type="button"
@@ -1007,7 +1184,7 @@ export default function StudentRegisterPage() {
                   className="inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_20px_50px_rgba(79,70,229,0.35)] md:w-auto"
                   disabled={isLoading}
                 >
-                  Lanjut ke Langkah Berikutnya →
+                  {STEP_DEFINITIONS[currentStep].id === 'parent' ? 'Isi & Lanjutkan →' : 'Lanjut ke Langkah Berikutnya →'}
                 </motion.button>
               ) : (
                 <motion.button
