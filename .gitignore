@@ -40,6 +40,10 @@ yarn-error.log*
 .env.production
 .env.development
 
+# Production credentials (delete after saving securely)
+docs/PRODUCTION-ADMIN-CREDENTIALS.md
+*-CREDENTIALS.md
+
 # vercel
 .vercel
 
