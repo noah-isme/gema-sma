@@ -79,10 +79,6 @@ export default function PlayfulTourGuide({
     if (typeof window === 'undefined') return
     const stored = window.localStorage.getItem(buildStorageKey(tourId))
     const hasSeenValue = Boolean(stored)
-    console.log('[Tour Debug] tourId:', tourId)
-    console.log('[Tour Debug] localStorage key:', buildStorageKey(tourId))
-    console.log('[Tour Debug] localStorage value:', stored)
-    console.log('[Tour Debug] hasSeenTutorial:', hasSeenValue)
     setHasSeenTutorial(hasSeenValue)
     setStorageReady(true)
   }, [tourId])
@@ -334,7 +330,22 @@ export default function PlayfulTourGuide({
       if (!step) return
 
       const target = document.querySelector<HTMLElement>(step.selector)
-      if (!target) {
+      if (target) {
+        const rect = target.getBoundingClientRect()
+        const isVisible = rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.left >= 0 && rect.bottom <= window.innerHeight && rect.right <= window.innerWidth
+        
+        if (!isVisible) {
+          console.warn('[StudentTour] target not visible for selector', step.selector)
+          setTargetRect(null)
+          setTooltipBounds(null)
+          if (index < steps.length - 1) {
+            setCurrentStep(index + 1)
+          } else {
+            stopTour()
+          }
+          return
+        }
+      } else {
         console.warn('[StudentTour] target not found for selector', step.selector)
         setTargetRect(null)
         setTooltipBounds(null)
@@ -349,19 +360,40 @@ export default function PlayfulTourGuide({
       clearHighlight()
       highlightRef.current = target
       target.classList.add('tour-highlight')
-      requestAnimationFrame(() => {
-        target.classList.add('tour-highlight-active')
-        generateParticles()
-      })
-      target.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-        inline: 'center'
-      })
-
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => updateTooltipPosition(target))
-      })
+      
+      // Ensure sidebar is expanded if target is in sidebar
+      if (target.closest('.sidebar-nav-link') && window.innerWidth >= 768) {
+        const sidebar = target.closest('[class*="md:w-64"], [class*="md:w-16"]')
+        if (sidebar && sidebar.classList.contains('md:w-16')) {
+          // Try to expand sidebar by clicking collapse button
+          const collapseBtn = sidebar.querySelector('button[title*="Collapse"], button[title*="Expand"]') as HTMLButtonElement
+          if (collapseBtn) {
+            collapseBtn.click()
+            // Wait a bit for animation
+            setTimeout(() => {
+              requestAnimationFrame(() => {
+                target.classList.add('tour-highlight-active')
+                generateParticles()
+              })
+            }, 350)
+          } else {
+            requestAnimationFrame(() => {
+              target.classList.add('tour-highlight-active')
+              generateParticles()
+            })
+          }
+        } else {
+          requestAnimationFrame(() => {
+            target.classList.add('tour-highlight-active')
+            generateParticles()
+          })
+        }
+      } else {
+        requestAnimationFrame(() => {
+          target.classList.add('tour-highlight-active')
+          generateParticles()
+        })
+      }
     },
     [clearHighlight, stopTour, steps, updateTooltipPosition, generateParticles]
   )
@@ -410,256 +442,3921 @@ export default function PlayfulTourGuide({
   }, [isRunning, updateTooltipPosition])
 
   useEffect(() => {
-    console.log('[Tour Debug] Auto-start check:')
-    console.log('  - storageReady:', storageReady)
-    console.log('  - autoStart:', autoStart)
-    console.log('  - hasSeenTutorial:', hasSeenTutorial)
-    console.log('  - steps.length:', steps.length)
-    
-    if (!storageReady || !autoStart || hasSeenTutorial || !steps.length) {
-      console.log('[Tour Debug] Auto-start BLOCKED:')
-      if (!storageReady) console.log('  ❌ Storage not ready')
-      if (!autoStart) console.log('  ❌ Auto-start disabled')
-      if (hasSeenTutorial) console.log('  ❌ User has seen tutorial before')
-      if (!steps.length) console.log('  ❌ No steps defined')
-      return
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
     }
-    
-    console.log('[Tour Debug] ✅ Starting tour in', autoStartDelay, 'ms')
-    const timeout = window.setTimeout(() => {
-      console.log('[Tour Debug] 🚀 Auto-start triggered!')
-      startTour()
-    }, autoStartDelay)
-    return () => window.clearTimeout(timeout)
-  }, [autoStart, autoStartDelay, hasSeenTutorial, startTour, steps.length, storageReady])
-
-  useEffect(() => {
-    if (showCompletion) {
-      // Clear highlight when completion modal shows
-      clearHighlight()
-      setTargetRect(null)
-      setTooltipBounds(null)
-    }
-  }, [showCompletion, clearHighlight])
-
-  useEffect(() => {
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
     return () => {
-      clearHighlight()
-      if (tooltipTimeoutRef.current) window.clearTimeout(tooltipTimeoutRef.current)
-      if (particleIntervalRef.current) window.clearInterval(particleIntervalRef.current)
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
     }
-  }, [clearHighlight])
+  }, [isRunning, updateTooltipPosition])
 
-  const currentStepData = useMemo(() => steps[currentStep] ?? null, [currentStep, steps])
-  const stepIndicator = `Langkah ${Math.min(currentStep + 1, steps.length)} dari ${steps.length}`
-
-  const resetTour = useCallback(() => {
-    if (typeof window === 'undefined') return
-    window.localStorage.removeItem(buildStorageKey(tourId))
-    setHasSeenTutorial(false)
-  }, [tourId])
-
-  const tooltipClassNames = ['tour-tooltip', tooltipPosition.placement === 'top' ? 'top' : 'bottom']
-  if (!tooltipVisible) tooltipClassNames.push('hidden')
-  if (tooltipActive) tooltipClassNames.push('active')
-
-  const arrowElement = useMemo(() => {
-    if (!targetRect || !tooltipBounds) return null
-
-    const start = {
-      x: targetRect.left + targetRect.width / 2,
-      y: targetRect.top + targetRect.height / 2
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
     }
-
-    let end = { x: tooltipBounds.left, y: tooltipBounds.top }
-    if (tooltipPosition.placement === 'right') {
-      end = { x: tooltipBounds.left, y: tooltipBounds.top + tooltipBounds.height / 2 }
-    } else if (tooltipPosition.placement === 'left') {
-      end = { x: tooltipBounds.left + tooltipBounds.width, y: tooltipBounds.top + tooltipBounds.height / 2 }
-    } else if (tooltipPosition.placement === 'top') {
-      end = { x: tooltipBounds.left + tooltipBounds.width / 2, y: tooltipBounds.top + tooltipBounds.height }
-    } else {
-      end = { x: tooltipBounds.left + tooltipBounds.width / 2, y: tooltipBounds.top }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
     }
+  }, [isRunning, updateTooltipPosition])
 
-    const box = {
-      left: Math.min(start.x, end.x),
-      top: Math.min(start.y, end.y),
-      width: Math.max(2, Math.abs(end.x - start.x)),
-      height: Math.max(2, Math.abs(end.y - start.y))
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
     }
-
-    const path = {
-      x1: start.x - box.left,
-      y1: start.y - box.top,
-      x2: end.x - box.left,
-      y2: end.y - box.top
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
     }
+  }, [isRunning, updateTooltipPosition])
 
-    return (
-      <svg className="tour-arrow" style={{ left: box.left, top: box.top, width: box.width, height: box.height }}>
-        <line className="tour-arrow-line" x1={path.x1} y1={path.y1} x2={path.x2} y2={path.y2} />
-      </svg>
-    )
-  }, [targetRect, tooltipBounds, tooltipPosition.placement])
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
 
-  const portalContent =
-    portalTarget && steps.length > 0
-      ? createPortal(
-          <>
-            {isRunning && targetRect && (
-              <>
-                <div className="tour-backdrop">
-                  <svg className="tour-spotlight" style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-                    <defs>
-                      <mask id={`tour-mask-${tourId}`}>
-                        <rect x="0" y="0" width="100%" height="100%" fill="white" />
-                        <rect
-                          x={targetRect.left - 12}
-                          y={targetRect.top - 12}
-                          width={targetRect.width + 24}
-                          height={targetRect.height + 24}
-                          rx="20"
-                          fill="black"
-                        />
-                      </mask>
-                    </defs>
-                    <rect
-                      x="0"
-                      y="0"
-                      width="100%"
-                      height="100%"
-                      fill="rgba(0, 0, 0, 0.8)"
-                      mask={`url(#tour-mask-${tourId})`}
-                    />
-                  </svg>
-                </div>
-                <div className="tour-particles-container">
-                  {particles.map((particle) => (
-                    <div
-                      key={particle.id}
-                      className="tour-particle"
-                      style={{
-                        left: particle.x,
-                        top: particle.y,
-                        animationDelay: `${particle.delay}s`
-                      }}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-            {arrowElement}
-            <div
-              ref={tooltipRef}
-              className={tooltipClassNames.join(' ')}
-              style={
-                {
-                  top: tooltipPosition.top,
-                  left: tooltipPosition.left
-                } as CSSProperties
-              }
-              role="dialog"
-              aria-modal="true"
-            >
-              <div className="tour-tooltip-inner">
-                <div className="tour-badge" aria-hidden="true">
-                  {currentStepData?.emoji ?? '✨'}
-                </div>
-                <div>
-                  <div className="tour-header">
-                    <div id="tour-title" className="tour-title">
-                      {currentStepData?.title ?? ''}
-                    </div>
-                    <div id="tour-subtitle" className="tour-subtitle">
-                      {currentStepData?.subtitle ?? ''}
-                    </div>
-                  </div>
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
 
-                  <div id="tour-tooltip-text" className="tour-tooltip-text">
-                    {currentStepData?.text ?? ''}
-                  </div>
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
 
-                  {steps.length > 1 && (
-                    <div className="tour-progress">
-                      {steps.map((_, index) => {
-                        const classes = ['tour-progress-dot']
-                        if (index === currentStep) classes.push('is-active')
-                        if (index < currentStep) classes.push('is-complete')
-                        return <span key={`tour-dot-${tourId}-${index}`} className={classes.join(' ')} />
-                      })}
-                    </div>
-                  )}
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
 
-                  <div className="tour-tooltip-footer">
-                    <button
-                      id="tour-prev"
-                      type="button"
-                      className="tour-btn-ghost"
-                      onClick={goPrev}
-                      disabled={currentStep === 0}
-                    >
-                      ← Balik
-                    </button>
-                    <div id="tour-step-indicator" className="tour-step-indicator">
-                      {stepIndicator}
-                    </div>
-                    <button id="tour-next" type="button" className="tour-btn" onClick={goNext}>
-                      {currentStep === steps.length - 1 ? 'Selesai' : 'Lanjut →'}
-                    </button>
-                  </div>
-                </div>
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
 
-                <button id="tour-skip" type="button" className="tour-skip" onClick={endTour}>
-                  Skip aja
-                </button>
-              </div>
-            </div>
-            {showCompletion && <div className="tour-complete-backdrop" />}
-            {showCompletion && (
-              <div className={`tour-complete-modal ${showCompletion ? 'active' : ''}`}>
-                <div className="tour-complete-icon">🎉</div>
-                <p className="tour-complete-title">Yey, udah paham!</p>
-                <p className="tour-complete-text">Sekarang kamu udah siap jelajahi GEMA tanpa bingung lagi.</p>
-                <div className="tour-complete-actions">
-                  <button type="button" className="tour-btn-primary" onClick={closeCompletion}>
-                    Gas belajar
-                  </button>
-                  <button
-                    type="button"
-                    className="tour-btn-secondary"
-                    onClick={() => {
-                      closeCompletion()
-                      if (typeof window !== 'undefined') {
-                        window.setTimeout(() => startTour(), 300)
-                      }
-                    }}
-                  >
-                    Ulang lagi deh
-                  </button>
-                </div>
-              </div>
-            )}
-          </>,
-          portalTarget
-        )
-      : null
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
 
-  const triggerNode = renderTrigger
-    ? renderTrigger({
-        startTour,
-        endTour,
-        resetTour,
-        isRunning,
-        hasSeenTutorial,
-        storageReady
-      })
-    : null
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
 
-  return (
-    <>
-      {portalContent}
-      {triggerNode}
-    </>
-  )
-}
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isRunning, updateTooltipPosition])
+
+  useEffect(() => {
+    if (!isRunning) return
+    const updatePosition = () => {
+      updateTooltipPosition(highlightRef.current)
+    }
+    window.addEvent
