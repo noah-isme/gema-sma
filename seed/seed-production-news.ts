@@ -1,12 +1,13 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 const newsArticles = [
   {
-    title: '🎉 Partner Coding Baru Anda: GPT‑5.1‑Codex‑Max dari OpenAI',
-    slug: 'partner-coding-baru-gpt-5-1-codex-max-openai',
-    excerpt: 'OpenAI meluncurkan GPT-5.1-Codex-Max, AI coding assistant generasi terbaru yang diklaim 10x lebih cepat dan akurat dalam memahami context code dibanding model sebelumnya.',
+    title: "🎉 Partner Coding Baru Anda: GPT‑5.1‑Codex‑Max dari OpenAI",
+    slug: "partner-coding-baru-gpt-5-1-codex-max-openai",
+    excerpt:
+      "OpenAI meluncurkan GPT-5.1-Codex-Max, AI coding assistant generasi terbaru yang diklaim 10x lebih cepat dan akurat dalam memahami context code dibanding model sebelumnya.",
     content: `# 🎉 Partner Coding Baru Anda: GPT‑5.1‑Codex‑Max dari OpenAI
 
 ![GPT-5.1 Codex Max Banner](https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&h=630&fit=crop)
@@ -104,22 +105,31 @@ Coding tetap penting, tapi **thinking about coding** akan lebih penting.
 **Bagaimana menurut kalian?** Apakah GPT-5.1-Codex-Max akan mengubah cara kita belajar coding? Share pendapat kalian di comment section! 💬
 
 *Published: 20 November 2025 | Author: Noah Caesar | Category: AI & Technology*`,
-    category: 'news',
-    tags: JSON.stringify(['AI', 'OpenAI', 'GPT-5', 'Coding', 'Technology', 'Machine Learning']),
-    author: 'Noah Caesar',
-    authorId: 'admin-noah-placeholder', // Will be updated with actual admin ID
-    status: 'published',
+    category: "news",
+    tags: JSON.stringify([
+      "AI",
+      "OpenAI",
+      "GPT-5",
+      "Coding",
+      "Technology",
+      "Machine Learning",
+    ]),
+    author: "Noah Caesar",
+    authorId: "admin-noah-placeholder", // Will be updated with actual admin ID
+    status: "published",
     featured: true,
-    imageUrl: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&h=630&fit=crop',
+    imageUrl:
+      "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&h=630&fit=crop",
     readTime: 8,
     views: 0,
-    publishedAt: new Date('2025-11-20T10:00:00Z')
+    publishedAt: new Date("2025-11-20T10:00:00Z"),
   },
-  
+
   {
-    title: '🚀 Gemini 3: AI Generasi Terbaru dari Google Kini Resmi Meluncur',
-    slug: 'gemini-3-ai-generasi-terbaru-google-resmi-meluncur',
-    excerpt: 'Google meluncurkan Gemini 3, AI multimodal yang mengintegrasikan text, image, video, audio, dan code dalam satu model unified. Diklaim sebagai "most capable AI" yang pernah dibuat.',
+    title: "🚀 Gemini 3: AI Generasi Terbaru dari Google Kini Resmi Meluncur",
+    slug: "gemini-3-ai-generasi-terbaru-google-resmi-meluncur",
+    excerpt:
+      'Google meluncurkan Gemini 3, AI multimodal yang mengintegrasikan text, image, video, audio, dan code dalam satu model unified. Diklaim sebagai "most capable AI" yang pernah dibuat.',
     content: `# 🚀 Gemini 3: AI Generasi Terbaru dari Google Kini Resmi Meluncur
 
 ![Gemini 3 Launch Event](https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=1200&h=630&fit=crop)
@@ -325,22 +335,32 @@ Rumor mengatakan Google sedang develop:
 **Your Thoughts?** Apakah Gemini 3 akan menggantikan GPT sebagai AI favorit kalian? Comment below! 👇
 
 *Published: 18 November 2025 | Author: Noah Caesar | Category: AI & Technology*`,
-    category: 'news',
-    tags: JSON.stringify(['AI', 'Google', 'Gemini', 'Machine Learning', 'Multimodal', 'DeepMind']),
-    author: 'Noah Caesar',
-    authorId: 'admin-noah-placeholder',
-    status: 'published',
+    category: "news",
+    tags: JSON.stringify([
+      "AI",
+      "Google",
+      "Gemini",
+      "Machine Learning",
+      "Multimodal",
+      "DeepMind",
+    ]),
+    author: "Noah Caesar",
+    authorId: "admin-noah-placeholder",
+    status: "published",
     featured: true,
-    imageUrl: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=1200&h=630&fit=crop',
+    imageUrl:
+      "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=1200&h=630&fit=crop",
     readTime: 10,
     views: 0,
-    publishedAt: new Date('2025-11-18T14:30:00Z')
+    publishedAt: new Date("2025-11-18T14:30:00Z"),
   },
-  
+
   {
-    title: '🌐 Ketika Infrastruktur Inti Internet Tersungkur: Cloudflare & AWS Kelabakan',
-    slug: 'infrastruktur-inti-internet-tersungkur-cloudflare-aws-kelabakan',
-    excerpt: 'Insiden massive outage melanda Cloudflare dan AWS secara bersamaan, menyebabkan jutaan website down dan kerugian triliunan rupiah. Apa yang terjadi dan pelajaran apa yang bisa kita ambil?',
+    title:
+      "🌐 Ketika Infrastruktur Inti Internet Tersungkur: Cloudflare & AWS Kelabakan",
+    slug: "infrastruktur-inti-internet-tersungkur-cloudflare-aws-kelabakan",
+    excerpt:
+      "Insiden massive outage melanda Cloudflare dan AWS secara bersamaan, menyebabkan jutaan website down dan kerugian triliunan rupiah. Apa yang terjadi dan pelajaran apa yang bisa kita ambil?",
     content: `# 🌐 Ketika Infrastruktur Inti Internet Tersungkur: Cloudflare & AWS Kelabakan
 
 ![Internet Infrastructure Down](https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&h=630&fit=crop)
@@ -566,7 +586,7 @@ async function loadAsset(url) {
     'https://cdn.jsdelivr.net/asset.js',
     '/local/asset.js' // Local fallback
   ]
-  
+
   for (const source of sources) {
     try {
       return await fetch(source)
@@ -574,7 +594,7 @@ async function loadAsset(url) {
       continue // Try next source
     }
   }
-  
+
   throw new Error('All sources failed')
 }
 \`\`\`
@@ -641,67 +661,73 @@ Pelajaran dari incident ini:
 **Discussion Time:** Bagaimana menurut kalian? Apakah kita terlalu bergantung pada few big providers? Share your thoughts! 💬
 
 *Published: 15 November 2025 | Author: Noah Caesar | Category: Infrastructure & Security*`,
-    category: 'news',
-    tags: JSON.stringify(['Internet', 'Infrastructure', 'BGP', 'Cloudflare', 'AWS', 'Outage', 'Networking']),
-    author: 'Noah Caesar',
-    authorId: 'admin-noah-placeholder',
-    status: 'published',
+    category: "news",
+    tags: JSON.stringify([
+      "Internet",
+      "Infrastructure",
+      "BGP",
+      "Cloudflare",
+      "AWS",
+      "Outage",
+      "Networking",
+    ]),
+    author: "Noah Caesar",
+    authorId: "admin-noah-placeholder",
+    status: "published",
     featured: true,
-    imageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&h=630&fit=crop',
+    imageUrl:
+      "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&h=630&fit=crop",
     readTime: 12,
     views: 0,
-    publishedAt: new Date('2025-11-15T16:45:00Z')
-  }
-]
+    publishedAt: new Date("2025-11-15T16:45:00Z"),
+  },
+];
 
 async function main() {
-  console.log('📰 Seeding news articles...')
+  console.log("📰 Seeding news articles...");
 
   // Get actual admin Noah ID if exists
   const adminNoah = await prisma.admin.findFirst({
-    where: { 
-      OR: [
-        { email: { contains: 'noah' } },
-        { username: { contains: 'noah' } }
-      ]
-    }
-  })
+    where: {
+      OR: [{ email: { contains: "noah" } }, { name: { contains: "Noah" } }],
+    },
+  });
 
   for (const article of newsArticles) {
     // Update authorId if admin found
     if (adminNoah) {
-      article.authorId = adminNoah.id
+      article.authorId = adminNoah.id;
     }
 
     const existing = await prisma.article.findUnique({
-      where: { slug: article.slug }
-    })
+      where: { slug: article.slug },
+    });
 
     if (existing) {
       await prisma.article.update({
         where: { slug: article.slug },
-        data: article
-      })
-      console.log(`✅ Updated article: ${article.title}`)
+        data: article,
+      });
+      console.log(`✅ Updated article: ${article.title}`);
     } else {
       await prisma.article.create({
-        data: article
-      })
-      console.log(`✅ Created article: ${article.title}`)
+        data: article,
+      });
+      console.log(`✅ Created article: ${article.title}`);
     }
   }
 
-  console.log(`\n✅ Seeded ${newsArticles.length} news articles`)
-  console.log(`   📰 Categories: news, AI, infrastructure`)
-  console.log(`   🏷️  Topics: GPT-5, Gemini 3, Internet Outage`)
-  console.log(`   📝 Total read time: ~30 minutes`)
+  console.log(`\n✅ Seeded ${newsArticles.length} news articles`);
+  console.log(`   📰 Categories: news, AI, infrastructure`);
+  console.log(`   🏷️  Topics: GPT-5, Gemini 3, Internet Outage`);
+  console.log(`   📝 Total read time: ~30 minutes`);
 }
 
 main()
   .catch((error) => {
-    console.error('❌ Error seeding news:', error)
-    process.exit(1)
+    console.error("❌ Error seeding news:", error);
+    process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect()
-  })
+    await prisma.$disconnect();
+  });
