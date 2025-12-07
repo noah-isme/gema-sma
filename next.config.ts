@@ -30,7 +30,17 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["lucide-react", "framer-motion"],
   },
 
-  // Webpack configuration for Prisma
+  // Turbopack configuration (Next.js 16+)
+  turbopack: {
+    resolveAlias: {
+      // Prisma client alias for server-side
+      '@prisma/client': {
+        external: true,
+      },
+    },
+  },
+
+  // Webpack configuration for backward compatibility (if needed in dev)
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals.push("@prisma/client");

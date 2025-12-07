@@ -20,8 +20,8 @@ else
   npx tsx scripts/seed-all-production.ts || echo "⚠️  Seeding completed with warnings"
 fi
 
-# Build Next.js application
-echo "🏗️  Building Next.js application..."
-next build
+# Build Next.js application with Turbopack (Next.js 16+)
+echo "🏗️  Building Next.js application with Turbopack..."
+next build --turbopack
 
 echo "✅ Build completed successfully!"

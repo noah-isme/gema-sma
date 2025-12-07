@@ -6,8 +6,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useToast } from '@/components/feedback/toast'
 
 import { UserForm } from './components/UserForm'
-import { UserTable } from './components/UserTable'
+import { ModernUserList } from './components/ModernUserList'
 import type { AdminUser, AdminUserFormData, RoleOption } from './types'
+import { Plus, RefreshCw } from 'lucide-react'
 
 const DEFAULT_FORM: AdminUserFormData = {
   email: '',
@@ -166,18 +167,21 @@ export function UserManager() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Kelola Admin</h1>
-          <p className="text-gray-600">Atur akses administrator dan moderator sistem</p>
+          <h1 className="text-3xl font-bold text-gray-900">Kelola Admin</h1>
+          <p className="text-gray-600 mt-1">Atur akses administrator dan moderator sistem</p>
         </div>
         <div className="flex gap-3">
           <button
             onClick={fetchUsers}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             type="button"
           >
-            Muat Ulang
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
           </button>
           <button
             onClick={() => {
@@ -185,14 +189,23 @@ export function UserManager() {
               setEditingUser(null)
               setFormData(DEFAULT_FORM)
             }}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm hover:shadow transition-all"
             type="button"
           >
+            <Plus className="w-4 h-4" />
             Tambah Admin
           </button>
         </div>
       </div>
 
+      {/* Info Banner */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p className="text-sm text-blue-800">
+          <span className="font-medium">💡 Info:</span> Admin baru akan menerima email aktivasi otomatis untuk mengatur password mereka.
+        </p>
+      </div>
+
+      {/* User Form Modal */}
       <UserForm
         formData={formData}
         isEditing={Boolean(editingUser)}
@@ -204,22 +217,14 @@ export function UserManager() {
         showForm={isFormVisible}
       />
 
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-gray-900">Daftar Admin</h2>
-            <p className="text-sm text-gray-500">Total {users.length} admin</p>
-          </div>
-
-          <UserTable
-            users={users}
-            isLoading={isLoading}
-            onDelete={handleDelete}
-            onEdit={handleEdit}
-            options={roleOptions}
-          />
-        </div>
-      </div>
+      {/* Modern User List */}
+      <ModernUserList
+        users={users}
+        isLoading={isLoading}
+        onDelete={handleDelete}
+        onEdit={handleEdit}
+        options={roleOptions}
+      />
     </div>
   )
 }
