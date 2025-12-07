@@ -31,16 +31,13 @@ const nextConfig: NextConfig = {
   },
 
   // Turbopack configuration (Next.js 16+)
-  turbopack: {
-    resolveAlias: {
-      // Prisma client alias for server-side
-      '@prisma/client': {
-        external: true,
-      },
-    },
-  },
+  // Empty config to silence the warning - Prisma handled by serverExternalPackages
+  turbopack: {},
 
-  // Webpack configuration for backward compatibility (if needed in dev)
+  // Server external packages (replaces webpack externals)
+  serverExternalPackages: ['@prisma/client', 'prisma'],
+
+  // Webpack configuration for backward compatibility (dev only)
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals.push("@prisma/client");
