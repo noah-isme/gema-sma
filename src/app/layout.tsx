@@ -28,9 +28,13 @@ const firaCode = Fira_Code({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://gema-lms.vercel.app'),
-  title: "GEMA (Generasi Muda Informatika) - LMS untuk Informatika SMA",
-  description: "GEMA (Generasi Muda Informatika) adalah platform LMS modern untuk mata pelajaran Informatika SMA. Dilengkapi coding lab interaktif, tutorial terstruktur, quiz otomatis, dan sistem penilaian komprehensif untuk pembelajaran pemrograman yang efektif.",
+  metadataBase: new URL('https://gema-sma.tech'),
+  title: {
+    default: "GEMA - Generasi Muda Informatika | Platform LMS untuk SMA",
+    template: "%s | GEMA LMS"
+  },
+  description: "Platform Learning Management System (LMS) modern untuk pembelajaran Informatika SMA di seluruh Indonesia. Dilengkapi coding lab interaktif, tutorial terstruktur, quiz otomatis, dan sistem penilaian komprehensif untuk pembelajaran pemrograman yang efektif.",
+  applicationName: "GEMA LMS",
   keywords: [
     "GEMA",
     "Generasi Muda Informatika",
@@ -45,21 +49,30 @@ export const metadata: Metadata = {
     "platform edukasi teknologi",
     "LMS programming",
     "e-learning informatika",
-    "coding education platform"
+    "coding education platform",
+    "pendidikan informatika Indonesia",
+    "belajar pemrograman SMA"
   ],
-  authors: [{ name: "GEMA Development Team" }],
+  authors: [
+    { name: "GEMA Development Team" }
+  ],
   creator: "GEMA - Learning Management System",
   publisher: "GEMA Platform",
+  formatDetection: {
+    email: true,
+    address: true,
+    telephone: true,
+  },
   openGraph: {
     type: "website",
     locale: "id_ID",
-    url: "https://gema-lms.vercel.app",
-    title: "GEMA - Learning Management System untuk Informatika SMA",
-    description: "Platform LMS modern untuk pembelajaran Informatika dengan coding lab interaktif dan sistem penilaian otomatis",
+    url: "https://gema-sma.tech",
+    title: "GEMA - Platform LMS Informatika untuk Seluruh SMA",
+    description: "Platform Learning Management System modern untuk pembelajaran Informatika dengan coding lab interaktif, tutorial terstruktur, quiz otomatis, dan sistem penilaian komprehensif. Untuk semua SMA di Indonesia.",
     siteName: "GEMA LMS",
     images: [
       {
-        url: "/og-image.jpg",
+        url: "/gema.svg",
         width: 1200,
         height: 630,
         alt: "GEMA - Generasi Muda Informatika"
@@ -68,9 +81,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "GEMA - Learning Management System untuk Informatika SMA", 
-    description: "Platform LMS modern untuk pembelajaran Informatika dengan coding lab interaktif dan sistem penilaian otomatis",
-    images: ["/og-image.jpg"]
+    title: "GEMA - Platform LMS Informatika untuk Seluruh SMA", 
+    description: "Platform LMS modern untuk pembelajaran Informatika dengan coding lab interaktif, tutorial terstruktur, dan sistem penilaian otomatis untuk seluruh SMA di Indonesia.",
+    images: ["/gema.svg"]
   },
   robots: {
     index: true,
@@ -85,7 +98,22 @@ export const metadata: Metadata = {
   },
   verification: {
     google: "your-google-verification-code"
-  }
+  },
+  category: "Education",
+  alternates: {
+    canonical: "https://gema-sma.tech",
+  },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32', type: 'image/x-icon' },
+      { url: '/icon.png', sizes: '192x192', type: 'image/png' }
+    ],
+    apple: [
+      { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }
+    ],
+    shortcut: '/favicon.ico'
+  },
+  manifest: '/manifest.json'
 };
 
 export default function RootLayout({
